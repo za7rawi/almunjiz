@@ -1,0 +1,475 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  EMPLOYEE
+  SUPPORT
+  ACCOUNTANT
+  CUSTOMER
+}
+
+enum ServiceCategory {
+  VISAS
+  CONTRACTS
+  VEHICLES
+  TRAVEL
+  HOTELS
+  BUSINESS
+  GOVERNMENT
+  ELECTRONIC
+  UNIVERSITIES
+  CONSULTATIONS
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  UNDER_REVIEW
+  WAITING_CLIENT
+  IN_PROGRESS
+  COMPLETED
+  DELIVERED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  MADA
+  APPLE_PAY
+  STC_PAY
+  VISA
+  MASTER_CARD
+  BANK_TRANSFER
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum NotificationType {
+  ORDER
+  PAYMENT
+  SYSTEM
+  PROMOTION
+  SUPPORT
+}
+
+enum ContactStatus {
+  PENDING
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model User {
+  id              String    @id @default(uuid())
+  name            String
+  email           String    @unique
+  phone           String    @unique
+  password        String
+  avatar          String?
+  role            UserRole  @default(CUSTOMER)
+  emailVerified   Boolean   @default(false)
+  phoneVerified   Boolean   @default(false)
+  twoFactorEnabled Boolean  @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  orders          Order[]
+  invoices        Invoice[]
+  payments        Payment[]
+  reviews         Review[]
+  notifications   Notification[]
+  tickets         Ticket[]
+  ticketMessages  TicketMessage[]
+  employee        Employee?
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model Service {
+  id              String          @id @default(uuid())
+  name            String
+  nameEn          String
+  description     String          @db.Text
+  descriptionEn   String          @db.Text
+  slug            String          @unique
+  icon            String
+  image           String?
+  category        ServiceCategory
+  price           Decimal         @db.Decimal(10, 2)
+  duration        String?
+  durationUnit    String?
+  isActive        Boolean         @default(true)
+  features        String[]
+  requirements    String[]
+  sortOrder       Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  orders          Order[]
+  reviews         Review[]
+
+  @@map("services")
+}
+
+model Order {
+  id                String        @id @default(uuid())
+  orderNumber       String        @unique
+  userId            String
+  serviceId         String
+  status            OrderStatus   @default(PENDING)
+  amount            Decimal       @db.Decimal(10, 2)
+  notes             String?       @db.Text
+  attachments       String[]
+  estimatedDelivery DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service           Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  timeline          OrderTimeline[]
+  invoice           Invoice?
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderTimeline {
+  id          String      @id @default(uuid())
+  orderId     String
+  status      OrderStatus
+  description String      @db.Text
+  createdAt   DateTime    @default(now())
+
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_timeline")
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  orderId       String        @unique
+  userId        String
+  subtotal      Decimal       @db.Decimal(10, 2)
+  tax           Decimal       @db.Decimal(10, 2) @default(0)
+  discount      Decimal       @db.Decimal(10, 2) @default(0)
+  total         Decimal       @db.Decimal(10, 2)
+  status        InvoiceStatus @default(PENDING)
+  dueDate       DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments      Payment[]
+
+  @@index([orderId])
+  @@index([userId])
+  @@map("invoices")
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  invoiceId  String
+  userId     String
+  amount     Decimal       @db.Decimal(10, 2)
+  method     PaymentMethod
+  status     PaymentStatus @default(PENDING)
+  reference  String?
+  metadata   Json?
+  createdAt  DateTime      @default(now())
+
+  invoice    Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([userId])
+  @@map("payments")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  userId     String
+  serviceId  String
+  rating     Int
+  comment    String?  @db.Text
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceId])
+  @@map("reviews")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  titleEn   String
+  message   String           @db.Text
+  messageEn String           @db.Text
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model FAQ {
+  id         String   @id @default(uuid())
+  question   String
+  questionEn String
+  answer     String   @db.Text
+  answerEn   String   @db.Text
+  category   String
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@map("faqs")
+}
+
+model Banner {
+  id          String   @id @default(uuid())
+  title       String
+  titleEn     String
+  subtitle    String?
+  subtitleEn  String?
+  image       String
+  link        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("banners")
+}
+
+model Offer {
+  id            String       @id @default(uuid())
+  title         String
+  titleEn       String
+  description   String?      @db.Text
+  descriptionEn String?      @db.Text
+  discount      Decimal      @db.Decimal(10, 2)
+  discountType  DiscountType @default(PERCENTAGE)
+  code          String?
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean      @default(true)
+  maxUses       Int?
+  usedCount     Int          @default(0)
+  serviceIds    String[]
+  createdAt     DateTime     @default(now())
+
+  @@map("offers")
+}
+
+model Coupon {
+  id           String       @id @default(uuid())
+  code         String       @unique
+  discount     Decimal      @db.Decimal(10, 2)
+  discountType DiscountType @default(PERCENTAGE)
+  maxUses      Int?
+  usedCount    Int          @default(0)
+  minAmount    Decimal?     @db.Decimal(10, 2)
+  startDate    DateTime
+  endDate      DateTime
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  @@map("coupons")
+}
+
+model Contact {
+  id         String        @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  subject    String
+  message    String        @db.Text
+  status     ContactStatus @default(PENDING)
+  reply      String?       @db.Text
+  repliedAt  DateTime?
+  createdAt  DateTime      @default(now())
+
+  @@map("contacts")
+}
+
+model Ticket {
+  id        String         @id @default(uuid())
+  userId    String
+  subject   String
+  status    TicketStatus   @default(OPEN)
+  priority  TicketPriority @default(MEDIUM)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  TicketMessage[]
+
+  @@index([userId])
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id          String   @id @default(uuid())
+  ticketId    String
+  senderId    String
+  message     String   @db.Text
+  attachments String[]
+  createdAt   DateTime @default(now())
+
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender      User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+model Page {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  title           String
+  titleEn         String
+  content         String   @db.Text
+  contentEn       String   @db.Text
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("pages")
+}
+
+model News {
+  id           String    @id @default(uuid())
+  title        String
+  titleEn      String
+  content      String    @db.Text
+  contentEn    String    @db.Text
+  excerpt      String?   @db.Text
+  excerptEn    String?   @db.Text
+  image        String?
+  isPublished  Boolean   @default(false)
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("news")
+}
+
+model Employee {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  department String
+  position   String
+  hireDate   DateTime
+  salary     Decimal? @db.Decimal(10, 2)
+  isActive   Boolean  @default(true)
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("employees")
+}
+
+model Permission {
+  id          String         @id @default(uuid())
+  name        String         @unique
+  description String?
+  resource    String
+  action      String
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  role         UserRole
+  permissionId String
+
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@map("role_permissions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  resource   String
+  resourceId String?
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}

@@ -1,0 +1,10 @@
+<svg width="128" height="128" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2580eb"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <path d="M50 2 L93 25 L93 75 L50 98 L7 75 L7 25 Z" fill="url(#g)"/>
+  <text x="50" y="58" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="36" font-weight="700" font-family="'Noto Sans Arabic', 'Tajawal', Arial, sans-serif" letter-spacing="-1">من</text>
+</svg>

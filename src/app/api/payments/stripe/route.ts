@@ -1,0 +1,63 @@
+import { NextRequest } from 'next/server';
+import Stripe from 'stripe';
+
+interface PaymentIntentRequest {
+  amount: number;
+  currency: string;
+  serviceId: string;
+  customerEmail: string;
+  customerName: string;
+  description: string;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: PaymentIntentRequest = await request.json();
+
+    const { amount, currency, serviceId, customerEmail, customerName, description } = body;
+
+    if (!amount || !currency || !serviceId || !customerEmail || !customerName) {
+      return Response.json(
+        { error: 'جميع الحقول مطلوبة' },
+        { status: 400 },
+      );
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return Response.json({
+        clientSecret: 'demo_secret_' + Date.now(),
+        paymentIntentId: 'demo_pi_' + Date.now(),
+        demo: true,
+      });
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2026-06-24.dahlia',
+    });
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100),
+      currency,
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        serviceId,
+        customerEmail,
+        customerName,
+        description: description || '',
+      },
+      receipt_email: customerEmail,
+    });
+
+    return Response.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      demo: false,
+    });
+  } catch (error) {
+    console.error('Stripe payment error:', error);
+    return Response.json(
+      { error: 'حدث خطأ أثناء إنشاء عملية الدفع' },
+      { status: 500 },
+    );
+  }
+}

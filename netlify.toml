@@ -1,0 +1,66 @@
+[build]
+  command = "npx next build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/**"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/logo.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[redirects]]
+  from = "/ar"
+  to = "/ar/"
+  status = 301
+
+[[redirects]]
+  from = "/en"
+  to = "/en/"
+  status = 301
+
+[[redirects]]
+  from = "/login"
+  to = "/ar/login"
+  status = 302
+
+[[redirects]]
+  from = "/register"
+  to = "/ar/register"
+  status = 302
+
+[[redirects]]
+  from = "/admin"
+  to = "/ar/admin"
+  status = 302
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/ar/dashboard"
+  status = 302
+
+[[redirects]]
+  from = "/services"
+  to = "/ar/services"
+  status = 302
+
+[[redirects]]
+  from = "/blog"
+  to = "/ar/blog"
+  status = 302
