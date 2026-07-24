@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail,
@@ -91,6 +91,8 @@ function AppleIcon() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
   const { login, loginEmail, loginWithGoogle, loginWithApple } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'phone' | 'email'>('phone');
   const [showPassword, setShowPassword] = useState(false);
@@ -113,7 +115,7 @@ export default function LoginPage() {
       email: `user${Date.now()}@gmail.com`,
     });
     if (result.success) {
-      router.push(result.redirect === '/admin' ? '/admin' : '/');
+      router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
     }
     setGoogleLoading(false);
   };
@@ -162,7 +164,7 @@ export default function LoginPage() {
       email: `user${Date.now()}@icloud.com`,
     });
     if (result.success) {
-      router.push(result.redirect === '/admin' ? '/admin' : '/');
+      router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
     }
     setAppleLoading(false);
   };
@@ -197,7 +199,7 @@ export default function LoginPage() {
     setLoading(true);
     const result = loginEmail(email, password);
     if (result.success) {
-      router.push(result.redirect === '/admin' ? '/admin' : '/');
+      router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
     } else {
       setErrors({ general: result.message });
     }
@@ -229,7 +231,7 @@ export default function LoginPage() {
           const match = data.message.match(/:\s*(\d{6})/);
           if (match) sessionStorage.setItem('otp_dev_code', match[1]);
         }
-        router.push('/otp');
+        router.push(`/otp?redirect=${encodeURIComponent(redirectTo)}`);
       } else {
         setErrors({ general: data.message || 'فشل إرسال رمز التحقق' });
       }

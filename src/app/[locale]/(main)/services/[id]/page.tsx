@@ -106,7 +106,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
               {isAuthenticated ? (
-                <Link href={`/checkout?service=${service.id}`}>
+                <Link href={`/request/${service.id}`}>
                   <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
                     اطلب الآن
                     <ArrowLeft size={20} className="rtl:rotate-180" />
@@ -217,7 +217,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     <p className="text-slate-500 dark:text-slate-400 text-sm">اضغط على زر &quot;اطلب الآن&quot; لفتح صفحة الطلب حيث يمكنك إدخال بياناتك ورفع المستندات واختيار طريقة الدفع.</p>
                   </div>
                   {isAuthenticated ? (
-                    <Link href={`/checkout?service=${service.id}`}>
+                <Link href={`/request/${service.id}`}>
                       <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
                         اطلب الآن
                       </Button>
@@ -319,7 +319,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
                 {isAuthenticated ? (
-                  <Link href={`/checkout?service=${service.id}`} className="block">
+                  <Link href={`/request/${service.id}`} className="block">
                     <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
                       اطلب الآن
                     </Button>

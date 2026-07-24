@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
@@ -82,6 +82,8 @@ function CircularProgress({ progress, size = 56, strokeWidth = 3 }: { progress: 
 
 export default function OtpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
   const { login } = useAuthStore();
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -148,7 +150,7 @@ export default function OtpPage() {
         sessionStorage.removeItem('otp_type');
         sessionStorage.removeItem('otp_phone_display');
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(redirectTo);
         }, 1500);
       } else {
         setError(true);

@@ -102,7 +102,7 @@ export function ServicesSection() {
                     </div>
                   </Link>
                   <div className="px-5 pb-5">
-                    <Link href={`/checkout?service=${service.id}`}>
+                    <Link href={`/services/${service.id}`}>
                       <Button variant="secondary" size="sm" fullWidth iconLeft={<ArrowLeft size={14} />}>
                         اطلب الآن
                       </Button>
