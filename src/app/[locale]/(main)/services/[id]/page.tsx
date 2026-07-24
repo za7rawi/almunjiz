@@ -1,28 +1,22 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, Clock, DollarSign, CheckCircle, FileText,
+  ArrowLeft, Clock, DollarSign, CheckCircle, FileText,
   Package, Shield, Star, Globe, Car, Plane, Building2, Headphones,
   GraduationCap, Briefcase, Hotel, Laptop, MessageSquare, Home,
-  FileSignature, Upload, X, ChevronDown, ChevronUp, Send, User,
-  Mail, Phone, MapPin, CreditCard, Check, File, FileSpreadsheet,
-  Archive, ImageIcon, ClipboardList, Search, Settings, Bell, Stamp,
-  Monitor, Zap, Video, Truck, List, Plus, Minus,
+  FileSignature, Upload, Send, ChevronDown, ChevronUp, ClipboardList, Search, Settings, Bell, Stamp,
+  Monitor, Zap, Mail, CreditCard, Video, Truck, List, Check,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PageHeader } from '@/components/ui/page-header';
-import { CountrySelect } from '@/components/ui/country-select';
-import { cn } from '@/lib/utils';
 import { servicesData } from '@/lib/services-data';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
-import { toast } from '@/components/ui/toast';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   Globe, FileText, Car, Plane, Building2, Headphones, GraduationCap,
@@ -39,124 +33,12 @@ const categoryColors: Record<string, string> = {
   OTHER: '#6366F1',
 };
 
-interface UploadedFile {
-  id: string;
-  file: File;
-  name: string;
-  size: number;
-  type: string;
-  preview?: string;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-function getFileIcon(type: string) {
-  if (type.includes('image')) return <ImageIcon size={20} className="text-blue-400" />;
-  if (type.includes('pdf')) return <FileText size={20} className="text-red-400" />;
-  if (type.includes('word') || type.includes('document')) return <FileText size={20} className="text-blue-500" />;
-  if (type.includes('excel') || type.includes('spreadsheet')) return <FileSpreadsheet size={20} className="text-green-400" />;
-  if (type.includes('zip') || type.includes('archive')) return <Archive size={20} className="text-purple-400" />;
-  return <File size={20} className="text-slate-400" />;
-}
-
-function generateOrderNumber(): string {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `AM-${ts}-${rand}`;
-}
-
 export default function ServiceDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
   const { id } = use(params);
   const { currency } = useCurrencyStore();
   const service = useMemo(() => servicesData.find((s) => s.id === id), [id]);
 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [orderSubmitted, setOrderSubmitted] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
-  const [formData, setFormData] = useState({
-    name: '', phone: '', email: '', country: '+966', city: '',
-    idNumber: '', notes: '',
-  });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  const validateForm = useCallback(() => {
-    const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = 'الاسم مطلوب';
-    if (!formData.phone) errors.phone = 'رقم الجوال مطلوب';
-    if (!formData.email) errors.email = 'البريد الإلكتروني مطلوب';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = 'البريد غير صحيح';
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [formData]);
-
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach((file) => {
-      if (file.size > 10 * 1024 * 1024) return;
-      if (uploadedFiles.length >= 5) return;
-      const uploaded: UploadedFile = {
-        id: Date.now().toString() + Math.random().toString(36),
-        file, name: file.name, size: file.size, type: file.type,
-      };
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          uploaded.preview = ev.target?.result as string;
-          setUploadedFiles((prev) => [...prev, uploaded]);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setUploadedFiles((prev) => [...prev, uploaded]);
-      }
-    });
-    e.target.value = '';
-  }, [uploadedFiles.length]);
-
-  const removeFile = useCallback((fileId: string) => {
-    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    Array.from(files).forEach((file) => {
-      if (file.size > 10 * 1024 * 1024) return;
-      if (uploadedFiles.length >= 5) return;
-      const uploaded: UploadedFile = {
-        id: Date.now().toString() + Math.random().toString(36),
-        file, name: file.name, size: file.size, type: file.type,
-      };
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          uploaded.preview = ev.target?.result as string;
-          setUploadedFiles((prev) => [...prev, uploaded]);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setUploadedFiles((prev) => [...prev, uploaded]);
-      }
-    });
-  }, [uploadedFiles.length]);
-
-  const handleSubmitOrder = useCallback(() => {
-    if (!validateForm()) return;
-    setUploading(true);
-    setTimeout(() => {
-      sessionStorage.setItem('orderFormData', JSON.stringify(formData));
-      sessionStorage.setItem('orderFiles', JSON.stringify(uploadedFiles.map((f) => ({ name: f.name, size: f.size, type: f.type }))));
-      sessionStorage.setItem('orderServiceId', service!.id);
-      setUploading(false);
-      window.location.href = `/checkout?service=${service!.id}`;
-    }, 2000);
-  }, [validateForm, formData, uploadedFiles, service]);
 
   if (!service) {
     return (
@@ -175,7 +57,6 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const color = categoryColors[service.category] || '#2580eb';
   const Icon = iconMap[service.icon] || Star;
   const relatedServices = servicesData
     .filter((s) => s.category === service.category && s.id !== service.id && s.isActive)
@@ -221,11 +102,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
               </motion.div>
             </div>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
-              <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4"
-                onClick={() => document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' })}>
-                اطلب الآن
-                <ArrowLeft size={20} className="rtl:rotate-180" />
-              </Button>
+              <Link href={`/checkout?service=${service.id}`}>
+                <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
+                  اطلب الآن
+                  <ArrowLeft size={20} className="rtl:rotate-180" />
+                </Button>
+              </Link>
             </motion.div>
           </div>
         </div>
@@ -313,158 +195,25 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
               </Card>
             </motion.div>
 
-            {/* File Upload Section */}
+            {/* Order Notice */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <Card glass padding="lg">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">رفع المستندات</h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">ارفع المستندات المطلوبة (اختياري)</p>
-                <div
-                  onDrop={handleDrop}
-                  onDragOver={(e) => e.preventDefault()}
-                  className="border-2 border-dashed border-slate-300 dark:border-white/20 hover:border-[#2580eb] rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer group"
-                  onClick={() => document.getElementById('detail-file-upload')?.click()}
-                >
-                  <input id="detail-file-upload" type="file" multiple
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip"
-                    onChange={handleFileUpload} className="hidden" />
-                  <div className="w-16 h-16 rounded-2xl bg-[#2580eb]/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <Upload size={28} className="text-[#2580eb]" />
+                <div className="flex items-center gap-4 p-4 bg-[#2580eb]/5 rounded-xl border border-[#2580eb]/10">
+                  <div className="w-12 h-12 rounded-xl bg-[#2580eb]/10 flex items-center justify-center shrink-0">
+                    <ClipboardList size={24} className="text-[#2580eb]" />
                   </div>
-                  <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">اسحب الملفات هنا أو اضغط للاختيار</p>
-                  <p className="text-slate-400 dark:text-slate-500 text-sm">PDF, Word, Excel, JPG, PNG, ZIP — حتى 10 ميجا — 5 ملفات كحد أقصى</p>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-slate-900 dark:text-white mb-1">كيفية الطلب</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">اضغط على زر &quot;اطلب الآن&quot; لفتح صفحة الطلب حيث يمكنك إدخال بياناتك ورفع المستندات واختيار طريقة الدفع.</p>
+                  </div>
+                  <Link href={`/checkout?service=${service.id}`}>
+                    <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                      اطلب الآن
+                    </Button>
+                  </Link>
                 </div>
-                {uploadedFiles.length > 0 && (
-                  <div className="mt-6 space-y-3">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">الملفات المرفقة ({uploadedFiles.length}/5)</p>
-                    {uploadedFiles.map((f) => (
-                      <motion.div key={f.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                        {f.preview ? (
-                          <img src={f.preview} alt={f.name} className="w-12 h-12 rounded-lg object-cover" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-center">
-                            {getFileIcon(f.type)}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{f.name}</p>
-                          <p className="text-xs text-slate-400">{formatFileSize(f.size)}</p>
-                        </div>
-                        <button onClick={() => removeFile(f.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors">
-                          <X size={16} />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
               </Card>
             </motion.div>
-
-            {/* Order Form Section */}
-            {!orderSubmitted ? (
-              <motion.div id="order-form" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                <Card glass padding="lg">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">بيانات الطلب</h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">أكمل البيانات لإتمام طلبك</p>
-                  <div className="space-y-5">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الاسم الكامل *</label>
-                      <div className="relative">
-                        <User size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="text" value={formData.name}
-                          onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                          placeholder="محمد أحمد"
-                          className={cn("w-full pr-10 pl-4 py-3.5 rounded-xl border text-sm focus:outline-none transition-all dark:bg-white/5 dark:text-white",
-                            formErrors.name ? 'border-red-400' : 'border-slate-200 dark:border-white/10 focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
-                      </div>
-                      {formErrors.name && <p className="text-xs text-red-500 mt-1">{formErrors.name}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">رقم الجوال *</label>
-                      <div className="relative">
-                        <Phone size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="tel" dir="ltr" value={formData.phone}
-                          onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 15) }))}
-                          placeholder="5XXXX XXXX"
-                          className={cn("w-full pr-10 pl-4 py-3.5 rounded-xl border text-sm focus:outline-none transition-all text-left font-mono dark:bg-white/5 dark:text-white",
-                            formErrors.phone ? 'border-red-400' : 'border-slate-200 dark:border-white/10 focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
-                      </div>
-                      {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">البريد الإلكتروني *</label>
-                      <div className="relative">
-                        <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="email" dir="ltr" value={formData.email}
-                          onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
-                          placeholder="example@email.com"
-                          className={cn("w-full pr-10 pl-4 py-3.5 rounded-xl border text-sm focus:outline-none transition-all text-left dark:bg-white/5 dark:text-white",
-                            formErrors.email ? 'border-red-400' : 'border-slate-200 dark:border-white/10 focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
-                      </div>
-                      {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الدولة</label>
-                      <CountrySelect value={formData.country}
-                        onChange={(c) => setFormData((p) => ({ ...p, country: c.dialCode }))} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">المدينة</label>
-                      <div className="relative">
-                        <MapPin size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="text" value={formData.city}
-                          onChange={(e) => setFormData((p) => ({ ...p, city: e.target.value }))}
-                          placeholder="الرياض"
-                          className="w-full pr-10 pl-4 py-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all dark:text-white" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">رقم الهوية / الجواز</label>
-                      <div className="relative">
-                        <CreditCard size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input type="text" dir="ltr" value={formData.idNumber}
-                          onChange={(e) => setFormData((p) => ({ ...p, idNumber: e.target.value }))}
-                          placeholder="XXXXXXXXXX"
-                          className="w-full pr-10 pl-4 py-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all text-left font-mono dark:text-white" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">ملاحظات <span className="text-slate-400">(اختياري)</span></label>
-                      <textarea value={formData.notes}
-                        onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
-                        placeholder="أي ملاحظات أو تفاصيل إضافية..." rows={4} maxLength={500}
-                        className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all resize-none dark:text-white" />
-                      <p className="text-xs text-slate-400 mt-1 text-left">{formData.notes.length}/500</p>
-                    </div>
-                  </div>
-                  <div className="mt-6">
-                      <Button fullWidth size="lg" loading={uploading} onClick={handleSubmitOrder} iconLeft={<Send size={18} />}>
-                        إرسال الطلب
-                      </Button>
-                  </div>
-                </Card>
-              </motion.div>
-            ) : (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring' }}>
-                <Card glass padding="lg" className="text-center">
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring' }}
-                    className="w-20 h-20 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
-                    <CheckCircle size={40} className="text-white" />
-                  </motion.div>
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">تم إرسال طلبك بنجاح!</h2>
-                  <p className="text-slate-500 dark:text-slate-400 mb-6">تم إرسال تفاصيل طلبك إلى بريدك الإلكتروني</p>
-                  <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 mb-6 text-sm space-y-2 max-w-sm mx-auto">
-                    <div className="flex justify-between"><span className="text-slate-500">رقم الطلب</span><span className="font-bold text-[#2580eb] font-mono" dir="ltr">{orderNumber}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">الخدمة</span><span className="font-medium">{service.name}</span></div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Link href="/track-order"><Button variant="primary" iconLeft={<FileText size={18} />}>تتبع الطلب</Button></Link>
-                    <Link href="/"><Button variant="secondary" iconLeft={<ArrowRight size={18} className="rtl:rotate-180" />}>العودة للرئيسية</Button></Link>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
 
             {/* FAQ Section */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -553,10 +302,11 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     <span className="text-sm text-slate-600 dark:text-slate-400">دفع آمن ومشفر</span>
                   </div>
                 </div>
-                <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}
-                  onClick={() => document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' })}>
-                  اطلب الآن
-                </Button>
+                <Link href={`/checkout?service=${service.id}`} className="block">
+                  <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                    اطلب الآن
+                  </Button>
+                </Link>
                 <div className="mt-4 text-center">
                   <Link href="/track-order" className="text-sm text-[#2580eb] hover:underline">
                     هل لديك طلب سابق؟ تتبعه هنا
