@@ -59,14 +59,6 @@ declare global {
         };
       };
     };
-    AppleID?: {
-      auth: {
-        signIn: () => Promise<{
-          authorization: { id_token: string };
-          user?: { name: { firstName: string; lastName: string }; email: string };
-        }>;
-      };
-    };
   }
 }
 
@@ -81,19 +73,11 @@ function GoogleIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-    </svg>
-  );
-}
-
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
-  const { login, loginEmail, loginWithGoogle, loginWithApple } = useAuthStore();
+  const { login, loginEmail, loginWithGoogle } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'phone' | 'email'>('phone');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -105,7 +89,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleGoogleCredentialResponse = async (response: { credential: string }) => {
@@ -170,18 +153,6 @@ export default function LoginPage() {
       setGoogleLoading(false);
       setErrors({ general: 'جاري تحميل خدمات Google...' });
     }
-  };
-
-  const handleAppleLogin = () => {
-    setAppleLoading(true);
-    const result = loginWithApple({
-      name: 'مستخدم Apple',
-      email: `user${Date.now()}@icloud.com`,
-    });
-    if (result.success) {
-      router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
-    }
-    setAppleLoading(false);
   };
 
   const validateEmailField = (val: string): string | undefined => {
@@ -556,7 +527,7 @@ export default function LoginPage() {
         </div>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+      <motion.div variants={itemVariants}>
         <motion.button
           type="button"
           onClick={handleGoogleLogin}
@@ -567,17 +538,6 @@ export default function LoginPage() {
         >
           {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
           Google
-        </motion.button>
-        <motion.button
-          type="button"
-          onClick={handleAppleLogin}
-          disabled={appleLoading}
-          whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.08)' }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm font-medium transition-all duration-200 hover:border-white/[0.15] disabled:opacity-50"
-        >
-          {appleLoading ? <Loader2 size={18} className="animate-spin" /> : <AppleIcon />}
-          Apple
         </motion.button>
       </motion.div>
 

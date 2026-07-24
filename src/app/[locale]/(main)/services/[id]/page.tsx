@@ -384,12 +384,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   لإكمال طلب الخدمة، يرجى تسجيل الدخول أو إنشاء حساب جديد
                 </p>
                 <div className="flex gap-3">
-                  <Link href="/login" className="flex-1">
+                  <Link href={`/login?redirect=/request/${service.id}`} className="flex-1">
                     <Button fullWidth variant="primary">
                       تسجيل الدخول
                     </Button>
                   </Link>
-                  <Link href="/register" className="flex-1">
+                  <Link href={`/register`} className="flex-1">
                     <Button fullWidth variant="secondary">
                       إنشاء حساب
                     </Button>

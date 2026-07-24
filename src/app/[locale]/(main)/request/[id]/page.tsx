@@ -150,9 +150,6 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
       if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = 'البريد الإلكتروني غير صحيح';
       if (!formData.phone || formData.phone.length < 7) errors.phone = 'رقم الجوال غير صحيح';
     }
-    if (s === 2) {
-      if (!selectedGatewayId && activeGateways.length > 0) errors.gateway = 'اختر طريقة الدفع';
-    }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };

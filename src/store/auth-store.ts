@@ -10,7 +10,7 @@ export interface User {
   phone?: string;
   role: 'admin' | 'manager' | 'employee' | 'support' | 'accountant' | 'customer';
   avatar: string | null;
-  provider: 'email' | 'google' | 'apple';
+  provider: 'email' | 'google';
   createdAt: string;
 }
 
@@ -21,7 +21,7 @@ interface RegisteredUser {
   phone: string;
   password: string;
   role: 'customer';
-  provider: 'email' | 'google' | 'apple';
+  provider: 'email' | 'google';
   createdAt: string;
 }
 
@@ -34,7 +34,6 @@ interface AuthStore {
   loginAdmin: (email: string, password: string) => { success: boolean; message: string };
   register: (data: { name: string; email: string; phone: string; password: string }) => { success: boolean; message: string };
   loginWithGoogle: (data: { name: string; email: string; avatar?: string }) => { success: boolean; redirect: string };
-  loginWithApple: (data: { name: string; email: string; avatar?: string }) => { success: boolean; redirect: string };
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   isAdmin: () => boolean;
@@ -173,42 +172,6 @@ export const useAuthStore = create<AuthStore>()(
           role: found.role,
           avatar: data.avatar || null,
           provider: 'google',
-          createdAt: found.createdAt,
-        };
-        set({ user, isAuthenticated: true });
-        return { success: true, redirect: '/dashboard' };
-      },
-
-      loginWithApple: (data) => {
-        const { registeredUsers } = get();
-        const lowerEmail = data.email.toLowerCase().trim();
-
-        let found = registeredUsers.find(
-          (u) => u.email.toLowerCase() === lowerEmail
-        );
-
-        if (!found) {
-          const newUser: RegisteredUser = {
-            id: `auser-${Date.now()}`,
-            name: data.name,
-            email: lowerEmail,
-            phone: '',
-            password: '',
-            role: 'customer',
-            provider: 'apple',
-            createdAt: new Date().toISOString(),
-          };
-          set({ registeredUsers: [...registeredUsers, newUser] });
-          found = newUser;
-        }
-
-        const user: User = {
-          id: found.id,
-          name: found.name,
-          email: found.email,
-          role: found.role,
-          avatar: data.avatar || null,
-          provider: 'apple',
           createdAt: found.createdAt,
         };
         set({ user, isAuthenticated: true });
