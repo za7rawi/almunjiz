@@ -15,7 +15,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { servicesData } from '@/lib/services-data';
+import { useAdminCMSStore } from '@/store/admin-cms-store';
+import { useRequestProgressStore } from '@/store/request-progress-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useOrderStore } from '@/store/order-store';
 import { useCurrencyStore } from '@/store/currency-store';
@@ -81,8 +82,10 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
   const { currency } = useCurrencyStore();
   const { gateways } = usePaymentGatewayStore();
   const { validateCoupon, applyCoupon } = useCouponStore();
+  const { services: servicesData } = useAdminCMSStore();
+  const { saveProgress, getProgress, clearProgress } = useRequestProgressStore();
 
-  const service = useMemo(() => servicesData.find((s) => s.id === id), [id]);
+  const service = useMemo(() => servicesData.find((s) => s.id === id), [id, servicesData]);
   const activeGateways = useMemo(() => gateways.filter((g) => g.isActive), [gateways]);
   const paymentMethods: PaymentMethodDisplay[] = useMemo(() => getAvailablePaymentMethods(gateways), [gateways]);
   const displayMethods = useMemo(() => paymentMethods.filter((m) => activeGateways.some((g) => g.id === m.id)), [paymentMethods, activeGateways]);
@@ -120,15 +123,69 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
     } else {
       setRedirecting(false);
       if (user) {
-        setFormData((prev) => ({
-          ...prev,
-          name: user.name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-        }));
+        const saved = getProgress(id);
+        if (saved) {
+          setFormData((prev) => ({
+            ...prev,
+            name: saved.formData.name || user.name || '',
+            email: saved.formData.email || user.email || '',
+            phone: saved.formData.phone || user.phone || '',
+            phoneCode: saved.formData.phoneCode || '+966',
+            country: saved.formData.country || 'السعودية',
+            idNumber: saved.formData.idNumber || '',
+            residenceNumber: saved.formData.residenceNumber || '',
+            passportNumber: saved.formData.passportNumber || '',
+            companyName: saved.formData.companyName || '',
+            profession: saved.formData.profession || '',
+            workerData: saved.formData.workerCount || '',
+            notes: saved.formData.notes || '',
+          }));
+          setStep(Math.min(saved.step, 3));
+          if (saved.promoCode) {
+            setPromoCode(saved.promoCode);
+          }
+          if (saved.selectedGatewayId) {
+            setSelectedGatewayId(saved.selectedGatewayId);
+          }
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+          }));
+        }
       }
     }
   }, [isAuthenticated, user, router, id]);
+
+  useEffect(() => {
+    if (!service || !isAuthenticated || redirecting) return;
+    const timer = setTimeout(() => {
+      saveProgress(id, {
+        serviceId: id,
+        step,
+        formData: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          phoneCode: formData.phoneCode,
+          country: formData.country,
+          idNumber: formData.idNumber,
+          residenceNumber: formData.residenceNumber,
+          passportNumber: formData.passportNumber,
+          companyName: formData.companyName,
+          profession: formData.profession,
+          workerCount: formData.workerData,
+          notes: formData.notes,
+        },
+        promoCode,
+        selectedGatewayId,
+        uploadedFileNames: uploadedFiles.map((f) => f.name),
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [formData, step, promoCode, selectedGatewayId, uploadedFiles, service, isAuthenticated, redirecting, id, saveProgress]);
 
   const price = service?.price || 0;
   const discount = useMemo(() => {
@@ -218,6 +275,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         timeline: [{ status: 'PENDING', label: 'تم استلام الطلب', date: new Date().toISOString() }],
       });
       router.push(`/payment/success?orderId=${orderNumber}`);
+      clearProgress(id);
     } catch {
       router.push('/payment/failed');
     } finally {
@@ -265,18 +323,18 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         </motion.div>
 
         {/* Steps Indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between max-w-2xl mx-auto">
+        <div className="mb-6 sm:mb-8 overflow-x-auto">
+          <div className="flex items-center justify-between min-w-[320px] max-w-2xl mx-auto px-2">
             {STEPS.map((s, i) => (
               <div key={i} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all",
+                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all",
                     i < step ? "bg-emerald-500 text-white" : i === step ? "bg-[#2580eb] text-white shadow-lg shadow-[#2580eb]/30" : "bg-slate-200 text-slate-500"
                   )}>
-                    {i < step ? <CheckCircle2 size={18} /> : i + 1}
+                    {i < step ? <CheckCircle2 size={16} /> : i + 1}
                   </div>
-                  <span className={cn("text-xs mt-2 font-medium", i <= step ? "text-slate-900" : "text-slate-400")}>{s}</span>
+                  <span className={cn("text-[10px] sm:text-xs mt-1.5 sm:mt-2 font-medium hidden sm:block", i <= step ? "text-slate-900" : "text-slate-400")}>{s}</span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className={cn("w-16 sm:w-24 h-0.5 mx-2 mb-6", i < step ? "bg-emerald-500" : "bg-slate-200")} />
@@ -292,10 +350,10 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
               {/* Step 0: Customer Info */}
               {step === 0 && (
                 <motion.div key="step0" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                  <Card className="p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-[#2580eb]/10 flex items-center justify-center text-[#2580eb]"><User size={20} /></div>
-                      <h2 className="text-lg font-bold text-slate-900">بيانات العميل</h2>
+                  <Card className="p-4 sm:p-6">
+                    <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#2580eb]/10 flex items-center justify-center text-[#2580eb]"><User size={18} className="sm:w-5 sm:h-5" /></div>
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900">بيانات العميل</h2>
                     </div>
                     <div className="space-y-4">
                       <div>

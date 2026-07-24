@@ -34,7 +34,7 @@ import {
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { Button } from '@/components/ui/button';
-import { servicesData, type ServiceData } from '@/lib/services-data';
+import { useAdminCMSStore, type ServiceData } from '@/store/admin-cms-store';
 import { blogsData } from '@/lib/blogs-data';
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
@@ -137,6 +137,7 @@ const blogPostsPreview = blogsData.slice(0, 3);
 
 export default function HomePage() {
   const { language } = useLanguageStore();
+  const { services: servicesData } = useAdminCMSStore();
   const { isRtl } = useDirection();
   const isAr = language === 'ar';
   const Arrow = isRtl ? ArrowLeft : ArrowRight;
@@ -195,7 +196,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
           >
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold mb-6 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold mb-4 sm:mb-6 leading-tight">
               <span className="text-white">{isAr ? 'منصة ' : 'Platform '}</span>
               <span className="bg-gradient-to-r from-[#2580eb] via-[#14b8a6] to-[#2580eb] bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-premium">
                 {isAr ? 'المنجز' : 'Al-Munjiz'}
@@ -318,7 +319,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {popularServices.map((service, i) => {
               const color = popularServiceColors[service.id] ?? '#2580eb';
               const iconBg = popularServiceIcons[service.id] ?? 'bg-[#2580eb]/10';
@@ -331,29 +332,29 @@ export default function HomePage() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                   whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                  className="group p-6 rounded-2xl border border-slate-100 hover:border-transparent bg-white hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 cursor-pointer relative overflow-hidden"
+                  className="group p-4 sm:p-6 rounded-2xl border border-slate-100 hover:border-transparent bg-white hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col"
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" style={{ border: `1px solid ${color}20` }} />
-                  <div className={`w-14 h-14 rounded-xl ${iconBg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                    <ServiceIcon size={24} style={{ color }} />
+                  <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl ${iconBg} flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform duration-300`}>
+                    <ServiceIcon size={20} className="sm:w-6 sm:h-6" style={{ color }} />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">
+                  <h3 className="text-sm sm:text-lg font-bold text-slate-900 mb-1 sm:mb-2 line-clamp-1">
                     {isAr ? service.name : service.nameEn}
                   </h3>
-                  <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-2">
+                  <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2 flex-1">
                     {isAr ? service.description : service.descriptionEn}
                   </p>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <Clock size={12} />
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <span className="text-[10px] sm:text-xs font-medium text-slate-400 bg-slate-100 px-2 sm:px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <Clock size={10} className="sm:w-3 sm:h-3" />
                       {isAr ? service.duration : service.durationEn}
                     </span>
-                    <span className="text-sm font-bold" style={{ color }}>
+                    <span className="text-xs sm:text-sm font-bold" style={{ color }}>
                       {service.price} {isAr ? 'ر.س' : 'SAR'}
                     </span>
                   </div>
                   <Link href={`/services/${service.id}`}>
-                    <Button fullWidth size="sm" className="mt-auto">
+                    <Button fullWidth size="sm" className="mt-auto text-xs sm:text-sm">
                       {isAr ? 'اطلب الآن' : 'Order Now'}
                     </Button>
                   </Link>
@@ -386,7 +387,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {categoryData.map((cat, i) => (
               <motion.div
                 key={cat.titleAr}
@@ -396,15 +397,15 @@ export default function HomePage() {
                 transition={{ duration: 0.5, delay: i * 0.08 }}
                 whileHover={{ y: -4, transition: { duration: 0.3 } }}
               >
-                <Link href="/services" className="flex items-center gap-4 p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-xl hover:shadow-black/5 hover:border-transparent transition-all duration-500 group">
-                  <div className={`w-14 h-14 rounded-xl ${cat.bgColor} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                    <cat.icon size={24} style={{ color: cat.color }} />
+                <Link href="/services" className="flex items-center gap-3 sm:gap-4 p-3 sm:p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-xl hover:shadow-black/5 hover:border-transparent transition-all duration-500 group">
+                  <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl ${cat.bgColor} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                    <cat.icon size={18} className="sm:w-6 sm:h-6" style={{ color: cat.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-slate-900">{isAr ? cat.titleAr : cat.titleEn}</h3>
-                    <p className="text-sm text-slate-500">{cat.count} {isAr ? 'خدمات' : 'services'}</p>
+                    <h3 className="text-sm sm:text-lg font-bold text-slate-900 truncate">{isAr ? cat.titleAr : cat.titleEn}</h3>
+                    <p className="text-xs sm:text-sm text-slate-500">{cat.count} {isAr ? 'خدمات' : 'services'}</p>
                   </div>
-                  <Arrow size={18} className="text-slate-300 group-hover:text-[#2580eb] transition-colors shrink-0" />
+                  <Arrow size={16} className="text-slate-300 group-hover:text-[#2580eb] transition-colors shrink-0" />
                 </Link>
               </motion.div>
             ))}

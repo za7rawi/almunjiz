@@ -13,7 +13,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { servicesData, type ServiceData } from '@/lib/services-data';
+import { useAdminCMSStore, type ServiceData } from '@/store/admin-cms-store';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
 
@@ -60,44 +60,44 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
+      className="flex"
     >
-      <Card glass padding="none" className="h-full overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-        {/* Gradient Header */}
-        <div className={`relative bg-gradient-to-br ${service.gradient} p-5 text-white`}>
+      <Card glass padding="none" className="h-full w-full overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div className={`relative bg-gradient-to-br ${service.gradient} p-3 sm:p-5 text-white`}>
           {service.isPopular && (
-            <div className="absolute top-3 left-3">
-              <Badge variant="warning" size="sm" className="bg-amber-400 text-amber-900 border-amber-300">
+            <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
+              <Badge variant="warning" size="sm" className="bg-amber-400 text-amber-900 border-amber-300 text-[10px]">
                 <Zap size={10} />
                 الأكثر طلباً
               </Badge>
             </div>
           )}
           <div className="flex items-start justify-between">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Icon size={24} />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Icon size={20} className="sm:w-6 sm:h-6" />
             </div>
-            <span className="text-xs bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full font-medium">{service.categoryAr}</span>
+            <span className="text-[10px] sm:text-xs bg-white/20 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full font-medium">{service.categoryAr}</span>
           </div>
         </div>
 
-        <div className="p-5">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{service.name}</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-2 leading-relaxed">{service.description}</p>
+        <div className="p-3 sm:p-5 flex flex-col flex-1">
+          <h3 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white mb-1 sm:mb-2 line-clamp-1">{service.name}</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2 leading-relaxed flex-1">{service.description}</p>
 
-          <div className="flex items-center gap-2 mb-4">
-            <Badge variant="info" size="sm">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <Badge variant="info" size="sm" className="text-[10px] sm:text-xs">
               <Clock size={12} className="ml-1" />
               {service.duration}
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2 pt-4 border-t border-slate-100 dark:border-white/5">
+          <div className="flex items-center gap-2 pt-3 sm:pt-4 border-t border-slate-100 dark:border-white/5">
             <div className="flex-1">
-              <p className="text-xs text-slate-400 mb-0.5">{service.priceNote}</p>
-              <p className="text-lg font-bold gradient-text">{formatPrice(service.price, currency)}</p>
+              <p className="text-[10px] sm:text-xs text-slate-400 mb-0.5">{service.priceNote}</p>
+              <p className="text-sm sm:text-lg font-bold gradient-text">{formatPrice(service.price, currency)}</p>
             </div>
             <Link href={`/services/${service.id}`}>
-              <Button variant="secondary" size="sm" iconLeft={<ArrowLeft size={14} />}>
+              <Button variant="secondary" size="sm" iconLeft={<ArrowLeft size={14} />} className="text-xs sm:text-sm">
                 التفاصيل
               </Button>
             </Link>
@@ -109,6 +109,7 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
 }
 
 export default function ServicesPage() {
+  const { services: servicesData } = useAdminCMSStore();
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -135,10 +136,10 @@ export default function ServicesPage() {
       {/* Hero */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#2580eb] via-[#14b8a6] to-[#7c3aed] text-white">
         <div className="absolute inset-0 bg-black/10" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">خدماتنا المتكاملة</h1>
-            <p className="text-white/80 text-lg mb-8">تصفح خدماتنا المتنوعة واختر ما يناسبك. نقدم حلولاً احترافية متكاملة لاحتياجاتك.</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">خدماتنا المتكاملة</h1>
+            <p className="text-white/80 text-sm sm:text-lg mb-6 sm:mb-8">تصفح خدماتنا المتنوعة واختر ما يناسبك. نقدم حلولاً احترافية متكاملة لاحتياجاتك.</p>
             <div className="relative max-w-lg mx-auto">
               <Search size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -146,14 +147,14 @@ export default function ServicesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="ابحث عن خدمة بالاسم أو الوصف..."
-                className="w-full pr-12 pl-4 py-4 rounded-2xl border-0 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-xl"
+                className="w-full pr-12 pl-4 py-3 sm:py-4 rounded-2xl border-0 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-xl"
               />
             </div>
           </motion.div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Popular Services */}
         {popularServices.length > 0 && activeCategory === 'all' && !searchQuery && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
@@ -161,7 +162,7 @@ export default function ServicesPage() {
               <Heart size={20} className="text-red-500" />
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">الخدمات الأكثر طلباً</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {popularServices.map((service, i) => (
                 <ServiceCard key={service.id} service={service} index={i} />
               ))}
@@ -170,12 +171,12 @@ export default function ServicesPage() {
         )}
 
         {/* Category Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-6 sm:mb-8 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
                 activeCategory === cat.id
                   ? 'bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white shadow-lg shadow-[#2580eb]/25'
                   : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-[#2580eb]/30 hover:bg-[#2580eb]/5'
@@ -195,7 +196,7 @@ export default function ServicesPage() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {filtered.map((service, i) => (
             <ServiceCard key={service.id} service={service} index={i} />
           ))}

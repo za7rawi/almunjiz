@@ -14,7 +14,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { servicesData } from '@/lib/services-data';
+import { useAdminCMSStore } from '@/store/admin-cms-store';
 import { useCurrencyStore } from '@/store/currency-store';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice } from '@/lib/currency';
@@ -38,7 +38,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const { currency } = useCurrencyStore();
   const { isAuthenticated } = useAuthStore();
-  const service = useMemo(() => servicesData.find((s) => s.id === id), [id]);
+  const { services: servicesData } = useAdminCMSStore();
+  const service = useMemo(() => servicesData.find((s) => s.id === id), [id, servicesData]);
 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -71,8 +72,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
       <div className={`relative overflow-hidden bg-gradient-to-br ${service.gradient} text-white`}>
         <div className="absolute inset-0 bg-black/10" />
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
-          <nav className="flex items-center gap-1.5 text-sm text-white/70 mb-6">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-20">
+          <nav className="flex items-center gap-1.5 text-xs sm:text-sm text-white/70 mb-4 sm:mb-6">
             <Link href="/" className="hover:text-white transition-colors">الرئيسية</Link>
             <ChevronDown size={14} className="rotate-[-90deg]" />
             <Link href="/services" className="hover:text-white transition-colors">الخدمات</Link>
@@ -82,20 +83,20 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
 
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
             <div className="flex-1">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Icon size={32} />
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Icon size={24} className="sm:w-8 sm:h-8" />
                 </div>
                 <Badge variant="secondary" size="sm" className="bg-white/20 text-white border-white/30">{service.categoryAr}</Badge>
               </motion.div>
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">{service.name}</motion.h1>
+                className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">{service.name}</motion.h1>
               <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="text-white/80 text-lg max-w-2xl leading-relaxed">{service.description}</motion.p>
+                className="text-white/80 text-sm sm:text-lg max-w-2xl leading-relaxed">{service.description}</motion.p>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                className="flex flex-wrap items-center gap-4 mt-6">
-                <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2 backdrop-blur-sm">
-                  <Clock size={18} />
+                className="flex flex-wrap items-center gap-2 sm:gap-4 mt-4 sm:mt-6">
+                <div className="flex items-center gap-2 bg-white/20 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm text-xs sm:text-sm">
+                  <Clock size={14} className="sm:w-[18px] sm:h-[18px]" />
                   <span className="font-medium">{service.duration}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2 backdrop-blur-sm">

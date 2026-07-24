@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { servicesData } from '@/lib/services-data';
+import { useAdminCMSStore } from '@/store/admin-cms-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useOrderStore } from '@/store/order-store';
 import { useCurrencyStore } from '@/store/currency-store';
@@ -93,6 +93,7 @@ export default function CheckoutPage() {
   const { currency } = useCurrencyStore();
   const { gateways } = usePaymentGatewayStore();
   const { validateCoupon, applyCoupon } = useCouponStore();
+  const { services: servicesData } = useAdminCMSStore();
 
   const [loading, setLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
