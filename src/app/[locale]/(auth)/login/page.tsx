@@ -108,14 +108,29 @@ export default function LoginPage() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const handleGoogleCredentialResponse = (response: { credential: string }) => {
+  const handleGoogleCredentialResponse = async (response: { credential: string }) => {
     setGoogleLoading(true);
-    const result = loginWithGoogle({
-      name: 'مستخدم Google',
-      email: `user${Date.now()}@gmail.com`,
-    });
-    if (result.success) {
-      router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: response.credential }),
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        const result = loginWithGoogle({
+          name: data.user.name,
+          email: data.user.email,
+          avatar: data.user.avatar,
+        });
+        if (result.success) {
+          router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
+        }
+      } else {
+        setErrors({ general: data.message || 'فشل تسجيل الدخول بـ Google' });
+      }
+    } catch {
+      setErrors({ general: 'حدث خطأ أثناء التواصل مع Google' });
     }
     setGoogleLoading(false);
   };
@@ -147,13 +162,13 @@ export default function LoginPage() {
     if (window.google) {
       window.google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          const demoToken = `demo_google_user_${Date.now()}@gmail.com`;
-          handleGoogleCredentialResponse({ credential: demoToken });
+          setGoogleLoading(false);
+          setErrors({ general: 'يرجى السماح لنافذة تسجيل الدخول أو تجربة طريقة أخرى' });
         }
       });
     } else {
-      const demoToken = `demo_google_user_${Date.now()}@gmail.com`;
-      handleGoogleCredentialResponse({ credential: demoToken });
+      setGoogleLoading(false);
+      setErrors({ general: 'جاري تحميل خدمات Google...' });
     }
   };
 

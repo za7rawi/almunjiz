@@ -6,6 +6,22 @@ function generateUserId(): string {
   return `google_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
+async function verifyGoogleToken(idToken: string): Promise<{ name: string; email: string; avatar: string | null } | null> {
+  try {
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+    if (!response.ok) return null;
+    const payload = await response.json();
+    if (!payload.email || payload.aud !== process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) return null;
+    return {
+      name: payload.name || payload.given_name || 'مستخدم Google',
+      email: payload.email,
+      avatar: payload.picture || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -20,14 +36,12 @@ export async function POST(request: Request) {
 
     let userData: { name: string; email: string; avatar: string | null };
 
-    if (idToken.startsWith('demo_google_')) {
-      const parts = idToken.split('_');
-      userData = {
-        name: parts[2] || 'مستخدم Google',
-        email: parts[3] || `user${Date.now()}@gmail.com`,
-        avatar: null,
-      };
+    // Try verifying against Google's servers
+    const verified = await verifyGoogleToken(idToken);
+    if (verified) {
+      userData = verified;
     } else {
+      // Fallback: try decoding JWT locally (for dev/demo tokens)
       try {
         const parts = idToken.split('.');
         if (parts.length === 3) {
@@ -38,19 +52,24 @@ export async function POST(request: Request) {
             avatar: payload.picture || null,
           };
         } else {
-          userData = {
-            name: 'مستخدم Google',
-            email: `user${Date.now()}@gmail.com`,
-            avatar: null,
-          };
+          return NextResponse.json(
+            { success: false, message: 'رمز Google غير صالح' },
+            { status: 401 }
+          );
         }
       } catch {
-        userData = {
-          name: 'مستخدم Google',
-          email: `user${Date.now()}@gmail.com`,
-          avatar: null,
-        };
+        return NextResponse.json(
+          { success: false, message: 'رمز Google غير صالح' },
+          { status: 401 }
+        );
       }
+    }
+
+    if (!userData.email) {
+      return NextResponse.json(
+        { success: false, message: 'لم يتم الحصول على البريد الإلكتروني من Google' },
+        { status: 401 }
+      );
     }
 
     const identifier = userData.email;
