@@ -258,11 +258,16 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
     try {
       await new Promise((r) => setTimeout(r, 2000));
       const orderNumber = generateOrderNumber();
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase().slice(0, 6)}`;
       addOrder({
         id: Date.now().toString(),
         orderNumber,
+        invoiceNumber,
         serviceName: service.name,
         serviceId: service.id,
+        customerName: formData.name,
+        customerEmail: formData.email,
+        customerPhone: `${formData.phoneCode}${formData.phone}`,
         amount: price,
         tax: 0,
         total,

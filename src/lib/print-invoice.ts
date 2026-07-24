@@ -2,6 +2,7 @@ export interface PrintInvoiceData {
   invoiceNumber: string;
   customer: string;
   email: string;
+  phone?: string;
   service: string;
   amount: number;
   tax: number;
@@ -575,7 +576,8 @@ export function printInvoice(data: PrintInvoiceData) {
           <h3>العميل / Customer</h3>
           <div class="name">${data.customer}</div>
           <div class="detail">${data.email}</div>
-          <div class="detail">رقم الفاتورة: ${data.invoiceNumber}</div>
+          ${data.phone ? `<div class="detail">هاتف: ${data.phone}</div>` : ''}
+          <div class="detail">رقم الطلب: ${data.invoiceNumber}</div>
           <div class="detail">تاريخ الطلب: ${data.date}</div>
         </div>
       </div>
@@ -602,10 +604,61 @@ export function printInvoice(data: PrintInvoiceData) {
 
       <div class="totals-section">
         <div class="totals-box">
+          ${data.amount !== data.total ? `
+          <div class="totals-row">
+            <span class="label">المبلغ</span>
+            <span class="value">${data.amount.toFixed(2)} ر.س</span>
+          </div>
+          <div class="totals-divider"></div>
+          ${data.tax > 0 ? `
+          <div class="totals-row">
+            <span class="label">الضريبة (15%)</span>
+            <span class="value">${data.tax.toFixed(2)} ر.س</span>
+          </div>
+          <div class="totals-divider"></div>
+          ` : ''}
+          ` : ''}
           <div class="totals-row total">
             <span class="label">الإجمالي</span>
             <span class="value">${data.total.toFixed(2)} ر.س</span>
           </div>
+        </div>
+      </div>
+
+      <!-- QR Code Section -->
+      <div style="display:flex;justify-content:center;margin-bottom:32px;">
+        <div style="text-align:center;padding:16px 24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+          <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="120" height="120" rx="8" fill="#f1f5f9"/>
+            <rect x="10" y="10" width="35" height="35" rx="4" fill="#1a1a2e"/>
+            <rect x="15" y="15" width="25" height="25" rx="2" fill="#fff"/>
+            <rect x="18" y="18" width="19" height="19" rx="1" fill="#1a1a2e"/>
+            <rect x="75" y="10" width="35" height="35" rx="4" fill="#1a1a2e"/>
+            <rect x="80" y="15" width="25" height="25" rx="2" fill="#fff"/>
+            <rect x="83" y="18" width="19" height="19" rx="1" fill="#1a1a2e"/>
+            <rect x="10" y="75" width="35" height="35" rx="4" fill="#1a1a2e"/>
+            <rect x="15" y="80" width="25" height="25" rx="2" fill="#fff"/>
+            <rect x="18" y="83" width="19" height="19" rx="1" fill="#1a1a2e"/>
+            <rect x="50" y="10" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="62" y="10" width="8" height="8" rx="1" fill="#2580eb"/>
+            <rect x="50" y="22" width="8" height="8" rx="1" fill="#14b8a6"/>
+            <rect x="62" y="22" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="50" y="50" width="20" height="20" rx="4" fill="#1a1a2e"/>
+            <rect x="53" y="53" width="14" height="14" rx="2" fill="#fff"/>
+            <rect x="56" y="56" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="50" y="75" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="62" y="75" width="8" height="8" rx="1" fill="#14b8a6"/>
+            <rect x="75" y="50" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="87" y="50" width="8" height="8" rx="1" fill="#2580eb"/>
+            <rect x="100" y="50" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="75" y="62" width="8" height="8" rx="1" fill="#14b8a6"/>
+            <rect x="87" y="62" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="75" y="87" width="35" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="75" y="100" width="8" height="8" rx="1" fill="#2580eb"/>
+            <rect x="87" y="100" width="8" height="8" rx="1" fill="#1a1a2e"/>
+            <rect x="100" y="100" width="8" height="8" rx="1" fill="#14b8a6"/>
+          </svg>
+          <p style="font-size:10px;color:#94a3b8;margin-top:8px;font-family:'Inter',sans-serif;letter-spacing:1px;">QR CODE</p>
         </div>
       </div>
 
@@ -631,6 +684,15 @@ export function printInvoice(data: PrintInvoiceData) {
             ${companyEmail}
           </div>
         </div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+        <p style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">الشروط والأحكام / Terms & Conditions</p>
+        <p style="font-size:11px;color:#78350f;line-height:1.6;">
+          1. هذه الفاتورة صادرة من ${companyNameAr} المعتمدة من الجهات المختصة.<br>
+          2. جميع المبالغ شاملة للخدمات المقدمة وليست قابلة للاسترداد إلا وفقاً لسياسات الشركة.<br>
+          3. يحق لـ ${companyNameAr} تعليق أو إلغاء الخدمة في حالة عدم الالتزام بالشروط.<br>
+          4. هذه الفاتورة إلكترونية ولا تحتاج إلى توقيع أو ختم.
+        </p>
       </div>
       <div class="footer-bottom">
         <p>شكراً لاختياركم ${companyNameAr}. هذه الفاتورة صادرة من نظام ${companyNameAr} الإلكتروني.</p>

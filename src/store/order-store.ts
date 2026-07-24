@@ -8,6 +8,9 @@ export interface Order {
   orderNumber: string;
   serviceName: string;
   serviceId: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   amount: number;
   tax: number;
   total: number;
@@ -16,6 +19,7 @@ export interface Order {
   description?: string;
   attachments?: string[];
   paymentMethod?: string;
+  invoiceNumber?: string;
   createdAt: string;
   updatedAt?: string;
   timeline: { status: string; label: string; date: string }[];

@@ -17,14 +17,8 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAdminCMSStore } from '@/store/admin-cms-store';
-
-const recentOrders = [
-  { id: 'AM-XYZ-1234', customer: 'محمد أحمد', service: 'تأشيرة سياحية', status: 'PENDING', amount: 250, date: '2026-07-23' },
-  { id: 'AM-ABC-5678', customer: 'خالد سعيد', service: 'تسجيل مركبة', status: 'IN_PROGRESS', amount: 300, date: '2026-07-22' },
-  { id: 'AM-DEF-9012', customer: 'فهد العلي', service: 'عقد إيجار', status: 'COMPLETED', amount: 200, date: '2026-07-22' },
-  { id: 'AM-GHI-3456', customer: 'أحمد الشمري', service: 'تأشيرة عمل', status: 'PENDING', amount: 450, date: '2026-07-21' },
-  { id: 'AM-JKL-7890', customer: 'سعد الدوسري', service: 'ترجمة وثائق', status: 'IN_PROGRESS', amount: 180, date: '2026-07-21' },
-];
+import { useOrderStore } from '@/store/order-store';
+import { useAuthStore } from '@/store/auth-store';
 
 const statusConfig: Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'info' | 'danger' }> = {
   PENDING: { label: 'قيد الانتظار', variant: 'warning' },
@@ -78,11 +72,11 @@ function EditableStat({
   };
 
   return (
-    <Card glass>
+    <Card className="hover:shadow-lg">
       <CardContent>
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
             {editing ? (
               <div className="flex items-center gap-2 mt-1">
                 <input
@@ -91,7 +85,7 @@ function EditableStat({
                   onChange={(e) => setTempValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && save()}
                   autoFocus
-                  className="w-full text-2xl font-bold bg-transparent border-b-2 border-[#2580eb] text-slate-900 dark:text-white focus:outline-none py-0.5"
+                  className="w-full text-2xl font-extrabold bg-transparent border-b-2 border-[#2580eb] text-slate-900 dark:text-white focus:outline-none py-0.5"
                 />
                 <button
                   onClick={save}
@@ -111,7 +105,7 @@ function EditableStat({
               </div>
             ) : (
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
+                <p className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{value}</p>
                 <button
                   onClick={() => {
                     setTempValue(value);
@@ -138,13 +132,21 @@ function EditableStat({
 
 export default function AdminDashboardPage() {
   const { stats, updateStats } = useAdminCMSStore();
+  const { orders } = useOrderStore();
+  const { registeredUsers } = useAuthStore();
   const maxRevenue = Math.max(...revenueData.map((d) => d.value));
 
+  const recentOrders = orders.slice(-5).reverse();
+  const totalOrders = orders.length.toString();
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || o.amount || 0), 0).toLocaleString() + ' ر.س';
+  const activeCustomers = registeredUsers.filter((u) => u.role === 'customer').length.toString();
+  const newOrders = orders.filter((o) => o.status === 'PENDING').length.toString();
+
   const statCards = [
-    { label: 'إجمالي الطلبات', key: 'totalOrders' as const, icon: Package, color: '#2580eb' },
-    { label: 'الإيرادات', key: 'totalRevenue' as const, icon: DollarSign, color: '#14b8a6' },
-    { label: 'العملاء النشطين', key: 'activeCustomers' as const, icon: Users, color: '#7c3aed' },
-    { label: 'الطلبات الجديدة', key: 'newOrders' as const, icon: ShoppingCart, color: '#f59e0b' },
+    { label: 'إجمالي الطلبات', value: totalOrders, key: 'totalOrders' as const, icon: Package, color: '#2580eb' },
+    { label: 'الإيرادات', value: totalRevenue, key: 'totalRevenue' as const, icon: DollarSign, color: '#14b8a6' },
+    { label: 'العملاء النشطين', value: activeCustomers, key: 'activeCustomers' as const, icon: Users, color: '#7c3aed' },
+    { label: 'الطلبات الجديدة', value: newOrders, key: 'newOrders' as const, icon: ShoppingCart, color: '#f59e0b' },
   ];
 
   return (
@@ -165,7 +167,7 @@ export default function AdminDashboardPage() {
           >
             <EditableStat
               label={stat.label}
-              value={stats[stat.key]}
+              value={stat.value}
               icon={stat.icon}
               color={stat.color}
               onChange={(value) => updateStats({ [stat.key]: value })}
@@ -201,23 +203,28 @@ export default function AdminDashboardPage() {
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-xs font-bold">
-                              {order.customer.charAt(0)}
+                              {(order.customerName || 'م').charAt(0)}
                             </div>
                             <div>
-                              <p className="font-medium text-slate-900 dark:text-white">{order.customer}</p>
-                              <p className="text-xs text-slate-400">{order.id}</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{order.customerName || 'عميل'}</p>
+                              <p className="text-xs text-slate-400">{order.orderNumber}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 px-2 text-slate-600 dark:text-slate-300">{order.service}</td>
+                        <td className="py-3 px-2 text-slate-600 dark:text-slate-300">{order.serviceName}</td>
                         <td className="py-3 px-2">
                           <Badge variant={statusConfig[order.status]?.variant || 'primary'} size="sm">
-                            {statusConfig[order.status]?.label || order.status}
+                            {statusConfig[order.status]?.label || order.statusAr || order.status}
                           </Badge>
                         </td>
-                        <td className="py-3 px-2 text-end font-bold text-slate-900 dark:text-white">{order.amount} ر.س</td>
+                        <td className="py-3 px-2 text-end font-bold text-slate-900 dark:text-white">{order.total || order.amount} ر.س</td>
                       </tr>
                     ))}
+                    {recentOrders.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500">لا توجد طلبات بعد</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

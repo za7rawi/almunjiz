@@ -534,7 +534,7 @@ export default function LoginPage() {
           disabled={googleLoading}
           whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.08)' }}
           whileTap={{ scale: 0.98 }}
-          className="flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm font-medium transition-all duration-200 hover:border-white/[0.15] disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm font-medium transition-all duration-200 hover:border-white/[0.15] disabled:opacity-50 shadow-lg shadow-black/10"
         >
           {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
           Google
