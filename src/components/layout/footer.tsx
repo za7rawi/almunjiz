@@ -195,8 +195,8 @@ export function Footer() {
               />
               <ContactItem
                 icon={<Clock size={15} />}
-                text={language === 'ar' ? CONTACT_INFO.workingHours : CONTACT_INFO.workingHoursEn}
-                color="text-amber-400"
+                text={language === 'ar' ? '🟢 متاح 24 ساعة يوميًا' : '🟢 Available 24/7'}
+                color="text-green-400"
               />
             </div>
 
@@ -242,9 +242,9 @@ export function Footer() {
             © {new Date().getFullYear()} {APP_NAME} AL-MUNJIZ.{' '}
             {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
           </p>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <span>🇸🇦</span>
-            <span>{language === 'ar' ? 'صنع في السعودية' : 'Made in Saudi Arabia'}</span>
+          <div className="text-sm text-slate-500">
+            <span>Powered by </span>
+            <span className="font-bold bg-gradient-to-r from-[#2580eb] to-[#14b8a6] bg-clip-text text-transparent">Z7R Technologies</span>
           </div>
         </div>
       </div>

@@ -361,6 +361,15 @@ export default function HomePage() {
               );
             })}
           </div>
+
+          <div className="mt-12 text-center">
+            <Link href="/services">
+              <Button variant="secondary" size="lg" className="gap-2">
+                {isAr ? 'إظهار المزيد من الخدمات' : 'Show More Services'}
+                <Arrow size={16} />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 

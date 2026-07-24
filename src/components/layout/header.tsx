@@ -23,8 +23,8 @@ import { useDirection } from '@/hooks/use-direction';
 import { NAVIGATION_LINKS, CONTACT_INFO } from '@/constants';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
-import { CurrencyToggle } from '@/components/ui/currency-toggle';
 import { SearchTrigger } from '@/components/shared/search-trigger';
+import { CurrencyToggle } from '@/components/ui/currency-toggle';
 import { useAuthStore } from '@/store/auth-store';
 import { getInitials } from '@/lib/utils';
 
@@ -153,7 +153,6 @@ export function Header() {
               </motion.a>
 
               <SearchTrigger />
-              <CurrencyToggle />
 
               {/* Auth */}
               {isAuthenticated && user ? (
@@ -234,7 +233,7 @@ export function Header() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <Link href="/login" className="hidden md:inline-flex">
+                <Link href="/login" className="inline-flex">
                   <Button
                     variant="secondary"
                     size="sm"
@@ -245,16 +244,6 @@ export function Header() {
                   </Button>
                 </Link>
               )}
-
-              {/* Language */}
-              <motion.button
-                onClick={handleLangToggle}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-3 py-1.5 text-xs font-bold rounded-xl transition-all duration-300 bg-white/[0.08] backdrop-blur-sm border border-white/15 text-white/70 hover:bg-white/[0.15] hover:text-white hover:border-white/25"
-              >
-                {language === 'ar' ? 'EN' : 'AR'}
-              </motion.button>
 
               {/* Mobile hamburger */}
               <motion.button
@@ -366,6 +355,15 @@ export function Header() {
                     >
                       {language === 'ar' ? 'English' : 'العربية'}
                     </motion.button>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.33 }}
+                  >
+                    <div className="flex items-center justify-center">
+                      <CurrencyToggle />
+                    </div>
                   </motion.div>
 
                   <motion.div

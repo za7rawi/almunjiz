@@ -9,13 +9,14 @@ import {
   Package, Shield, Star, Globe, Car, Plane, Building2, Headphones,
   GraduationCap, Briefcase, Hotel, Laptop, MessageSquare, Home,
   FileSignature, Upload, Send, ChevronDown, ChevronUp, ClipboardList, Search, Settings, Bell, Stamp,
-  Monitor, Zap, Mail, CreditCard, Video, Truck, List, Check,
+  Monitor, Zap, Mail, CreditCard, Video, Truck, List, Check, Lock, X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { servicesData } from '@/lib/services-data';
 import { useCurrencyStore } from '@/store/currency-store';
+import { useAuthStore } from '@/store/auth-store';
 import { formatPrice } from '@/lib/currency';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
@@ -36,9 +37,11 @@ const categoryColors: Record<string, string> = {
 export default function ServiceDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
   const { id } = use(params);
   const { currency } = useCurrencyStore();
+  const { isAuthenticated } = useAuthStore();
   const service = useMemo(() => servicesData.find((s) => s.id === id), [id]);
 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   if (!service) {
     return (
@@ -102,12 +105,19 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
               </motion.div>
             </div>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
-              <Link href={`/checkout?service=${service.id}`}>
-                <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
+              {isAuthenticated ? (
+                <Link href={`/checkout?service=${service.id}`}>
+                  <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
+                    اطلب الآن
+                    <ArrowLeft size={20} className="rtl:rotate-180" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4" onClick={() => setShowLoginModal(true)}>
                   اطلب الآن
                   <ArrowLeft size={20} className="rtl:rotate-180" />
                 </Button>
-              </Link>
+              )}
             </motion.div>
           </div>
         </div>
@@ -206,11 +216,17 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     <h3 className="font-bold text-slate-900 dark:text-white mb-1">كيفية الطلب</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">اضغط على زر &quot;اطلب الآن&quot; لفتح صفحة الطلب حيث يمكنك إدخال بياناتك ورفع المستندات واختيار طريقة الدفع.</p>
                   </div>
-                  <Link href={`/checkout?service=${service.id}`}>
-                    <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                  {isAuthenticated ? (
+                    <Link href={`/checkout?service=${service.id}`}>
+                      <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                        اطلب الآن
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />} onClick={() => setShowLoginModal(true)}>
                       اطلب الآن
                     </Button>
-                  </Link>
+                  )}
                 </div>
               </Card>
             </motion.div>
@@ -302,11 +318,17 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     <span className="text-sm text-slate-600 dark:text-slate-400">دفع آمن ومشفر</span>
                   </div>
                 </div>
-                <Link href={`/checkout?service=${service.id}`} className="block">
-                  <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                {isAuthenticated ? (
+                  <Link href={`/checkout?service=${service.id}`} className="block">
+                    <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                      اطلب الآن
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />} onClick={() => setShowLoginModal(true)}>
                     اطلب الآن
                   </Button>
-                </Link>
+                )}
                 <div className="mt-4 text-center">
                   <Link href="/track-order" className="text-sm text-[#2580eb] hover:underline">
                     هل لديك طلب سابق؟ تتبعه هنا
@@ -329,6 +351,55 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showLoginModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowLoginModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="absolute top-4 left-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-[#2580eb]/10 flex items-center justify-center mx-auto mb-6">
+                  <Lock size={28} className="text-[#2580eb]" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">يجب تسجيل الدخول أولًا</h3>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 leading-relaxed">
+                  لإكمال طلب الخدمة، يرجى تسجيل الدخول أو إنشاء حساب جديد
+                </p>
+                <div className="flex gap-3">
+                  <Link href="/login" className="flex-1">
+                    <Button fullWidth variant="primary">
+                      تسجيل الدخول
+                    </Button>
+                  </Link>
+                  <Link href="/register" className="flex-1">
+                    <Button fullWidth variant="secondary">
+                      إنشاء حساب
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
