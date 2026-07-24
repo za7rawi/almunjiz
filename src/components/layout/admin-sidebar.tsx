@@ -27,6 +27,7 @@ import {
   Menu,
   X,
   Layers,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
@@ -51,6 +52,7 @@ const adminSidebarItems: AdminSidebarItem[] = [
   { label: 'الموظفون', labelEn: 'Employees', icon: <UserCog size={20} />, href: '/admin/employees' },
   { label: 'الفواتير', labelEn: 'Invoices', icon: <FileText size={20} />, href: '/admin/invoices' },
   { label: 'المدفوعات', labelEn: 'Payments', icon: <CreditCard size={20} />, href: '/admin/payments' },
+  { label: 'بوابات الدفع', labelEn: 'Gateways', icon: <Wallet size={20} />, href: '/admin/gateways' },
   { label: 'الإشعارات', labelEn: 'Notifications', icon: <Bell size={20} />, href: '/admin/notifications' },
   { label: 'التقييمات', labelEn: 'Reviews', icon: <Star size={20} />, href: '/admin/reviews' },
   { label: 'الأخبار', labelEn: 'News', icon: <Newspaper size={20} />, href: '/admin/news' },
