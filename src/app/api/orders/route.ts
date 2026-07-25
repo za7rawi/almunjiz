@@ -3,16 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sendOrderCreatedEmail, sendInvoiceEmail } from '@/lib/email/service';
-
-function generateOrderNumber(): string {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `AM-${ts}-${rand}`;
-}
-
-function generateInvoiceNumber(): string {
-  return `INV-${Date.now().toString(36).toUpperCase().slice(0, 6)}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-}
+import { generateOrderNumber, generateInvoiceNumber } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -127,7 +118,7 @@ export async function POST(request: NextRequest) {
       userId = newUser.id;
     }
 
-    const order = await prisma.order.create({
+    const createdOrder = await prisma.order.create({
       data: {
         orderNumber,
         userId,
@@ -145,12 +136,11 @@ export async function POST(request: NextRequest) {
         attachments: attachments || [],
         status: 'PENDING',
       },
-      include: { service: true },
     });
 
     await prisma.orderTimeline.create({
       data: {
-        orderId: order.id,
+        orderId: createdOrder.id,
         status: 'PENDING',
         description: 'تم استلام الطلب بنجاح',
       },
@@ -159,13 +149,24 @@ export async function POST(request: NextRequest) {
     const invoice = await prisma.invoice.create({
       data: {
         invoiceNumber,
-        orderId: order.id,
+        orderId: createdOrder.id,
         userId,
         subtotal: Number(amount),
         tax: 0,
         discount: Number(discount),
         total: Number(total || amount),
         status: 'PENDING',
+      },
+    });
+
+    const order = await prisma.order.findUnique({
+      where: { id: createdOrder.id },
+      include: {
+        service: true,
+        invoice: true,
+        payments: true,
+        timeline: true,
+        fileAttachments: true,
       },
     });
 
@@ -209,6 +210,12 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         ...order,
+        amount: Number(order?.amount),
+        discount: Number(order?.discount),
+        tax: Number(order?.tax),
+        total: Number(order?.total),
+        createdAt: order?.createdAt?.toISOString(),
+        updatedAt: order?.updatedAt?.toISOString(),
         invoiceNumber: invoice.invoiceNumber,
       },
     }, { status: 201 });

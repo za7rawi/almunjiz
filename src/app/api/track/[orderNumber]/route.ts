@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OrderService } from "@/services/order.service";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +8,16 @@ export async function GET(
   try {
     const { orderNumber } = await params;
 
-    const order = await OrderService.findByOrderNumber(orderNumber);
+    const order = await prisma.order.findUnique({
+      where: { orderNumber },
+      include: {
+        service: { select: { id: true, name: true, nameEn: true, slug: true } },
+        invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
+        payments: { select: { id: true, method: true, status: true, amount: true, transactionId: true, gatewayData: true, createdAt: true } },
+        timeline: { orderBy: { createdAt: "asc" } },
+        fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
+      },
+    });
 
     if (!order) {
       return NextResponse.json(
@@ -22,18 +31,35 @@ export async function GET(
       );
     }
 
+    const lastPayment = order.payments[order.payments.length - 1];
+
     return NextResponse.json({
       success: true,
       data: {
         orderNumber: order.orderNumber,
         status: order.status,
-        serviceName: order.service.name,
-        serviceNameEn: order.service.nameEn,
-        amount: order.amount,
+        paymentStatus: order.paymentStatus,
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        customerPhone: order.customerPhone,
+        service: order.service,
+        baseAmount: Number(order.amount),
+        discount: Number(order.discount),
+        tax: Number(order.tax),
+        total: Number(order.total),
+        paymentMethod: order.paymentMethod,
+        transactionId: lastPayment?.transactionId ?? order.transactionId,
+        invoice: order.invoice,
+        timeline: order.timeline.map((t) => ({
+          id: t.id,
+          status: t.status,
+          description: t.description,
+          createdAt: t.createdAt,
+        })),
+        fileAttachments: order.fileAttachments,
         createdAt: order.createdAt,
         estimatedDelivery: order.estimatedDelivery,
         deliveredAt: order.deliveredAt,
-        timeline: order.timeline,
       },
       message: "تم جلب معلومات الطلب بنجاح / Order info fetched successfully",
       error: null,

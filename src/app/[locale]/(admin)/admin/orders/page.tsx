@@ -73,6 +73,7 @@ export default function OrdersPage() {
       { id: 'ALL' as OrderStatus, label: 'الكل', count: counts.ALL },
       { id: 'PENDING' as OrderStatus, label: 'قيد الانتظار', count: counts.PENDING || 0 },
       { id: 'UNDER_REVIEW' as OrderStatus, label: 'قيد المراجعة', count: counts.UNDER_REVIEW || 0 },
+      { id: 'WAITING_CLIENT' as OrderStatus, label: 'بانتظار العميل', count: counts.WAITING_CLIENT || 0 },
       { id: 'IN_PROGRESS' as OrderStatus, label: 'جار التنفيذ', count: counts.IN_PROGRESS || 0 },
       { id: 'COMPLETED' as OrderStatus, label: 'مكتمل', count: counts.COMPLETED || 0 },
       { id: 'DELIVERED' as OrderStatus, label: 'تم التسليم', count: counts.DELIVERED || 0 },

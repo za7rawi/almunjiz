@@ -68,7 +68,7 @@ export default function PaymentSuccessPage() {
       fetch('/api/payments/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gatewayId, transactionId: txnId }),
+        body: JSON.stringify({ gatewayId, transactionId: txnId, orderId }),
       })
         .then((r) => r.json())
         .then((data) => {

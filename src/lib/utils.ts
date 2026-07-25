@@ -42,6 +42,12 @@ export function generateOrderNumber(): string {
   return `AM-${timestamp}-${random}`;
 }
 
+export function generateInvoiceNumber(): string {
+  const ts = Date.now();
+  const rand = Math.floor(1000 + Math.random() * 9000);
+  return `INV-${ts}-${rand}`;
+}
+
 export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }

@@ -50,10 +50,11 @@ interface TimelineEntry {
 interface FileAttachment {
   id: string;
   fileName: string;
-  originalName: string;
+  fileUrl: string;
+  fileType: string;
   mimeType: string;
-  size: number;
-  url?: string;
+  fileSize: number;
+  uploadedAt: string;
 }
 
 interface OrderData {
@@ -94,10 +95,10 @@ export default function TrackOrderPage() {
     setFoundOrder(null);
     setError('');
     try {
-      const res = await fetch(`/api/orders?search=${encodeURIComponent(q.trim())}`);
+      const res = await fetch(`/api/track/${encodeURIComponent(q.trim())}`);
       const data = await res.json();
-      if (data.success && data.data?.length > 0) {
-        setFoundOrder(data.data[0]);
+      if (data.success && data.data) {
+        setFoundOrder(data.data);
       } else {
         setError('لم يتم العثور على الطلب');
       }
@@ -345,7 +346,7 @@ export default function TrackOrderPage() {
                         >
                           <img
                             src={`/api/files/${file.id}`}
-                            alt={file.originalName}
+                            alt={file.fileName}
                             className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                           />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
@@ -363,8 +364,8 @@ export default function TrackOrderPage() {
                       )}
                       <div className="p-3 flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-slate-900 truncate">{file.originalName}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{formatFileSize(file.size)}</p>
+                          <p className="text-sm font-medium text-slate-900 truncate">{file.fileName}</p>
+                           <p className="text-xs text-slate-400 mt-0.5">{formatFileSize(file.fileSize)}</p>
                         </div>
                         <a
                           href={`/api/files/${file.id}`}

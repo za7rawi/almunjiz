@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { generateInvoiceNumber } from "@/lib/utils";
 
 export class PaymentService {
   static async createInvoice(data: {
@@ -9,7 +10,7 @@ export class PaymentService {
     discount?: number;
     dueDate?: Date;
   }) {
-    const invoiceNumber = `INV-${Date.now()}-${String(Math.floor(1000 + Math.random() * 9000))}`;
+    const invoiceNumber = generateInvoiceNumber();
 
     return prisma.invoice.create({
       data: {

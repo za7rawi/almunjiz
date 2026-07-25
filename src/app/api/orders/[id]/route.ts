@@ -25,7 +25,25 @@ export async function GET(
     }
 
     const { id } = await params;
-    const order = await OrderService.findById(id);
+    const { prisma } = await import("@/lib/prisma");
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        service: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        invoice: true,
+        payments: true,
+        timeline: { orderBy: { createdAt: "asc" } },
+        fileAttachments: true,
+      },
+    });
 
     if (!order) {
       return NextResponse.json(
@@ -39,9 +57,40 @@ export async function GET(
       );
     }
 
+    const serialized = {
+      ...order,
+      amount: order.amount?.toString() ?? null,
+      discount: order.discount?.toString() ?? null,
+      tax: order.tax?.toString() ?? null,
+      total: order.total?.toString() ?? null,
+      createdAt: order.createdAt?.toISOString() ?? null,
+      updatedAt: order.updatedAt?.toISOString() ?? null,
+      estimatedDelivery: order.estimatedDelivery?.toISOString() ?? null,
+      timeline: order.timeline.map((t) => ({
+        ...t,
+        createdAt: t.createdAt?.toISOString() ?? null,
+      })),
+      invoice: order.invoice
+        ? {
+            ...order.invoice,
+            subtotal: order.invoice.subtotal?.toString() ?? null,
+            tax: order.invoice.tax?.toString() ?? null,
+            total: order.invoice.total?.toString() ?? null,
+            discount: order.invoice.discount?.toString() ?? null,
+            createdAt: order.invoice.createdAt?.toISOString() ?? null,
+          }
+        : null,
+      payments: order.payments.map((p) => ({
+        ...p,
+        amount: p.amount?.toString() ?? null,
+        createdAt: p.createdAt?.toISOString() ?? null,
+        updatedAt: p.updatedAt?.toISOString() ?? null,
+      })),
+    };
+
     return NextResponse.json({
       success: true,
-      data: order,
+      data: serialized,
       message: "تم جلب الطلب بنجاح / Order fetched successfully",
       error: null,
     });
@@ -92,8 +141,9 @@ export async function PUT(
       await OrderService.updateStatus(id, status);
     }
 
+    const { prisma } = await import("@/lib/prisma");
+
     if (notes !== undefined || estimatedDelivery !== undefined || internalNotes !== undefined) {
-      const { prisma } = await import("@/lib/prisma");
       await prisma.order.update({
         where: { id },
         data: {
@@ -104,7 +154,57 @@ export async function PUT(
       });
     }
 
-    const updatedOrder = await OrderService.findById(id);
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        service: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        invoice: true,
+        payments: true,
+        timeline: { orderBy: { createdAt: "asc" } },
+        fileAttachments: true,
+      },
+    });
+
+    const serializedUpdated = updatedOrder
+      ? {
+          ...updatedOrder,
+          amount: updatedOrder.amount?.toString() ?? null,
+          discount: updatedOrder.discount?.toString() ?? null,
+          tax: updatedOrder.tax?.toString() ?? null,
+          total: updatedOrder.total?.toString() ?? null,
+          createdAt: updatedOrder.createdAt?.toISOString() ?? null,
+          updatedAt: updatedOrder.updatedAt?.toISOString() ?? null,
+          estimatedDelivery: updatedOrder.estimatedDelivery?.toISOString() ?? null,
+          timeline: updatedOrder.timeline.map((t) => ({
+            ...t,
+            createdAt: t.createdAt?.toISOString() ?? null,
+          })),
+          invoice: updatedOrder.invoice
+            ? {
+                ...updatedOrder.invoice,
+                subtotal: updatedOrder.invoice.subtotal?.toString() ?? null,
+                tax: updatedOrder.invoice.tax?.toString() ?? null,
+                total: updatedOrder.invoice.total?.toString() ?? null,
+                discount: updatedOrder.invoice.discount?.toString() ?? null,
+                createdAt: updatedOrder.invoice.createdAt?.toISOString() ?? null,
+              }
+            : null,
+          payments: updatedOrder.payments.map((p) => ({
+            ...p,
+            amount: p.amount?.toString() ?? null,
+            createdAt: p.createdAt?.toISOString() ?? null,
+            updatedAt: p.updatedAt?.toISOString() ?? null,
+          })),
+        }
+      : null;
 
     if (status && existing.customerEmail) {
       const emailData = {
@@ -129,7 +229,6 @@ export async function PUT(
         );
       }
 
-      const { prisma } = await import("@/lib/prisma");
       const STATUS_LABELS: Record<string, { ar: string; en: string }> = {
         PENDING: { ar: 'قيد الانتظار', en: 'Pending' },
         UNDER_REVIEW: { ar: 'قيد المراجعة', en: 'Under Review' },
@@ -157,7 +256,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      data: updatedOrder,
+      data: serializedUpdated,
       message: "تم تحديث الطلب بنجاح / Order updated successfully",
       error: null,
     });

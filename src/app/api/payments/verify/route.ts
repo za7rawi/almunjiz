@@ -4,6 +4,7 @@ import { createPaymentProvider } from '@/lib/payment-providers';
 import { writeAuditLog } from '@/lib/audit-log';
 import { sendPaymentSuccessEmail } from '@/lib/email/service';
 import { requireAuth } from '@/lib/admin-auth';
+import { generateInvoiceNumber } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
         if (result.status === 'COMPLETED') {
           const existingInvoice = await prisma.invoice.findUnique({ where: { orderId } });
           if (!existingInvoice) {
-            const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+            const invoiceNumber = generateInvoiceNumber();
             await prisma.invoice.create({
               data: {
                 invoiceNumber,

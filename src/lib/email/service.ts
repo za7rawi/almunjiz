@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || "المنجز <noreply@munjiz.store>";
+const FROM_EMAIL = process.env.FROM_EMAIL || "المنجز | AL-MUNJIZ <noreply@munjiz.store>";
 
 let resendClient: Resend | null = null;
 
