@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Lock, Bell, Trash2, Save, Shield, Upload, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
@@ -50,7 +50,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
   const [saving, setSaving] = useState(false)
   const mounted = useIsClient()
-  const fileInputRef = useState<HTMLInputElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const router = useRouter()
   const { user, updateUser, logout } = useAuthStore()
 

@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
-type FilterType = 'all' | 'unread' | 'orders' | 'payment' | 'system'
+type FilterType = 'all' | 'unread' | 'order' | 'payment' | 'system'
 
 interface Notification {
   id: string
@@ -44,7 +44,7 @@ const mockNotifications: Notification[] = [
 const filterTabs: { id: FilterType; label: string; labelEn: string }[] = [
   { id: 'all', label: 'الكل', labelEn: 'All' },
   { id: 'unread', label: 'غير مقروءة', labelEn: 'Unread' },
-  { id: 'orders', label: 'الطلبات', labelEn: 'Orders' },
+  { id: 'order', label: 'الطلبات', labelEn: 'Orders' },
   { id: 'payment', label: 'الدفع', labelEn: 'Payment' },
   { id: 'system', label: 'النظام', labelEn: 'System' },
 ]

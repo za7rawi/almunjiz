@@ -41,7 +41,7 @@ export default function TermsPage() {
           <div>
             <h2 className="text-xl font-bold text-slate-900 mb-3">الإلغاء والاسترداد</h2>
             <p className="text-slate-600 leading-relaxed mb-3">
-              يمكن إلغاء الطلب واسترداد المبلغ وفقاً لل policies التالية:
+              يمكن إلغاء الطلب واسترداد المبلغ وفقاً للسياسات التالية:
             </p>
             <ul className="list-disc list-inside space-y-2 text-slate-600">
               <li>إلغاء قبل بدء التنفيذ: استرداد كامل</li>

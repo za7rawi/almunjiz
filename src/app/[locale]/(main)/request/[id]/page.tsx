@@ -99,7 +99,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
   useEffect(() => {
     fetch('/api/services?limit=100')
       .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setServicesData(data.data); })
+      .then((data) => { if (data.success && data.data) { const items = data.data.data || data.data; setServicesData(Array.isArray(items) ? items : []); } })
       .catch(() => {});
     fetch('/api/admin/gateways')
       .then((r) => r.json())
