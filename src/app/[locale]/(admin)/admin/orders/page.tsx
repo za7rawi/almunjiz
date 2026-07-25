@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
 import { useLanguageStore } from '@/store/language-store';
+import { useAuthStore } from '@/store/auth-store';
 import { printInvoice } from '@/lib/print-invoice';
 import type { ApiOrder } from '@/types/api-order';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ const paymentStatusConfig: Record<string, { label: string; variant: 'warning' | 
 
 export default function OrdersPage() {
   const { language } = useLanguageStore();
+  const { user } = useAuthStore();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState<OrderStatus>('ALL');
@@ -88,11 +90,17 @@ export default function OrdersPage() {
       const res = await fetch(`/api/orders/${selectedOrder.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, _adminUserId: user?.id }),
       });
       if (res.ok) {
-        setOrders((prev) => prev.map((o) => o.id === selectedOrder.id ? { ...o, status } : o));
-        setSelectedOrder({ ...selectedOrder, status });
+        const data = await res.json();
+        if (data.success && data.data) {
+          setOrders((prev) => prev.map((o) => o.id === selectedOrder.id ? { ...o, status, ...data.data } : o));
+          setSelectedOrder({ ...selectedOrder, status, ...data.data });
+        } else {
+          setOrders((prev) => prev.map((o) => o.id === selectedOrder.id ? { ...o, status } : o));
+          setSelectedOrder({ ...selectedOrder, status });
+        }
       }
     } catch {}
   };

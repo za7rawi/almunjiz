@@ -265,12 +265,12 @@ export default function CheckoutPage() {
           return;
         }
         if (payData.success && payData.data?.clientSecret) {
-          router.push(`/payment/success?orderId=${orderId}&gatewayId=${selectedGatewayId}`);
+          router.push(`/payment/success?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}&gatewayId=${selectedGatewayId}`);
           return;
         }
       }
 
-      router.push(`/payment/success?orderId=${orderId}`);
+      router.push(`/payment/success?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}`);
     } catch {
       router.push('/payment/failed');
     } finally {

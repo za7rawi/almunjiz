@@ -17,6 +17,7 @@ import type { ApiOrder } from '@/types/api-order';
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId') || 'N/A';
+  const orderNumberParam = searchParams.get('orderNumber');
   const gatewayId = searchParams.get('gatewayId');
   const { language } = useLanguageStore();
   const { dir } = useDirection();
@@ -26,13 +27,18 @@ export default function PaymentSuccessPage() {
   const [paymentVerified, setPaymentVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (orderId && orderId !== 'N/A') {
+    if (orderNumberParam) {
+      fetch(`/api/orders?search=${encodeURIComponent(orderNumberParam)}&limit=1`)
+        .then((r) => r.json())
+        .then((data) => { if (data.success && data.data?.[0]) setOrder(data.data[0]); })
+        .catch(() => {});
+    } else if (orderId && orderId !== 'N/A') {
       fetch(`/api/orders?search=${encodeURIComponent(orderId)}&limit=1`)
         .then((r) => r.json())
         .then((data) => { if (data.success && data.data?.[0]) setOrder(data.data[0]); })
         .catch(() => {});
     }
-  }, [orderId]);
+  }, [orderId, orderNumberParam]);
 
   const amount = Number(order?.total ?? 0);
   const tax = Number(order?.tax ?? 0);
@@ -51,7 +57,8 @@ export default function PaymentSuccessPage() {
         .then((data) => {
           setPaymentVerified(data.success && data.status === 'COMPLETED');
           if (data.success) {
-            fetch(`/api/orders?search=${encodeURIComponent(orderId)}&limit=1`)
+            const searchQuery = orderNumberParam || orderId;
+            fetch(`/api/orders?search=${encodeURIComponent(searchQuery)}&limit=1`)
               .then((r) => r.json())
               .then((d) => { if (d.success && d.data?.[0]) setOrder(d.data[0]); })
               .catch(() => {});
@@ -60,7 +67,7 @@ export default function PaymentSuccessPage() {
         .catch(() => setPaymentVerified(false))
         .finally(() => setVerifying(false));
     }
-  }, [gatewayId, orderId, paymentVerified]);
+  }, [gatewayId, orderId, paymentVerified, orderNumberParam]);
 
   const handleDownloadInvoice = async () => {
     await printInvoice({

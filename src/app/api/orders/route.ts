@@ -23,11 +23,14 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
     if (search) {
-      where.OR = [
-        { orderNumber: { contains: search, mode: 'insensitive' } },
-        { customerName: { contains: search, mode: 'insensitive' } },
-        { customerEmail: { contains: search, mode: 'insensitive' } },
-      ];
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search);
+      where.OR = isUuid
+        ? [{ id: search }]
+        : [
+            { orderNumber: { contains: search, mode: 'insensitive' } },
+            { customerName: { contains: search, mode: 'insensitive' } },
+            { customerEmail: { contains: search, mode: 'insensitive' } },
+          ];
     }
 
     const [orders, total] = await Promise.all([

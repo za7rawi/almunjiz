@@ -2,33 +2,36 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Download, FileText, FolderOpen, Printer, Loader2 } from 'lucide-react'
+import { Search, FileText, FolderOpen, Printer, Loader2 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Badge } from '@/components/ui/badge'
 import { printInvoice } from '@/lib/print-invoice'
 import { useIsClient } from '@/hooks/use-is-client'
+import { useAuthStore } from '@/store/auth-store'
 
 interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  total: number;
-  tax: number;
-  discount: number;
-  subtotal: number;
-  status: string;
-  createdAt: string;
-  paidAt?: string;
+  id: string
+  invoiceNumber: string
+  total: number
+  tax: number
+  discount: number
+  subtotal: number
+  status: string
+  createdAt: string
+  paidAt?: string
   order?: {
-    orderNumber: string;
-    customerName?: string;
-    customerEmail?: string;
-    customerPhone?: string;
-    paymentMethod?: string;
-    transactionId?: string;
-    paymentStatus?: string;
-    service?: { name: string };
-  };
-  user?: { name: string; email: string; phone?: string };
+    id: string
+    orderNumber: string
+    customerName?: string
+    customerEmail?: string
+    customerPhone?: string
+    paymentMethod?: string
+    transactionId?: string
+    paymentStatus?: string
+    serviceName?: string
+    service?: { name: string }
+  }
+  user?: { id: string; name: string; email: string; phone?: string }
 }
 
 const statusConfig: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
@@ -36,21 +39,33 @@ const statusConfig: Record<string, { label: string; variant: 'success' | 'warnin
   PENDING: { label: 'معلقة', variant: 'warning' },
   COMPLETED: { label: 'مدفوعة', variant: 'success' },
   CANCELLED: { label: 'ملغاة', variant: 'danger' },
+  OVERDUE: { label: 'متأخرة', variant: 'danger' },
 }
 
 export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const mounted = useIsClient()
+  const { user } = useAuthStore()
 
   useEffect(() => {
-    fetch('/api/invoices?limit=200')
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setInvoices(data.data); })
-      .catch(() => {})
+    const params = new URLSearchParams({ limit: '200' })
+    if (user?.id) params.set('userId', user.id)
+    fetch(`/api/invoices?${params.toString()}`)
+      .then((r) => {
+        if (!r.ok) throw new Error('API error')
+        return r.json()
+      })
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setInvoices(data.data)
+        }
+      })
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [])
+  }, [user?.id])
 
   if (!mounted) return null
 
@@ -58,7 +73,7 @@ export default function InvoicesPage() {
     !searchQuery ||
     inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (inv.order?.orderNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (inv.order?.service?.name || '').includes(searchQuery),
+    (inv.order?.service?.name || inv.order?.serviceName || '').includes(searchQuery),
   )
 
   const handlePrintInvoice = async (inv: Invoice) => {
@@ -69,7 +84,7 @@ export default function InvoicesPage() {
       customer: inv.order?.customerName || inv.user?.name || 'عميل المنجز',
       email: inv.order?.customerEmail || inv.user?.email || '',
       phone: inv.order?.customerPhone || inv.user?.phone || '',
-      service: inv.order?.service?.name || 'خدمة',
+      service: inv.order?.service?.name || inv.order?.serviceName || 'خدمة',
       amount: Number(inv.subtotal || inv.total - (inv.tax || 0)),
       tax: Number(inv.tax || 0),
       total: Number(inv.total),
@@ -90,6 +105,12 @@ export default function InvoicesPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-[#2580eb]" size={32} /></div>
+      ) : error ? (
+        <div className="text-center py-16">
+          <FileText size={48} className="mx-auto text-slate-300 mb-3" />
+          <p className="text-slate-500 text-sm mb-1">حدث خطأ أثناء تحميل الفواتير</p>
+          <button onClick={() => window.location.reload()} className="text-[#2580eb] text-sm font-medium hover:underline">إعادة المحاولة</button>
+        </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
@@ -110,9 +131,9 @@ export default function InvoicesPage() {
                   {filtered.map((inv, i) => (
                     <motion.tr key={inv.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: i * 0.03 }} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2"><FileText size={16} className="text-slate-400" /><div><span className="text-sm font-medium text-slate-900">{inv.invoiceNumber}</span><p className="text-xs text-slate-400 sm:hidden">{inv.order?.service?.name || '-'}</p></div></div>
+                        <div className="flex items-center gap-2"><FileText size={16} className="text-slate-400" /><div><span className="text-sm font-medium text-slate-900">{inv.invoiceNumber}</span><p className="text-xs text-slate-400 sm:hidden">{inv.order?.service?.name || inv.order?.serviceName || '-'}</p></div></div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 hidden sm:table-cell">{inv.order?.service?.name || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-slate-600 hidden sm:table-cell">{inv.order?.service?.name || inv.order?.serviceName || '-'}</td>
                       <td className="px-6 py-4 text-sm font-mono text-[#2580eb] hidden md:table-cell">{inv.order?.orderNumber || '-'}</td>
                       <td className="px-6 py-4 text-sm font-bold text-slate-900">{Number(inv.total).toLocaleString()} ر.س</td>
                       <td className="px-6 py-4 text-sm text-slate-500 hidden md:table-cell">{new Date(inv.createdAt).toLocaleDateString('ar-SA')}</td>
