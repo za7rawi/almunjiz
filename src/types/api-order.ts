@@ -14,10 +14,23 @@ export interface ApiOrder {
   internalNotes?: string;
   attachments: string[];
   paymentStatus: string;
+  paymentMethod?: string;
+  transactionId?: string;
   createdAt: string;
   updatedAt: string;
-  service?: { id: string; name: string; nameEn: string; price: number };
+  estimatedDelivery?: string;
+  service?: { id: string; name: string; nameEn: string; price: number; description?: string; descriptionEn?: string };
   timeline?: { id: string; status: string; description: string; createdAt: string }[];
-  invoice?: { invoiceNumber: string };
-  payments?: { id: string; transactionId: string; status: string; provider: string }[];
+  invoice?: { id: string; invoiceNumber: string; subtotal: number; tax: number; discount: number; total: number; status: string; dueDate?: string; paidAt?: string };
+  payments?: { id: string; transactionId: string; status: string; provider: string; amount: number; paymentMethod?: string }[];
+  gateway?: { id: string; name: string; slug: string };
+  fileAttachments?: {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    mimeType?: string;
+    fileSize: number;
+    uploadedAt: string;
+  }[];
 }

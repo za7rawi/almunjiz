@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
-        include: { service: true, gateway: true, payments: true, invoice: true, timeline: { orderBy: { createdAt: 'desc' } } },
+        include: { service: true, gateway: true, payments: true, invoice: true, timeline: { orderBy: { createdAt: 'desc' } }, fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } } },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,

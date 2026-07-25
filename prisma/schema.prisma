@@ -589,17 +589,19 @@ model PaymentGateway {
 }
 
 model FileAttachment {
-  id          String   @id @default(uuid())
-  userId      String
-  orderId     String?
-  fileName    String
-  fileUrl     String
-  fileType    String
-  fileSize    Int
-  uploadedAt  DateTime @default(now())
+  id            String   @id @default(uuid())
+  userId        String
+  orderId       String?
+  fileName      String
+  storedName    String?
+  fileUrl       String
+  fileType      String
+  mimeType      String?
+  fileSize      Int
+  uploadedAt    DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order       Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order         Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([orderId])
