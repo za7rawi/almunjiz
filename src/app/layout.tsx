@@ -21,7 +21,11 @@ export const metadata: Metadata = {
     "طلبات إلكترونية",
   ],
   icons: {
-    icon: "/favicon.jpg",
+    icon: [
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.jpg", type: "image/jpeg" },
+    ],
+    apple: "/favicon.png",
   },
   openGraph: {
     type: "website",
