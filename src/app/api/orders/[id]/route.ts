@@ -65,7 +65,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     const body = await request.json();
-    const { status, notes, estimatedDelivery } = body;
+    const { status, notes, estimatedDelivery, internalNotes } = body;
 
     let isAuthorized = false;
     let adminName = 'مدير النظام';
@@ -123,12 +123,13 @@ export async function PUT(
       await OrderService.updateStatus(id, status);
     }
 
-    if (notes !== undefined || estimatedDelivery !== undefined) {
+    if (notes !== undefined || estimatedDelivery !== undefined || internalNotes !== undefined) {
       const { prisma } = await import("@/lib/prisma");
       await prisma.order.update({
         where: { id },
         data: {
           ...(notes !== undefined && { notes }),
+          ...(internalNotes !== undefined && { internalNotes }),
           ...(estimatedDelivery && { estimatedDelivery: new Date(estimatedDelivery) }),
         },
       });

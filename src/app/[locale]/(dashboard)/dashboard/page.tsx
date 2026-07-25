@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Package, CreditCard, Receipt, FolderOpen, Plus, Search, Headphones, ArrowUpLeft, TrendingUp, CheckCircle2, MessageSquare, Loader2 } from 'lucide-react'
+import { Package, CreditCard, Receipt, FolderOpen, Plus, Search, Headphones, ArrowUpLeft, TrendingUp, CheckCircle2, MessageSquare, Loader2, Bell, Shield } from 'lucide-react'
 import { useAuthStore } from '@/store/auth-store'
 import { useLanguageStore } from '@/store/language-store'
 import { StatCard } from '@/components/ui/stat-card'
@@ -25,12 +25,44 @@ const statusMap: Record<string, { variant: 'primary' | 'success' | 'warning' | '
   CANCELLED: { variant: 'danger', labelAr: 'ملغي' },
 }
 
+const notificationTypeConfig: Record<string, { icon: React.ReactNode; color: string }> = {
+  ORDER: { icon: <Package size={16} />, color: 'bg-[#2580eb]/10 text-[#2580eb]' },
+  PAYMENT: { icon: <CreditCard size={16} />, color: 'bg-emerald-500/10 text-emerald-500' },
+  SYSTEM: { icon: <Bell size={16} />, color: 'bg-[#7c3aed]/10 text-[#7c3aed]' },
+}
+
+function timeAgo(dateStr: string): string {
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const seconds = Math.floor((now - then) / 1000)
+  if (seconds < 60) return 'الآن'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes} د`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} س`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days} ي`
+  const months = Math.floor(days / 30)
+  return `${months} ش`
+}
+
+interface Notification {
+  id: string
+  title: string
+  message: string
+  type: 'ORDER' | 'PAYMENT' | 'SYSTEM'
+  isRead: boolean
+  createdAt: string
+}
+
 export default function DashboardPage() {
   const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const router = useRouter()
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [loading, setLoading] = useState(true)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [invoiceCount, setInvoiceCount] = useState(0)
 
   useEffect(() => {
     fetch('/api/orders?limit=50')
@@ -38,12 +70,21 @@ export default function DashboardPage() {
       .then((data) => { if (data.success && data.data) setOrders(data.data); })
       .catch(() => {})
       .finally(() => setLoading(false))
+
+    fetch('/api/notifications?limit=5')
+      .then((r) => r.json())
+      .then((data) => { if (data.success && data.data) setNotifications(data.data); })
+      .catch(() => {})
+
+    fetch('/api/invoices?limit=1000')
+      .then((r) => r.json())
+      .then((data) => { if (data.success && data.meta?.total != null) setInvoiceCount(data.meta.total); })
+      .catch(() => {})
   }, [])
 
   const recentOrders = orders.slice(0, 5)
   const totalOrders = orders.length
   const totalPaid = orders.filter(o => o.status === 'COMPLETED' || o.paymentStatus === 'PAID').reduce((s, o) => s + Number(o.total), 0)
-  const pendingOrders = orders.filter(o => o.status === 'PENDING').length
 
   const quickActions = [
     { label: 'إنشاء طلب', labelEn: 'New Order', icon: <Plus size={18} />, href: '/services', color: 'from-[#2580eb] to-[#14b8a6]' },
@@ -58,7 +99,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={<Package size={20} />} value={totalOrders} label={language === 'ar' ? 'عدد الطلبات' : 'Total Orders'} />
         <StatCard icon={<CreditCard size={20} />} value={totalPaid} prefix="ر.س " label={language === 'ar' ? 'المدفوعات' : 'Total Paid'} />
-        <StatCard icon={<Receipt size={20} />} value={totalOrders} label={language === 'ar' ? 'الفواتير' : 'Invoices'} />
+        <StatCard icon={<Receipt size={20} />} value={invoiceCount} label={language === 'ar' ? 'الفواتير' : 'Invoices'} />
         <StatCard icon={<FolderOpen size={20} />} value={0} label={language === 'ar' ? 'الملفات' : 'Files'} />
       </div>
 
@@ -120,17 +161,25 @@ export default function DashboardPage() {
           <Card>
             <CardHeader><h3 className="font-bold text-slate-900 dark:text-white">{language === 'ar' ? 'النشاط الأخير' : 'Recent Activity'}</h3></CardHeader>
             <CardContent className="space-y-4">
-              {[
-                { icon: <Package size={16} />, text: 'تم إنشاء طلب جديد', textEn: 'New order created', color: 'bg-[#2580eb]/10 text-[#2580eb]' },
-                { icon: <CreditCard size={16} />, text: 'تم الدفع بنجاح', textEn: 'Payment completed', color: 'bg-emerald-500/10 text-emerald-500' },
-                { icon: <CheckCircle2 size={16} />, text: 'تم إكمال الخدمة', textEn: 'Service completed', color: 'bg-[#14b8a6]/10 text-[#14b8a6]' },
-                { icon: <MessageSquare size={16} />, text: 'رسالة جديدة من الدعم', textEn: 'New support message', color: 'bg-[#7c3aed]/10 text-[#7c3aed]' },
-              ].map((activity, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="flex items-start gap-3">
-                  <div className={`p-1.5 rounded-lg ${activity.color} shrink-0 mt-0.5`}>{activity.icon}</div>
-                  <div className="flex-1 min-w-0"><p className="text-sm text-slate-700 dark:text-slate-300">{language === 'ar' ? activity.text : activity.textEn}</p></div>
-                </motion.div>
-              ))}
+              {notifications.length === 0 ? (
+                <div className="py-6 text-center">
+                  <Bell size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+                  <p className="text-sm text-slate-500">{language === 'ar' ? 'لا يوجد نشاط بعد' : 'No activity yet'}</p>
+                </div>
+              ) : (
+                notifications.map((n, i) => {
+                  const cfg = notificationTypeConfig[n.type] || notificationTypeConfig.SYSTEM
+                  return (
+                    <motion.div key={n.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="flex items-start gap-3">
+                      <div className={`p-1.5 rounded-lg ${cfg.color} shrink-0 mt-0.5`}>{cfg.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-700 dark:text-slate-300">{n.title}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{timeAgo(n.createdAt)}</p>
+                      </div>
+                    </motion.div>
+                  )
+                })
+              )}
             </CardContent>
           </Card>
         </div>

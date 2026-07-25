@@ -32,8 +32,13 @@ function PasswordStrength({ password }: { password: string }) {
   if (password.length === 0) return null
   return (
     <div className="mt-2">
-      <div className="flex items-center justify-between text-xs mb-1"><span className="text-slate-500">قوة كلمة المرور</span><span style={{ color: colors[strength] }}>{labels[strength]}</span></div>
-      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className="h-full rounded-full" style={{ backgroundColor: colors[strength] }} transition={{ duration: 0.3 }} /></div>
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="text-slate-500">قوة كلمة المرور</span>
+        <span style={{ color: colors[strength] }}>{labels[strength]}</span>
+      </div>
+      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className="h-full rounded-full" style={{ backgroundColor: colors[strength] }} transition={{ duration: 0.3 }} />
+      </div>
     </div>
   )
 }
@@ -49,6 +54,8 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (val:
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile')
   const [saving, setSaving] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
   const mounted = useIsClient()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const router = useRouter()
@@ -62,6 +69,14 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [notifications, setNotifications] = useState({ email: true, mobile: true, orders: true, offers: false })
 
+  useEffect(() => {
+    if (user) {
+      setName(user.name ?? '')
+      setEmail(user.email ?? '')
+      setAvatar(user.avatar ?? null)
+    }
+  }, [user])
+
   if (!mounted) return null
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,14 +87,64 @@ export default function SettingsPage() {
     reader.readAsDataURL(file)
   }
 
-  const handleSaveProfile = () => { setSaving(true); updateUser({ name, email, avatar }); setTimeout(() => setSaving(false), 1000) }
-
-  const handleSavePassword = () => {
+  const handleSaveProfile = async () => {
+    if (!user?.id) return
     setSaving(true)
-    setTimeout(() => { setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setSaving(false) }, 1000)
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, avatar }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        updateUser({ name, email, avatar })
+      }
+    } catch {
+      updateUser({ name, email, avatar })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleDeleteAccount = () => { logout(); router.replace('/') }
+  const handleSavePassword = async () => {
+    setPasswordError('')
+    setPasswordSuccess('')
+    if (newPassword !== confirmPassword) {
+      setPasswordError('كلمتا المرور غير متطابقتين')
+      return
+    }
+    if (newPassword.length < 8) {
+      setPasswordError('كلمة المرور يجب أن تكون 8 أحرف على الأقل')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPasswordSuccess('تم تحديث كلمة المرور بنجاح')
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+      } else {
+        setPasswordError(data.message || 'فشل تحديث كلمة المرور')
+      }
+    } catch {
+      setPasswordError('حدث خطأ أثناء تحديث كلمة المرور')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteAccount = () => {
+    logout()
+    router.replace('/')
+  }
 
   return (
     <div className="space-y-6">
@@ -100,70 +165,108 @@ export default function SettingsPage() {
           <AnimatePresence mode="wait">
             {activeTab === 'profile' && (
               <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <Card><CardHeader><h3 className="font-bold text-slate-900">الملف الشخصي</h3></CardHeader><CardContent>
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">{avatar ? <img src={avatar} alt="avatar" className="w-full h-full object-cover" /> : getInitials(name || 'مستخدم')}</div>
-                      <div><button onClick={() => { const el = document.querySelector('input[type=file]') as HTMLInputElement; el?.click(); }} className="text-sm text-[#2580eb] hover:underline flex items-center gap-1.5"><Upload size={14} />تغيير الصورة</button></div>
+                <Card>
+                  <CardHeader><h3 className="font-bold text-slate-900">الملف الشخصي</h3></CardHeader>
+                  <CardContent>
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                          {avatar ? <img src={avatar} alt="avatar" className="w-full h-full object-cover" /> : getInitials(name || 'مستخدم')}
+                        </div>
+                        <div>
+                          <button onClick={() => { const el = fileInputRef.current; el?.click(); }} className="text-sm text-[#2580eb] hover:underline flex items-center gap-1.5">
+                            <Upload size={14} />تغيير الصورة
+                          </button>
+                        </div>
+                      </div>
+                      <input type="file" accept="image/*" ref={fileInputRef} onChange={handleAvatarUpload} className="hidden" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input label="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
+                        <Input label="البريد الإلكتروني" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                      </div>
+                      <Button variant="primary" size="md" loading={saving} onClick={handleSaveProfile} iconLeft={<Save size={16} />}>حفظ التغييرات</Button>
                     </div>
-                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
-                      <Input label="البريد الإلكتروني" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    </div>
-                    <Button variant="primary" size="md" loading={saving} onClick={handleSaveProfile} iconLeft={<Save size={16} />}>حفظ التغييرات</Button>
-                  </div>
-                </CardContent></Card>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
 
             {activeTab === 'password' && (
               <motion.div key="password" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <Card><CardHeader><div className="flex items-center gap-2"><Shield size={20} className="text-[#2580eb]" /><h3 className="font-bold text-slate-900">تغيير كلمة المرور</h3></div></CardHeader><CardContent>
-                  <div className="space-y-5 max-w-md">
-                    <Input label="كلمة المرور الحالية" isPassword value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-                    <div><Input label="كلمة المرور الجديدة" isPassword value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /><PasswordStrength password={newPassword} /></div>
-                    <Input label="تأكيد كلمة المرور" isPassword value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} error={confirmPassword && newPassword !== confirmPassword ? 'كلمتا المرور غير متطابقتين' : undefined} />
-                    <Button variant="primary" size="md" loading={saving} onClick={handleSavePassword} disabled={!currentPassword || !newPassword || newPassword !== confirmPassword} iconLeft={<Lock size={16} />}>تحديث كلمة المرور</Button>
-                  </div>
-                </CardContent></Card>
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Shield size={20} className="text-[#2580eb]" />
+                      <h3 className="font-bold text-slate-900">تغيير كلمة المرور</h3>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-5 max-w-md">
+                      {passwordError && (
+                        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{passwordError}</div>
+                      )}
+                      {passwordSuccess && (
+                        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">{passwordSuccess}</div>
+                      )}
+                      <Input label="كلمة المرور الحالية" isPassword value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+                      <div>
+                        <Input label="كلمة المرور الجديدة" isPassword value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                        <PasswordStrength password={newPassword} />
+                      </div>
+                      <Input label="تأكيد كلمة المرور" isPassword value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} error={confirmPassword && newPassword !== confirmPassword ? 'كلمتا المرور غير متطابقتين' : undefined} />
+                      <Button variant="primary" size="md" loading={saving} onClick={handleSavePassword} disabled={!currentPassword || !newPassword || newPassword !== confirmPassword} iconLeft={<Lock size={16} />}>تحديث كلمة المرور</Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
 
             {activeTab === 'notifications' && (
               <motion.div key="notifications" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <Card><CardHeader><h3 className="font-bold text-slate-900">تفضيلات الإشعارات</h3></CardHeader><CardContent>
-                  <div className="space-y-4">
-                    {([
-                      { key: 'email' as const, label: 'إشعارات البريد الإلكتروني', desc: 'تلقى إشعارات عبر البريد الإلكتروني' },
-                      { key: 'mobile' as const, label: 'إشعارات الجوال', desc: 'تلقى إشعارات فورية على جهازك' },
-                      { key: 'orders' as const, label: 'إشعارات الطلبات', desc: 'تلقى إشعارات عند تحديث حالة طلبك' },
-                      { key: 'offers' as const, label: 'إشعارات العروض', desc: 'تلقى إشعارات العروض الخاصة والخصومات' },
-                    ]).map((item) => (
-                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100/80 transition-colors">
-                        <div><p className="text-sm font-medium text-slate-900">{item.label}</p><p className="text-xs text-slate-500 mt-0.5">{item.desc}</p></div>
-                        <ToggleSwitch checked={notifications[item.key]} onChange={(val) => setNotifications((prev) => ({ ...prev, [item.key]: val }))} />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent></Card>
+                <Card>
+                  <CardHeader><h3 className="font-bold text-slate-900">تفضيلات الإشعارات</h3></CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {([
+                        { key: 'email' as const, label: 'إشعارات البريد الإلكتروني', desc: 'تلقى إشعارات عبر البريد الإلكتروني' },
+                        { key: 'mobile' as const, label: 'إشعارات الجوال', desc: 'تلقى إشعارات فورية على جهازك' },
+                        { key: 'orders' as const, label: 'إشعارات الطلبات', desc: 'تلقى إشعارات عند تحديث حالة طلبك' },
+                        { key: 'offers' as const, label: 'إشعارات العروض', desc: 'تلقى إشعارات العروض الخاصة والخصومات' },
+                      ]).map((item) => (
+                        <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100/80 transition-colors">
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{item.label}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+                          </div>
+                          <ToggleSwitch checked={notifications[item.key]} onChange={(val) => setNotifications((prev) => ({ ...prev, [item.key]: val }))} />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
 
             {activeTab === 'danger' && (
               <motion.div key="danger" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <Card><CardHeader><h3 className="font-bold text-red-600">حذف الحساب</h3></CardHeader><CardContent>
-                  <div className="p-4 rounded-xl bg-red-50 border border-red-200 mb-6">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle size={20} className="text-red-500 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-red-700">تحذير خطير</p>
-                        <p className="text-xs text-red-600 mt-1">حذف حسابك سيمسح جميع بياناتك نهائياً. لا يمكن التراجع عن هذا الإجراء.</p>
+                <Card>
+                  <CardHeader><h3 className="font-bold text-red-600">حذف الحساب</h3></CardHeader>
+                  <CardContent>
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 mb-6">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle size={20} className="text-red-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-red-700">تحذير خطير</p>
+                          <p className="text-xs text-red-600 mt-1">حذف حسابك سيمسح جميع بياناتك نهائياً. لا يمكن التراجع عن هذا الإجراء.</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <Button variant="danger" size="md" onClick={handleDeleteAccount} iconLeft={<Trash2 size={16} />}>حذف الحساب نهائياً</Button>
-                </CardContent></Card>
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
+                      <p className="text-sm text-amber-700">ل حذف حسابك نهائياً، يرجى التواصل مع الدعم الفني عبر البريد الإلكتروني أو الواتساب.</p>
+                    </div>
+                    <Button variant="secondary" size="md" onClick={handleDeleteAccount} iconLeft={<Trash2 size={16} />}>تسجيل الخروج</Button>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
           </AnimatePresence>

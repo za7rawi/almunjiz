@@ -47,6 +47,7 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<ApiOrder | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [internalNotes, setInternalNotes] = useState('');
 
   useEffect(() => {
     fetch('/api/orders?limit=200')
@@ -90,7 +91,7 @@ export default function OrdersPage() {
       const res = await fetch(`/api/orders/${selectedOrder.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, _adminUserId: user?.id }),
+        body: JSON.stringify({ status, internalNotes: internalNotes || undefined, _adminUserId: user?.id }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -232,7 +233,7 @@ export default function OrdersPage() {
                       <td className="py-3 px-4"><Badge variant={statusConfig[order.status]?.variant || 'primary'} size="sm">{statusConfig[order.status]?.label || order.status}</Badge></td>
                       <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">{new Date(order.createdAt).toLocaleDateString('ar-SA')}</td>
                       <td className="py-3 px-4 text-center">
-                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => { setSelectedOrder(order); setShowDetailModal(true); }} className="p-2 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors">
+                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => { setSelectedOrder(order); setInternalNotes(order.internalNotes || ''); setShowDetailModal(true); }} className="p-2 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors">
                           <Eye size={16} />
                         </motion.button>
                       </td>
@@ -347,6 +348,17 @@ export default function OrdersPage() {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{language === 'ar' ? 'ملاحظات داخلية (للإدارة فقط)' : 'Internal Notes (Admin Only)'}</label>
+                <textarea
+                  value={internalNotes}
+                  onChange={(e) => setInternalNotes(e.target.value)}
+                  rows={3}
+                  placeholder={language === 'ar' ? 'ملاحظات داخلية لا تظهر للعميل...' : 'Internal notes not visible to customer...'}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30 resize-none"
+                />
+              </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{language === 'ar' ? 'تحديث الحالة' : 'Update Status'}</label>

@@ -145,6 +145,7 @@ model User {
   ticketMessages  TicketMessage[]
   employee        Employee?
   auditLogs       AuditLog[]
+  fileAttachments FileAttachment[]
 
   @@map("users")
 }
@@ -194,6 +195,7 @@ model Order {
   customerEmail     String
   customerPhone     String?
   notes             String?       @db.Text
+  internalNotes     String?       @db.Text
   attachments       String[]
   estimatedDelivery DateTime?
   deliveredAt       DateTime?
@@ -208,6 +210,7 @@ model Order {
   timeline          OrderTimeline[]
   invoice           Invoice?
   payments          Payment[]
+  fileAttachments   FileAttachment[]
 
   @@index([userId])
   @@index([orderNumber])
@@ -567,4 +570,22 @@ model PaymentGateway {
   @@index([isActive])
   @@index([isDefault])
   @@map("payment_gateways")
+}
+
+model FileAttachment {
+  id          String   @id @default(uuid())
+  userId      String
+  orderId     String?
+  fileName    String
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  uploadedAt  DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([orderId])
+  @@map("file_attachments")
 }

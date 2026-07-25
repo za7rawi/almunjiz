@@ -9,8 +9,7 @@ export class PaymentService {
     discount?: number;
     dueDate?: Date;
   }) {
-    const invoiceCount = await prisma.invoice.count();
-    const invoiceNumber = `INV-${String(invoiceCount + 1).padStart(6, "0")}`;
+    const invoiceNumber = `INV-${Date.now()}-${String(Math.floor(1000 + Math.random() * 9000))}`;
 
     return prisma.invoice.create({
       data: {

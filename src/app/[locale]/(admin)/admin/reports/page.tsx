@@ -3,32 +3,55 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  TrendingUp,
-  TrendingDown,
   DollarSign,
   Users,
   Package,
   Download,
   Calendar,
+  ShoppingCart,
+  BarChart3,
+  Star,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguageStore } from '@/store/language-store';
-import { cn } from '@/lib/utils';
-const dayLabels = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-const monthLabels = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
 
-const serviceColors: Record<string, { color: string; gradientFrom: string; gradientTo: string }> = {
-  'تأشيرات': { color: '#2580eb', gradientFrom: '#2580eb', gradientTo: '#14b8a6' },
-  'عقود': { color: '#7c3aed', gradientFrom: '#7c3aed', gradientTo: '#a78bfa' },
-  'مركبات': { color: '#14b8a6', gradientFrom: '#14b8a6', gradientTo: '#5eead4' },
-  'تأمين': { color: '#f59e0b', gradientFrom: '#f59e0b', gradientTo: '#fbbf24' },
-  'ترجمة': { color: '#ef4444', gradientFrom: '#ef4444', gradientTo: '#f87171' },
+interface ApiOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  amount: unknown;
+  total: unknown;
+  tax: unknown;
+  discount: unknown;
+  createdAt: string;
+  paymentStatus: string;
+  service?: { name: string };
+  customerName?: string;
+  customerEmail?: string;
+}
+
+interface ApiUser {
+  id: string;
+  role: string;
+  createdAt: string;
+}
+
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  PENDING: { label: 'قيد الانتظار', color: '#f59e0b', bg: '#f59e0b15' },
+  UNDER_REVIEW: { label: 'قيد المراجعة', color: '#2580eb', bg: '#2580eb15' },
+  WAITING_CLIENT: { label: 'بانتظار العميل', color: '#8b5cf6', bg: '#8b5cf615' },
+  IN_PROGRESS: { label: 'جار التنفيذ', color: '#2580eb', bg: '#2580eb15' },
+  COMPLETED: { label: 'مكتمل', color: '#16a34a', bg: '#16a34a15' },
+  DELIVERED: { label: 'تم التسليم', color: '#16a34a', bg: '#16a34a15' },
+  CANCELLED: { label: 'ملغى', color: '#ef4444', bg: '#ef444415' },
 };
 
-const fallbackColors = [
+const monthLabels = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+const serviceColors = [
   { color: '#2580eb', gradientFrom: '#2580eb', gradientTo: '#14b8a6' },
   { color: '#7c3aed', gradientFrom: '#7c3aed', gradientTo: '#a78bfa' },
   { color: '#14b8a6', gradientFrom: '#14b8a6', gradientTo: '#5eead4' },
@@ -36,368 +59,160 @@ const fallbackColors = [
   { color: '#ef4444', gradientFrom: '#ef4444', gradientTo: '#f87171' },
 ];
 
-function BarChartSection({ revenueValues }: { revenueValues: number[] }) {
-  const maxRevenue = Math.max(...revenueValues, 1);
-
-  return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg">إيرادات المبيعات</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">إيرادات آخر 7 أيام</p>
-          </div>
-          <Badge variant="success" size="sm">+18.2%</Badge>
-        </div>
-        <div className="relative h-64">
-          <svg viewBox="0 0 350 220" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <linearGradient id="barGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#2580eb" />
-                <stop offset="100%" stopColor="#14b8a6" />
-              </linearGradient>
-            </defs>
-            {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => (
-              <g key={i}>
-                <line
-                  x1="40"
-                  y1={200 - pct * 180}
-                  x2="340"
-                  y2={200 - pct * 180}
-                  stroke="currentColor"
-                  className="text-slate-100 dark:text-white/5"
-                  strokeWidth="0.5"
-                />
-                <text
-                  x="35"
-                  y={204 - pct * 180}
-                  textAnchor="end"
-                  fill="currentColor"
-                  className="text-slate-400 dark:text-slate-500"
-                  fontSize="8"
-                >
-                  {Math.round(pct * maxRevenue).toLocaleString()}
-                </text>
-              </g>
-            ))}
-            {revenueValues.map((val, i) => {
-              const barHeight = (val / maxRevenue) * 170;
-              const barWidth = 32;
-              const x = 55 + i * 41;
-              const y = 200 - barHeight;
-              return (
-                <g key={i}>
-                  <motion.rect
-                    x={x}
-                    y={200}
-                    width={barWidth}
-                    height={0}
-                    rx="4"
-                    fill="url(#barGradient)"
-                    initial={{ height: 0, y: 200 }}
-                    animate={{ height: barHeight, y }}
-                    transition={{ delay: i * 0.1, type: 'spring', stiffness: 120, damping: 14 }}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                  >
-                    <title>{`${dayLabels[i]}: ${val.toLocaleString()} ر.س`}</title>
-                  </motion.rect>
-                  <motion.text
-                    x={x + barWidth / 2}
-                    y={y - 6}
-                    textAnchor="middle"
-                    fill="#2580eb"
-                    fontSize="8"
-                    fontWeight="600"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 + i * 0.1 }}
-                  >
-                    {val.toLocaleString()}
-                  </motion.text>
-                  <text
-                    x={x + barWidth / 2}
-                    y="216"
-                    textAnchor="middle"
-                    fill="currentColor"
-                    className="text-slate-500 dark:text-slate-400"
-                    fontSize="8"
-                  >
-                    {dayLabels[i]}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function HorizontalBarChartSection({ servicesData }: { servicesData: { label: string; value: number; color: string; gradientFrom: string; gradientTo: string }[] }) {
-  const maxService = Math.max(...servicesData.map((s) => s.value), 1);
-
-  return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg">الطلبات حسب الخدمة</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">توزيع الطلبات على الخدمات</p>
-          </div>
-          <Badge variant="primary" size="sm">{servicesData.length} خدمات</Badge>
-        </div>
-        <div className="space-y-5">
-          {servicesData.map((service, i) => (
-            <div key={service.label}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{service.label}</span>
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{service.value}%</span>
-              </div>
-              <div className="h-3 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{
-                    background: `linear-gradient(to left, ${service.gradientFrom}, ${service.gradientTo})`,
-                  }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(service.value / maxService) * 100}%` }}
-                  transition={{ delay: 0.2 + i * 0.15, duration: 0.8, ease: 'easeOut' }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DonutChartSection() {
-  const ratingsData = [
-    { stars: 5, percentage: 55, color: '#2580eb' },
-    { stars: 4, percentage: 25, color: '#14b8a6' },
-    { stars: 3, percentage: 12, color: '#7c3aed' },
-    { stars: 2, percentage: 5, color: '#f59e0b' },
-    { stars: 1, percentage: 3, color: '#ef4444' },
-  ];
-
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius;
-
-  const segments = ratingsData.reduce<{ r: typeof ratingsData[number]; offset: number; idx: number }[]>((acc, r, idx) => {
-    const dashLength = (r.percentage / 100) * circumference;
-    const prevOffset = acc.length > 0 ? acc[acc.length - 1].offset + (acc[acc.length - 1].r.percentage / 100) * circumference : 0;
-    acc.push({ r, offset: prevOffset, idx });
-    return acc;
-  }, []);
-
-  return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg">التقييمات</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">توزيع تقييمات العملاء</p>
-          </div>
-          <Badge variant="warning" size="sm">متوسط 4.3</Badge>
-        </div>
-        <div className="flex flex-col items-center">
-          <div className="relative w-48 h-48">
-            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-              <defs>
-                {ratingsData.map((r, idx) => (
-                  <linearGradient key={idx} id={`donutGrad${r.stars}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor={r.color} />
-                    <stop offset="100%" stopColor={r.color} stopOpacity="0.7" />
-                  </linearGradient>
-                ))}
-              </defs>
-              {segments.map(({ r, offset, idx }) => {
-                const dashLength = (r.percentage / 100) * circumference;
-                const gapLength = circumference - dashLength;
-                return (
-                  <motion.circle
-                    key={idx}
-                    cx="50"
-                    cy="50"
-                    r={radius}
-                    fill="none"
-                    stroke={`url(#donutGrad${r.stars})`}
-                    strokeWidth="10"
-                    strokeLinecap="round"
-                    strokeDasharray={`${dashLength} ${gapLength}`}
-                    strokeDashoffset={-offset}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 + idx * 0.15, duration: 0.6 }}
-                  />
-                );
-              })}
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <motion.span
-                className="text-3xl font-bold text-slate-900 dark:text-white"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
-              >
-                4.3
-              </motion.span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">من 5</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            {ratingsData.map((r) => (
-              <div key={r.stars} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color }} />
-                <span className="text-xs text-slate-600 dark:text-slate-300">
-                  {r.stars} نجوم ({r.percentage}%)
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LineChartSection({ monthlyValues }: { monthlyValues: number[] }) {
-  const maxMonthly = Math.max(...monthlyValues, 1);
-  const svgWidth = 350;
-  const svgHeight = 220;
-  const paddingX = 45;
+function MonthlyRevenueChart({ data }: { data: { month: string; label: string; value: number }[] }) {
+  const maxRevenue = Math.max(...data.map((d) => d.value), 1);
+  const svgWidth = 700;
+  const svgHeight = 240;
+  const paddingX = 50;
   const paddingY = 25;
   const chartWidth = svgWidth - paddingX * 2;
   const chartHeight = svgHeight - paddingY * 2;
 
-  const points = monthlyValues.map((val, i) => ({
-    x: paddingX + (i / Math.max(monthlyValues.length - 1, 1)) * chartWidth,
-    y: paddingY + chartHeight - (val / maxMonthly) * chartHeight,
-  }));
-
-  const areaPath = points.length > 0 ? [
-    `M ${points[0].x} ${paddingY + chartHeight}`,
-    `L ${points[0].x} ${points[0].y}`,
-    ...points.slice(1).map((p) => `L ${p.x} ${p.y}`),
-    `L ${points[points.length - 1].x} ${paddingY + chartHeight}`,
-    'Z',
-  ].join(' ') : '';
+  const barWidth = Math.max(Math.floor(chartWidth / data.length) - 8, 16);
 
   return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg">النمو الشهري</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">نمو الإيرادات خلال آخر 6 أشهر</p>
-          </div>
-          <Badge variant="success" size="sm">+42.3%</Badge>
-        </div>
-        <div className="relative h-64">
-          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <linearGradient id="lineAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.02" />
-              </linearGradient>
-              <linearGradient id="lineStrokeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#2580eb" />
-                <stop offset="100%" stopColor="#7c3aed" />
-              </linearGradient>
-            </defs>
-            {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-              const y = paddingY + chartHeight - pct * chartHeight;
-              return (
-                <g key={i}>
-                  <line
-                    x1={paddingX}
-                    y1={y}
-                    x2={svgWidth - paddingX}
-                    y2={y}
-                    stroke="currentColor"
-                    className="text-slate-100 dark:text-white/5"
-                    strokeWidth="0.5"
-                  />
-                  <text
-                    x={paddingX - 8}
-                    y={y + 3}
-                    textAnchor="end"
-                    fill="currentColor"
-                    className="text-slate-400 dark:text-slate-500"
-                    fontSize="8"
-                  >
-                    {Math.round(pct * maxMonthly).toLocaleString()}
-                  </text>
-                </g>
-              );
-            })}
-            {areaPath && (
-              <motion.path
-                d={areaPath}
-                fill="url(#lineAreaGradient)"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-              />
-            )}
-            <motion.path
-              d={points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')}
-              fill="none"
-              stroke="url(#lineStrokeGradient)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ delay: 0.3, duration: 1.2, ease: 'easeInOut' }}
+    <div className="relative h-72">
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="reportBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#2580eb" />
+            <stop offset="100%" stopColor="#14b8a6" />
+          </linearGradient>
+        </defs>
+        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => (
+          <g key={i}>
+            <line
+              x1={paddingX}
+              y1={paddingY + chartHeight - pct * chartHeight}
+              x2={svgWidth - paddingX}
+              y2={paddingY + chartHeight - pct * chartHeight}
+              stroke="currentColor"
+              className="text-slate-100 dark:text-white/5"
+              strokeWidth="0.5"
             />
-            {points.map((p, i) => (
-              <g key={i}>
-                <motion.circle
-                  cx={p.x}
-                  cy={p.y}
-                  r="4"
-                  fill="#7c3aed"
-                  stroke="white"
-                  strokeWidth="2"
-                  className="dark:stroke-slate-900"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.8 + i * 0.1, type: 'spring', stiffness: 300 }}
-                />
-                <text
-                  x={p.x}
-                  y={svgHeight - 5}
+            <text
+              x={paddingX - 8}
+              y={paddingY + chartHeight - pct * chartHeight + 3}
+              textAnchor="end"
+              fill="currentColor"
+              className="text-slate-400 dark:text-slate-500"
+              fontSize="8"
+            >
+              {Math.round(pct * maxRevenue).toLocaleString()}
+            </text>
+          </g>
+        ))}
+        {data.map((d, i) => {
+          const barHeight = maxRevenue > 0 ? (d.value / maxRevenue) * chartHeight : 0;
+          const x = paddingX + (i / data.length) * chartWidth + 4;
+          const y = paddingY + chartHeight - barHeight;
+          return (
+            <g key={i}>
+              <motion.rect
+                x={x}
+                y={paddingY + chartHeight}
+                width={barWidth}
+                height={0}
+                rx="4"
+                fill="url(#reportBarGrad)"
+                initial={{ height: 0, y: paddingY + chartHeight }}
+                animate={{ height: barHeight, y }}
+                transition={{ delay: i * 0.06, type: 'spring', stiffness: 120, damping: 14 }}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <title>{`${d.label}: ${d.value.toLocaleString()} ر.س`}</title>
+              </motion.rect>
+              {d.value > 0 && (
+                <motion.text
+                  x={x + barWidth / 2}
+                  y={y - 6}
                   textAnchor="middle"
-                  fill="currentColor"
-                  className="text-slate-500 dark:text-slate-400"
+                  fill="#2580eb"
                   fontSize="8"
+                  fontWeight="600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 + i * 0.06 }}
                 >
-                  {monthLabels[i]}
-                </text>
-              </g>
-            ))}
-          </svg>
+                  {d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}k` : d.value.toLocaleString()}
+                </motion.text>
+              )}
+              <text
+                x={x + barWidth / 2}
+                y={svgHeight - 5}
+                textAnchor="middle"
+                fill="currentColor"
+                className="text-slate-500 dark:text-slate-400"
+                fontSize="7"
+              >
+                {d.label.slice(0, 3)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function TopServicesChart({
+  data,
+}: {
+  data: { name: string; revenue: number; count: number; color: string; gradientFrom: string; gradientTo: string }[];
+}) {
+  const maxRevenue = Math.max(...data.map((s) => s.revenue), 1);
+
+  return (
+    <div className="space-y-5">
+      {data.map((service, i) => (
+        <div key={service.name}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{service.name}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-400">{service.count} طلب</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">{service.revenue.toLocaleString()} ر.س</span>
+            </div>
+          </div>
+          <div className="h-3 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{
+                background: `linear-gradient(to left, ${service.gradientFrom}, ${service.gradientTo})`,
+              }}
+              initial={{ width: 0 }}
+              animate={{ width: `${(service.revenue / maxRevenue) * 100}%` }}
+              transition={{ delay: 0.2 + i * 0.15, duration: 0.8, ease: 'easeOut' }}
+            />
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ))}
+      {data.length === 0 && (
+        <p className="text-center text-slate-400 dark:text-slate-500 py-8">لا توجد بيانات بعد</p>
+      )}
+    </div>
   );
 }
 
 export default function AdminReportsPage() {
   const { language } = useLanguageStore();
-  const [orders, setOrders] = useState<{ id: string; serviceName: string; total: number; status: string; createdAt: string; customerEmail?: string; customerName?: string }[]>([]);
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    fetch('/api/orders?limit=100')
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setOrders(data.data); })
-      .catch(() => {});
+    Promise.all([
+      fetch('/api/orders?limit=10000').then((r) => r.json()),
+      fetch('/api/users').then((r) => r.json()),
+    ])
+      .then(([ordersRes, usersRes]) => {
+        if (ordersRes.success && ordersRes.data) setOrders(ordersRes.data);
+        if (usersRes.success && usersRes.data) setUsers(usersRes.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredOrders = useMemo(() => {
@@ -411,93 +226,132 @@ export default function AdminReportsPage() {
     return result;
   }, [orders, dateFrom, dateTo]);
 
-  const revenueValues = useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(now);
-      day.setDate(now.getDate() - (6 - i));
-      const dayStr = day.toISOString().slice(0, 10);
-      return filteredOrders
-        .filter((o) => o.createdAt.startsWith(dayStr))
-        .reduce((sum, o) => sum + Number(o.total || 0), 0);
-    });
-  }, [filteredOrders]);
+  const paidOrders = useMemo(
+    () => filteredOrders.filter((o) => o.paymentStatus === 'PAID'),
+    [filteredOrders],
+  );
 
-  const monthlyValues = useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
-      const month = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-      const prefix = month.toISOString().slice(0, 7);
-      return filteredOrders
-        .filter((o) => o.createdAt.startsWith(prefix))
-        .reduce((sum, o) => sum + Number(o.total || 0), 0);
-    });
-  }, [filteredOrders]);
+  const now = new Date();
 
-  const servicesData = useMemo(() => {
+  const totalRevenue = useMemo(
+    () => paidOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
+    [paidOrders],
+  );
+
+  const monthlyRevenue = useMemo(() => {
+    const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return paidOrders
+      .filter((o) => o.createdAt.startsWith(prefix))
+      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  }, [paidOrders, now]);
+
+  const totalOrders = filteredOrders.length;
+
+  const ordersByStatus = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredOrders.forEach((o) => {
-      counts[o.serviceName] = (counts[o.serviceName] || 0) + 1;
+      counts[o.status] = (counts[o.status] || 0) + 1;
     });
-    const total = filteredOrders.length || 1;
-    return Object.entries(counts)
-      .map(([name, count], idx) => {
-        const colors = serviceColors[name] || fallbackColors[idx % fallbackColors.length];
-        return {
-          label: name,
-          value: Math.round((count / total) * 100),
-          ...colors,
-        };
-      })
-      .sort((a, b) => b.value - a.value);
+    return counts;
   }, [filteredOrders]);
 
-  const statsCards = useMemo(() => {
-    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.total, 0);
-    const totalOrders = filteredOrders.length;
-    const statuses = new Set(filteredOrders.map((o) => o.customerEmail || o.customerName).filter(Boolean));
-    const completed = filteredOrders.filter((o) => o.status === 'completed' || o.status === 'delivered').length;
-    const conversionRate = totalOrders > 0 ? ((completed / totalOrders) * 100).toFixed(1) + '%' : '0%';
+  const avgOrderValue = totalOrders > 0 ? totalRevenue / paidOrders.length || 0 : 0;
 
-    return [
-      {
-        label: 'إجمالي الإيرادات',
-        value: `${totalRevenue.toLocaleString()} ر.س`,
-        icon: DollarSign,
-        color: '#16a34a',
-        bgColor: '#16a34a15',
-        trend: 'up' as const,
-        trendValue: '+12.5%',
-      },
-      {
-        label: 'إجمالي الطلبات',
-        value: totalOrders.toLocaleString(),
-        icon: Package,
-        color: '#2580eb',
-        bgColor: '#2580eb15',
-        trend: 'up' as const,
-        trendValue: '+8.2%',
-      },
-      {
-        label: 'عملاء جدد',
-        value: statuses.size.toLocaleString(),
-        icon: Users,
-        color: '#7c3aed',
-        bgColor: '#7c3aed15',
-        trend: 'up' as const,
-        trendValue: '+15.3%',
-      },
-      {
-        label: 'معدل التحويل',
-        value: conversionRate,
-        icon: TrendingUp,
-        color: '#14b8a6',
-        bgColor: '#14b8a615',
-        trend: 'up' as const,
-        trendValue: '+0.8%',
-      },
-    ];
-  }, [filteredOrders]);
+  const newCustomersThisMonth = useMemo(() => {
+    const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return users.filter(
+      (u) => (u.role === 'CUSTOMER' || u.role === 'customer') && u.createdAt.startsWith(prefix),
+    ).length;
+  }, [users, now]);
+
+  const totalCustomers = useMemo(
+    () => users.filter((u) => u.role === 'CUSTOMER' || u.role === 'customer').length,
+    [users],
+  );
+
+  const revenueByMonth = useMemo(() => {
+    const months: { month: string; label: string; value: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = monthLabels[d.getMonth()];
+      const value = paidOrders
+        .filter((o) => o.createdAt.startsWith(prefix))
+        .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      months.push({ month: prefix, label, value });
+    }
+    return months;
+  }, [paidOrders, now]);
+
+  const topServices = useMemo(() => {
+    const map: Record<string, { revenue: number; count: number }> = {};
+    paidOrders.forEach((o) => {
+      const name = o.service?.name || 'غير محدد';
+      if (!map[name]) map[name] = { revenue: 0, count: 0 };
+      map[name].revenue += Number(o.total) || 0;
+      map[name].count += 1;
+    });
+    return Object.entries(map)
+      .map(([name, data], idx) => ({
+        name,
+        revenue: data.revenue,
+        count: data.count,
+        ...serviceColors[idx % serviceColors.length],
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 8);
+  }, [paidOrders]);
+
+  const statsCards = [
+    {
+      label: 'إجمالي الإيرادات',
+      value: totalRevenue,
+      prefix: '',
+      suffix: ' ر.س',
+      icon: DollarSign,
+      numericValue: totalRevenue,
+    },
+    {
+      label: 'إيرادات الشهر',
+      value: monthlyRevenue,
+      prefix: '',
+      suffix: ' ر.س',
+      icon: BarChart3,
+      numericValue: monthlyRevenue,
+    },
+    {
+      label: 'إجمالي الطلبات',
+      value: totalOrders,
+      prefix: '',
+      suffix: '',
+      icon: Package,
+      numericValue: totalOrders,
+    },
+    {
+      label: 'متوسط الطلب',
+      value: Math.round(avgOrderValue),
+      prefix: '',
+      suffix: ' ر.س',
+      icon: ShoppingCart,
+      numericValue: Math.round(avgOrderValue),
+    },
+    {
+      label: 'العملاء',
+      value: totalCustomers,
+      prefix: '',
+      suffix: '',
+      icon: Users,
+      numericValue: totalCustomers,
+    },
+    {
+      label: 'عملاء جدد (الشهر)',
+      value: newCustomersThisMonth,
+      prefix: '',
+      suffix: '',
+      icon: Star,
+      numericValue: newCustomersThisMonth,
+    },
+  ];
 
   const handleExport = () => {
     setExporting(true);
@@ -549,80 +403,127 @@ export default function AdminReportsPage() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statsCards.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 + i * 0.08 }}
-          >
-            <Card glass>
-              <CardContent>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stat.value}</p>
-                    <div className="flex items-center gap-1 mt-2">
-                      {stat.trend === 'up' ? (
-                        <TrendingUp size={14} className="text-emerald-500" />
-                      ) : (
-                        <TrendingDown size={14} className="text-red-500" />
-                      )}
-                      <span
-                        className={cn(
-                          'text-xs font-medium',
-                          stat.trend === 'up' ? 'text-emerald-500' : 'text-red-500',
-                        )}
-                      >
-                        {stat.trendValue}
-                      </span>
-                      <span className="text-xs text-slate-400">هذا الشهر</span>
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-28 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {statsCards.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 + i * 0.08 }}
+            >
+              <Card glass>
+                <CardContent>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                        {stat.prefix}{stat.numericValue.toLocaleString()}{stat.suffix}
+                      </p>
+                    </div>
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: '#2580eb15' }}
+                    >
+                      <stat.icon size={20} style={{ color: '#2580eb' }} />
                     </div>
                   </div>
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: stat.bgColor }}
-                  >
-                    <stat.icon size={20} style={{ color: stat.color }} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <BarChartSection revenueValues={revenueValues} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">إيرادات المبيعات الشهرية</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">إيرادات آخر 12 شهر (المدفوعة فقط)</p>
+                </div>
+                <Badge variant="success" size="sm">
+                  {paidOrders.length} طلب مدفوع
+                </Badge>
+              </div>
+              <MonthlyRevenueChart data={revenueByMonth} />
+            </CardContent>
+          </Card>
         </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <HorizontalBarChartSection servicesData={servicesData} />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <DonutChartSection />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <LineChartSection monthlyValues={monthlyValues} />
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <Card>
+            <CardContent>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">أعلى الخدمات إيراداً</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">ترتيب الخدمات حسب الإيرادات</p>
+                </div>
+                <Badge variant="primary" size="sm">{topServices.length} خدمات</Badge>
+              </div>
+              <TopServicesChart data={topServices} />
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">توزيع الطلبات حسب الحالة</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">عدد الطلبات في كل حالة</p>
+              </div>
+              <Badge variant="info" size="sm">{totalOrders} طلب</Badge>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Object.entries(ordersByStatus)
+                .sort((a, b) => b[1] - a[1])
+                .map(([status, count], i) => {
+                  const cfg = statusConfig[status] || { label: status, color: '#6b7280', bg: '#6b728015' };
+                  const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : '0';
+                  return (
+                    <motion.div
+                      key={status}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.6 + i * 0.05 }}
+                      className="p-4 rounded-xl border border-slate-100 dark:border-white/5 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.color }} />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{cfg.label}</span>
+                      </div>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{count}</p>
+                      <p className="text-xs text-slate-400 mt-1">{pct}% من الإجمالي</p>
+                      <div className="mt-3 h-1.5 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: cfg.color }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ delay: 0.8 + i * 0.05, duration: 0.6 }}
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              {Object.keys(ordersByStatus).length === 0 && !loading && (
+                <p className="col-span-full text-center text-slate-400 dark:text-slate-500 py-8">لا توجد طلبات بعد</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}

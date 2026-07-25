@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Upload,
@@ -17,33 +17,26 @@ import {
   CloudUpload,
   X,
   CheckCircle2,
+  Loader2,
+  Eye,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/store/auth-store'
 
 type FileType = 'all' | 'document' | 'image' | 'other'
 
-interface MockFile {
+interface FileRecord {
   id: string
-  name: string
-  type: 'pdf' | 'image' | 'doc' | 'archive'
-  size: string
-  date: string
-  dateEn: string
+  fileName: string
+  fileUrl: string
+  fileType: string
+  fileSize: number
+  uploadedAt: string
+  order?: { id: string; orderNumber: string } | null
 }
-
-const mockFiles: MockFile[] = [
-  { id: '1', name: 'تقرير-المبيعات-2024.pdf', type: 'pdf', size: '2.4 MB', date: '15 يناير 2026', dateEn: 'Jan 15, 2026' },
-  { id: '2', name: 'تصميم-الشعار.png', type: 'image', size: '1.1 MB', date: '12 يناير 2026', dateEn: 'Jan 12, 2026' },
-  { id: '3', name: 'عقد-الخدمة.docx', type: 'doc', size: '856 KB', date: '10 يناير 2026', dateEn: 'Jan 10, 2026' },
-  { id: '4', name: 'صور-المشروع.zip', type: 'archive', size: '15.3 MB', date: '8 يناير 2026', dateEn: 'Jan 8, 2026' },
-  { id: '5', name: 'فاتورة-ديسمبر.pdf', type: 'pdf', size: '320 KB', date: '5 يناير 2026', dateEn: 'Jan 5, 2026' },
-  { id: '6', name: 'واجهة-الموقع.jpg', type: 'image', size: '3.2 MB', date: '3 يناير 2026', dateEn: 'Jan 3, 2026' },
-  { id: '7', name: 'بيانات-العملاء.xlsx', type: 'doc', size: '1.8 MB', date: '1 يناير 2026', dateEn: 'Jan 1, 2026' },
-  { id: '8', name: 'شارة-التوثيق.pdf', type: 'pdf', size: '540 KB', date: '28 ديسمبر 2025', dateEn: 'Dec 28, 2025' },
-]
 
 const tabs: { id: FileType; label: string; labelEn: string }[] = [
   { id: 'all', label: 'الكل', labelEn: 'All' },
@@ -52,86 +45,167 @@ const tabs: { id: FileType; label: string; labelEn: string }[] = [
   { id: 'other', label: 'أخرى', labelEn: 'Other' },
 ]
 
-function getFileIcon(type: MockFile['type']) {
-  switch (type) {
-    case 'pdf': return <FileText size={20} className="text-red-500" />
-    case 'image': return <Image size={20} className="text-emerald-500" />
-    case 'doc': return <FileText size={20} className="text-[#2580eb]" />
-    case 'archive': return <Archive size={20} className="text-amber-500" />
-  }
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-function getFileTypeBadge(type: MockFile['type']) {
-  const map: Record<MockFile['type'], { label: string; variant: 'danger' | 'success' | 'primary' | 'warning' }> = {
-    pdf: { label: 'PDF', variant: 'danger' },
-    image: { label: 'صورة', variant: 'success' },
-    doc: { label: 'مستند', variant: 'primary' },
-    archive: { label: 'أرشيف', variant: 'warning' },
-  }
-  return map[type]
-}
-
-function getFilterType(type: MockFile['type']): FileType {
-  if (type === 'pdf' || type === 'doc') return 'document'
-  if (type === 'image') return 'image'
+function getFileCategory(mimeType: string): 'image' | 'document' | 'other' {
+  if (mimeType.startsWith('image/')) return 'image'
+  if (
+    mimeType.includes('pdf') ||
+    mimeType.includes('word') ||
+    mimeType.includes('document') ||
+    mimeType.includes('sheet') ||
+    mimeType.includes('excel') ||
+    mimeType.includes('text/plain')
+  )
+    return 'document'
   return 'other'
 }
 
+function getFileIcon(category: 'image' | 'document' | 'other', mimeType: string) {
+  if (category === 'image') return <Image size={20} className="text-emerald-500" />
+  if (mimeType.includes('pdf')) return <FileText size={20} className="text-red-500" />
+  if (mimeType.includes('word') || mimeType.includes('document'))
+    return <FileText size={20} className="text-[#2580eb]" />
+  if (mimeType.includes('sheet') || mimeType.includes('excel'))
+    return <FileText size={20} className="text-emerald-600" />
+  return <File size={20} className="text-amber-500" />
+}
+
+function getFileTypeBadge(mimeType: string): { label: string; variant: 'danger' | 'success' | 'primary' | 'warning' } {
+  if (mimeType.includes('pdf')) return { label: 'PDF', variant: 'danger' }
+  if (mimeType.startsWith('image/')) return { label: 'صورة', variant: 'success' }
+  if (mimeType.includes('word') || mimeType.includes('document')) return { label: 'مستند', variant: 'primary' }
+  if (mimeType.includes('sheet') || mimeType.includes('excel')) return { label: 'جدول', variant: 'primary' }
+  if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('rar')) return { label: 'أرشيف', variant: 'warning' }
+  return { label: 'ملف', variant: 'warning' }
+}
+
 export default function FilesPage() {
-  const [files, setFiles] = useState<MockFile[]>(mockFiles)
+  const [files, setFiles] = useState<FileRecord[]>([])
   const [activeTab, setActiveTab] = useState<FileType>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { user } = useAuthStore()
 
-  const filteredFiles = files.filter((f) => {
-    const matchesTab = activeTab === 'all' || getFilterType(f.type) === activeTab
-    const matchesSearch = !search || f.name.includes(search)
-    return matchesTab && matchesSearch
-  })
+  const fetchFiles = useCallback(async () => {
+    try {
+      const params = new URLSearchParams()
+      if (activeTab !== 'all') params.set('type', activeTab)
+      if (search) params.set('search', search)
+      const res = await fetch(`/api/files?${params.toString()}`)
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data)) {
+        setFiles(data.data)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false)
+    }
+  }, [activeTab, search])
 
-  const simulateUpload = () => {
+  useEffect(() => {
+    setLoading(true)
+    fetchFiles()
+  }, [fetchFiles])
+
+  const handleUpload = async (selectedFiles: FileList | File[]) => {
+    const fileArray = Array.from(selectedFiles)
+    if (fileArray.length === 0) return
+
     setUploading(true)
     setUploadProgress(0)
     setUploadSuccess(false)
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 20 + 5
-      if (progress >= 100) {
-        progress = 100
-        clearInterval(interval)
+
+    try {
+      const formData = new FormData()
+      fileArray.forEach((f) => formData.append('files', f))
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const uploadData = await uploadRes.json()
+
+      if (!uploadData.success || !uploadData.data) {
+        setUploading(false)
+        return
+      }
+
+      setUploadProgress(60)
+
+      const filesPayload = uploadData.data.map(
+        (f: { name: string; url: string; size: number; type: string }) => ({
+          fileName: f.name,
+          fileUrl: f.url,
+          fileType: f.type,
+          fileSize: f.size,
+        })
+      )
+
+      const saveRes = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: filesPayload }),
+      })
+      const saveData = await saveRes.json()
+
+      if (saveData.success) {
         setUploadProgress(100)
         setUploadSuccess(true)
-        const newFile: MockFile = {
-          id: String(Date.now()),
-          name: 'ملف-جديد.pdf',
-          type: 'pdf',
-          size: '1.2 MB',
-          date: 'اليوم',
-          dateEn: 'Today',
-        }
-        setFiles((prev) => [newFile, ...prev])
+        await fetchFiles()
         setTimeout(() => {
           setUploading(false)
           setUploadSuccess(false)
         }, 2000)
+      } else {
+        setUploading(false)
       }
-      setUploadProgress(Math.min(progress, 100))
-    }, 300)
+    } catch {
+      setUploading(false)
+    }
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleUpload(e.target.files)
+      e.target.value = ''
+    }
   }
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
-    simulateUpload()
+    if (e.dataTransfer.files.length > 0) {
+      handleUpload(e.dataTransfer.files)
+    }
   }
 
-  const deleteFile = (id: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id))
+  const deleteFile = async (id: string) => {
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/files?id=${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setFiles((prev) => prev.filter((f) => f.id !== id))
+      }
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -148,7 +222,10 @@ export default function FilesPage() {
 
       {/* Upload Area */}
       <motion.div
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => !uploading && fileInputRef.current?.click()}
@@ -162,7 +239,8 @@ export default function FilesPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          onChange={simulateUpload}
+          multiple
+          onChange={handleFileInputChange}
         />
         {uploading ? (
           <div className="space-y-4">
@@ -199,7 +277,7 @@ export default function FilesPage() {
               <Upload size={28} className="text-[#2580eb]" />
             </div>
             <p className="text-sm font-medium text-slate-700 mb-1">اسحب الملفات هنا أو انقر للرفع</p>
-            <p className="text-xs text-slate-400">PDF, PNG, JPG, DOCX — حتى 50 ميجابايت</p>
+            <p className="text-xs text-slate-400">PDF, PNG, JPG, DOCX — حتى 10 ميجابايت لكل ملف</p>
           </>
         )}
       </motion.div>
@@ -218,9 +296,6 @@ export default function FilesPage() {
               }`}
             >
               {tab.label}
-              <span className="ms-1.5 text-xs opacity-70">
-                ({tab.id === 'all' ? files.length : files.filter((f) => getFilterType(f.type) === tab.id).length})
-              </span>
             </button>
           ))}
         </div>
@@ -253,18 +328,25 @@ export default function FilesPage() {
       </div>
 
       {/* Files Grid / List */}
-      {filteredFiles.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-[#2580eb]" size={32} />
+        </div>
+      ) : files.length === 0 ? (
         <Card padding="lg">
           <div className="py-16 text-center">
             <FolderOpen size={48} className="mx-auto text-slate-300 mb-3" />
             <p className="text-sm text-slate-500">لا توجد ملفات</p>
+            <p className="text-xs text-slate-400 mt-1">ابدأ برفع ملفاتك الأولى</p>
           </div>
         </Card>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <AnimatePresence>
-            {filteredFiles.map((file, i) => {
-              const badge = getFileTypeBadge(file.type)
+            {files.map((file, i) => {
+              const category = getFileCategory(file.fileType)
+              const badge = getFileTypeBadge(file.fileType)
+              const isImage = file.fileType.startsWith('image/')
               return (
                 <motion.div
                   key={file.id}
@@ -276,26 +358,57 @@ export default function FilesPage() {
                 >
                   <Card padding="none" className="overflow-hidden hover:border-[#2580eb]/30 transition-all group">
                     <div className="p-4">
+                      {isImage && (
+                        <div
+                          className="w-full h-32 rounded-xl mb-3 bg-slate-100 overflow-hidden cursor-pointer relative group/preview"
+                          onClick={() => setPreviewUrl(file.fileUrl)}
+                        >
+                          <img
+                            src={file.fileUrl}
+                            alt={file.fileName}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/30 transition-colors flex items-center justify-center">
+                            <Eye size={20} className="text-white opacity-0 group-hover/preview:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-start justify-between mb-3">
                         <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">
-                          {getFileIcon(file.type)}
+                          {getFileIcon(category, file.fileType)}
                         </div>
                         <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
                       </div>
-                      <h4 className="text-sm font-medium text-slate-900 truncate mb-1">{file.name}</h4>
-                      <p className="text-xs text-slate-400">{file.size} · {file.date}</p>
+                      <h4 className="text-sm font-medium text-slate-900 truncate mb-1">{file.fileName}</h4>
+                      <p className="text-xs text-slate-400">
+                        {formatFileSize(file.fileSize)} · {new Date(file.uploadedAt).toLocaleDateString('ar-SA')}
+                      </p>
+                      {file.order && (
+                        <p className="text-xs text-[#2580eb] mt-1 truncate">طلب: {file.order.orderNumber}</p>
+                      )}
                     </div>
                     <div className="flex border-t border-slate-100">
-                      <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#2580eb] hover:bg-[#2580eb]/5 transition-colors">
+                      <a
+                        href={file.fileUrl}
+                        download={file.fileName}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#2580eb] hover:bg-[#2580eb]/5 transition-colors"
+                      >
                         <Download size={14} />
                         تحميل
-                      </button>
+                      </a>
                       <div className="w-px bg-slate-100" />
                       <button
                         onClick={() => deleteFile(file.id)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
+                        disabled={deletingId === file.id}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
                       >
-                        <Trash2 size={14} />
+                        {deletingId === file.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={14} />
+                        )}
                         حذف
                       </button>
                     </div>
@@ -319,8 +432,9 @@ export default function FilesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredFiles.map((file, i) => {
-                  const badge = getFileTypeBadge(file.type)
+                {files.map((file, i) => {
+                  const category = getFileCategory(file.fileType)
+                  const badge = getFileTypeBadge(file.fileType)
                   return (
                     <motion.tr
                       key={file.id}
@@ -331,31 +445,49 @@ export default function FilesPage() {
                     >
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-3">
-                          {getFileIcon(file.type)}
-                          <span className="text-sm font-medium text-slate-900">{file.name}</span>
+                          {getFileIcon(category, file.fileType)}
+                          <div>
+                            <span className="text-sm font-medium text-slate-900">{file.fileName}</span>
+                            {file.order && (
+                              <p className="text-xs text-[#2580eb]">طلب: {file.order.orderNumber}</p>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-3 hidden sm:table-cell">
                         <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
                       </td>
-                      <td className="px-6 py-3 text-sm text-slate-500 hidden md:table-cell">{file.size}</td>
-                      <td className="px-6 py-3 text-sm text-slate-500 hidden md:table-cell">{file.date}</td>
+                      <td className="px-6 py-3 text-sm text-slate-500 hidden md:table-cell">
+                        {formatFileSize(file.fileSize)}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-slate-500 hidden md:table-cell">
+                        {new Date(file.uploadedAt).toLocaleDateString('ar-SA')}
+                      </td>
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-1">
-                          <motion.button
+                          <motion.a
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
+                            href={file.fileUrl}
+                            download={file.fileName}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="p-1.5 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors"
                           >
                             <Download size={15} />
-                          </motion.button>
+                          </motion.a>
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => deleteFile(file.id)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+                            disabled={deletingId === file.id}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-50"
                           >
-                            <Trash2 size={15} />
+                            {deletingId === file.id ? (
+                              <Loader2 size={15} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={15} />
+                            )}
                           </motion.button>
                         </div>
                       </td>
@@ -367,6 +499,39 @@ export default function FilesPage() {
           </div>
         </div>
       )}
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {previewUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setPreviewUrl(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[85vh] w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setPreviewUrl(null)}
+                className="absolute -top-12 left-0 text-white hover:text-slate-300 transition-colors"
+              >
+                <X size={24} />
+              </button>
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-full h-full object-contain rounded-xl"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

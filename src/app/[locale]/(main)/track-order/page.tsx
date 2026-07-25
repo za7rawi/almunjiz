@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Package, Clock, CheckCircle, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Package, Clock, CheckCircle, FileText, AlertCircle, User, Mail, Phone, CreditCard, Calendar, Hash } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -10,13 +10,27 @@ import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
 import { useSearchParams } from 'next/navigation';
 
-interface TimelineStep { status: string; date: string | null; done: boolean }
+interface TimelineStep { status: string; description?: string; date: string | null; done: boolean }
 interface OrderData {
   orderNumber: string; service: string; status: string; progress: number;
-  createdAt: string; total?: number; timeline: TimelineStep[];
+  createdAt: string; total?: number; customerName?: string; customerEmail?: string;
+  customerPhone?: string; paymentStatus?: string; timeline: TimelineStep[];
+  invoiceNumber?: string;
 }
 
-const statusColors: Record<string, string> = { PENDING: 'warning', IN_PROGRESS: 'info', COMPLETED: 'success', DELIVERED: 'success' };
+const statusConfig: Record<string, { label: string; variant: string }> = {
+  PENDING: { label: 'قيد الانتظار', variant: 'warning' },
+  UNDER_REVIEW: { label: 'قيد المراجعة', variant: 'info' },
+  WAITING_CLIENT: { label: 'بانتظار العميل', variant: 'secondary' },
+  IN_PROGRESS: { label: 'جار التنفيذ', variant: 'primary' },
+  COMPLETED: { label: 'تم الإنجاز', variant: 'success' },
+  DELIVERED: { label: 'تم التسليم', variant: 'success' },
+  CANCELLED: { label: 'ملغي', variant: 'danger' },
+};
+
+const paymentStatusConfig: Record<string, string> = {
+  PENDING: 'بانتظار الدفع', PAID: 'مدفوع', FAILED: 'فشل', REFUNDED: 'مسترد', CANCELLED: 'ملغي',
+};
 
 export default function TrackOrderPage() {
   const searchParams = useSearchParams();
@@ -27,7 +41,7 @@ export default function TrackOrderPage() {
   const [error, setError] = useState('');
   const { currency } = useCurrencyStore();
 
-  const handleSearch = async (searchVal?: string) => {
+  const handleSearch = useCallback(async (searchVal?: string) => {
     const q = searchVal || orderNumber;
     if (!q.trim()) return;
     setSearching(true);
@@ -38,23 +52,35 @@ export default function TrackOrderPage() {
       const data = await res.json();
       if (data.success && data.data?.length > 0) {
         const o = data.data[0];
-        const timeline = (o.timeline || []).map((t: { status: string; description: string; createdAt: string }) => ({
+        const rawTimeline = (o.timeline || []) as { status: string; description: string; createdAt: string }[];
+        const timeline: TimelineStep[] = rawTimeline.map((t) => ({
           status: t.description || t.status,
+          description: t.description,
           date: t.createdAt ? new Date(t.createdAt).toLocaleDateString('ar-SA') : null,
           done: true,
         }));
-        timeline.push(
-          { status: 'تم الانجاز', date: null, done: o.status === 'COMPLETED' || o.status === 'DELIVERED' },
-          { status: 'تم التسليم', date: null, done: o.status === 'DELIVERED' },
-        );
-        const completedSteps = timeline.filter((s: TimelineStep) => s.done).length;
+        const statusSteps = ['PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'COMPLETED', 'DELIVERED'];
+        const currentIdx = statusSteps.indexOf(o.status);
+        statusSteps.forEach((s, i) => {
+          const exists = timeline.find((t) => t.status === (statusConfig[s]?.label || s));
+          if (!exists && i <= currentIdx) {
+            timeline.push({ status: statusConfig[s]?.label || s, date: null, done: i < currentIdx });
+          }
+        });
+        const completedSteps = timeline.filter((s) => s.done).length;
+        const totalSteps = Math.max(timeline.length, 1);
         setFoundOrder({
           orderNumber: o.orderNumber,
           service: o.service?.name || '-',
           status: o.status,
-          progress: Math.min(Math.round((completedSteps / 6) * 100), 100),
+          progress: Math.min(Math.round((completedSteps / totalSteps) * 100), 100),
           createdAt: new Date(o.createdAt).toLocaleDateString('ar-SA'),
-          total: o.total,
+          total: Number(o.total || 0),
+          customerName: o.customerName,
+          customerEmail: o.customerEmail,
+          customerPhone: o.customerPhone,
+          paymentStatus: o.paymentStatus,
+          invoiceNumber: o.invoice?.invoiceNumber,
           timeline,
         });
       } else {
@@ -65,7 +91,7 @@ export default function TrackOrderPage() {
     } finally {
       setSearching(false);
     }
-  };
+  }, [orderNumber]);
 
   useEffect(() => {
     if (initialOrder) {
@@ -74,6 +100,8 @@ export default function TrackOrderPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const sc = statusConfig[foundOrder?.status || ''] || { label: foundOrder?.status || '', variant: 'warning' };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/5">
@@ -97,9 +125,7 @@ export default function TrackOrderPage() {
             <Card glass className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div><h3 className="text-lg font-bold text-slate-900">الطلب #{foundOrder.orderNumber}</h3><p className="text-slate-500 text-sm mt-1">{foundOrder.service}</p></div>
-                <Badge variant={(statusColors[foundOrder.status] as 'warning' | 'info' | 'success') || 'warning'} dot>
-                  {foundOrder.status === 'PENDING' ? 'قيد الانتظار' : foundOrder.status === 'IN_PROGRESS' ? 'جار التنفيذ' : foundOrder.status === 'COMPLETED' ? 'تم الانجاز' : 'تم التسليم'}
-                </Badge>
+                <Badge variant={(sc.variant as 'warning' | 'info' | 'success' | 'primary' | 'secondary' | 'danger') || 'warning'} dot>{sc.label}</Badge>
               </div>
               <div className="mb-6">
                 <div className="flex items-center justify-between text-sm mb-2"><span className="text-slate-500">نسبة الإنجاز</span><span className="font-bold text-[#2580eb]">{foundOrder.progress}%</span></div>
@@ -123,14 +149,21 @@ export default function TrackOrderPage() {
                 ))}
               </div>
             </Card>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl border border-slate-200 p-4 text-center"><Package size={24} className="mx-auto text-[#2580eb] mb-2" /><p className="text-xs text-slate-500">رقم الطلب</p><p className="font-bold text-slate-900 text-sm font-mono" dir="ltr">{foundOrder.orderNumber}</p></div>
-              <div className="bg-white rounded-xl border border-slate-200 p-4 text-center"><FileText size={24} className="mx-auto text-[#14b8a6] mb-2" /><p className="text-xs text-slate-500">الخدمة</p><p className="font-bold text-slate-900 text-sm">{foundOrder.service}</p></div>
-              <div className="bg-white rounded-xl border border-slate-200 p-4 text-center"><Clock size={24} className="mx-auto text-[#7c3aed] mb-2" /><p className="text-xs text-slate-500">تاريخ الإنشاء</p><p className="font-bold text-slate-900 text-sm">{foundOrder.createdAt}</p></div>
-            </div>
-            {foundOrder.total && (
-              <div className="flex justify-center"><div className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#2580eb]/5 to-[#14b8a6]/5 border border-[#2580eb]/10"><span className="text-sm text-slate-500">المبلغ الإجمالي:</span><span className="text-lg font-bold gradient-text">{formatPrice(foundOrder.total, currency)}</span></div></div>
-            )}
+
+            <Card glass className="p-6">
+              <h4 className="font-bold text-slate-900 mb-4">تفاصيل الطلب</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><Hash size={16} className="text-[#2580eb] shrink-0" /><div><p className="text-[10px] text-slate-400">رقم الطلب</p><p className="text-sm font-medium text-slate-900 font-mono" dir="ltr">{foundOrder.orderNumber}</p></div></div>
+                {foundOrder.invoiceNumber && <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><FileText size={16} className="text-[#14b8a6] shrink-0" /><div><p className="text-[10px] text-slate-400">رقم الفاتورة</p><p className="text-sm font-medium text-slate-900 font-mono" dir="ltr">{foundOrder.invoiceNumber}</p></div></div>}
+                {foundOrder.customerName && <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><User size={16} className="text-[#7c3aed] shrink-0" /><div><p className="text-[10px] text-slate-400">اسم العميل</p><p className="text-sm font-medium text-slate-900">{foundOrder.customerName}</p></div></div>}
+                {foundOrder.customerEmail && <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><Mail size={16} className="text-amber-500 shrink-0" /><div><p className="text-[10px] text-slate-400">البريد الإلكتروني</p><p className="text-sm font-medium text-slate-900" dir="ltr">{foundOrder.customerEmail}</p></div></div>}
+                {foundOrder.customerPhone && <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><Phone size={16} className="text-emerald-500 shrink-0" /><div><p className="text-[10px] text-slate-400">رقم الجوال</p><p className="text-sm font-medium text-slate-900" dir="ltr">{foundOrder.customerPhone}</p></div></div>}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><Package size={16} className="text-[#2580eb] shrink-0" /><div><p className="text-[10px] text-slate-400">الخدمة</p><p className="text-sm font-medium text-slate-900">{foundOrder.service}</p></div></div>
+                {foundOrder.total ? <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><CreditCard size={16} className="text-[#7c3aed] shrink-0" /><div><p className="text-[10px] text-slate-400">المبلغ الإجمالي</p><p className="text-sm font-bold text-slate-900">{formatPrice(foundOrder.total, currency)}</p></div></div> : null}
+                {foundOrder.paymentStatus && <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><CreditCard size={16} className="text-emerald-500 shrink-0" /><div><p className="text-[10px] text-slate-400">حالة الدفع</p><p className="text-sm font-medium text-slate-900">{paymentStatusConfig[foundOrder.paymentStatus] || foundOrder.paymentStatus}</p></div></div>}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"><Calendar size={16} className="text-slate-400 shrink-0" /><div><p className="text-[10px] text-slate-400">تاريخ الطلب</p><p className="text-sm font-medium text-slate-900">{foundOrder.createdAt}</p></div></div>
+              </div>
+            </Card>
           </motion.div>
         )}
 

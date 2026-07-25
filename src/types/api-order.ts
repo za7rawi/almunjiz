@@ -11,6 +11,7 @@ export interface ApiOrder {
   customerEmail: string;
   customerPhone: string;
   notes: string;
+  internalNotes?: string;
   attachments: string[];
   paymentStatus: string;
   createdAt: string;
