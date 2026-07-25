@@ -103,7 +103,8 @@ export const ServiceSchema = z.object({
 });
 
 export const PaymentSchema = z.object({
-  invoiceId: z.string().min(1, "الفاتورة مطلوبة / Invoice is required"),
+  orderId: z.string().min(1, "الطلب مطلوب / Order is required"),
+  invoiceId: z.string().optional(),
   amount: z.number().positive("المبلغ يجب أن يكون موجباً / Amount must be positive"),
   method: z.enum([
     "MADA",

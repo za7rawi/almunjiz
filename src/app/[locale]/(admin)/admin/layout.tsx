@@ -18,12 +18,13 @@ export default function AdminLayout({
   const mounted = useIsClient();
 
   const isLoginPage = pathname.endsWith("/admin/login") || pathname.endsWith("/admin/login/");
+  const isAdmin = user?.email === 'admin@gmail.com' || user?.role === 'admin';
 
   useEffect(() => {
-    if (mounted && !isAuthenticated && !isLoginPage) {
+    if (mounted && !isLoginPage && (!isAuthenticated || !isAdmin)) {
       router.replace("/ar/admin/login");
     }
-  }, [mounted, isAuthenticated, isLoginPage, router]);
+  }, [mounted, isAuthenticated, isLoginPage, isAdmin, router]);
 
   if (!mounted) {
     return (
@@ -37,7 +38,7 @@ export default function AdminLayout({
     return <>{children}</>;
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return null;
   }
 

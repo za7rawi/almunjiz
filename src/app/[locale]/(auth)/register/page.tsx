@@ -70,7 +70,7 @@ function GoogleIcon() {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, isEmailRegistered, loginWithGoogle } = useAuthStore();
+  const { register, loginWithGoogle } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<Country>(getDefaultCountry());
@@ -136,7 +136,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     const fullPhone = `${selectedCountry.dialCode}${formData.phone}`;
-    const result = register({
+    const result = await register({
       name: formData.name.trim(),
       email: formData.email,
       phone: fullPhone,
@@ -150,8 +150,9 @@ export default function RegisterPage() {
     setLoading(false);
   };
 
-  const handleGoogleSignup = () => {
-    const result = loginWithGoogle({
+  const handleGoogleSignup = async () => {
+    const result = await loginWithGoogle({
+      idToken: '',
       name: 'مستخدم Google',
       email: `user${Date.now()}@gmail.com`,
     });

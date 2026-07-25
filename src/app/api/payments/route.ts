@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
     const userId = (session.user as Record<string, unknown>).id as string;
 
     const payment = await PaymentService.createPayment({
+      orderId: validated.data.orderId || '',
       invoiceId: validated.data.invoiceId,
       userId,
       amount: validated.data.amount,

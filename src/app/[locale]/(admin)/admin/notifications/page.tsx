@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useSyncExternalStore, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell,
@@ -12,16 +12,29 @@ import {
   AlertTriangle,
   AlertCircle,
   CheckCircle,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
-import { useLanguageStore } from '@/store/language-store';
-import { useAdminDataStore } from '@/store/admin-data-store';
-import type { NotificationType, NotificationTarget } from '@/store/admin-data-store';
 import { cn } from '@/lib/utils';
+
+type NotificationType = 'info' | 'success' | 'warning' | 'error';
+type NotificationTarget = 'all' | 'customers' | 'employees' | 'managers';
+
+interface Notification {
+  id: string;
+  title: string;
+  titleEn: string;
+  message: string;
+  messageEn: string;
+  type: NotificationType;
+  target: NotificationTarget;
+  isRead: boolean;
+  createdAt: string;
+}
 
 const typeIcons: Record<NotificationType, typeof Bell> = {
   info: Info,
@@ -48,9 +61,8 @@ type FilterType = 'ALL' | NotificationType;
 type FilterRead = 'ALL' | 'read' | 'unread';
 
 export default function NotificationsPage() {
-  const { language } = useLanguageStore();
-  const { notifications, addNotification, markAsRead, markAllAsRead, deleteNotification } =
-    useAdminDataStore();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const now = useSyncExternalStore(
     () => () => {},
     () => Date.now(),
@@ -67,6 +79,22 @@ export default function NotificationsPage() {
   const [formMessageEn, setFormMessageEn] = useState('');
   const [formType, setFormType] = useState<NotificationType>('info');
   const [formTarget, setFormTarget] = useState<NotificationTarget>('all');
+  const [sending, setSending] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/cms/notifications');
+      const data = await res.json();
+      if (data.success) setNotifications(data.data);
+    } catch {
+      console.error('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
   const filtered = useMemo(() => {
     return notifications.filter((n) => {
@@ -90,63 +118,119 @@ export default function NotificationsPage() {
     setFormTarget('all');
   }
 
-  function handleSend() {
+  async function handleSend() {
     if (!formTitle.trim() || !formMessage.trim()) return;
-    addNotification({
-      title: formTitle,
-      titleEn: formTitleEn || formTitle,
-      message: formMessage,
-      messageEn: formMessageEn || formMessage,
-      type: formType,
-      target: formTarget,
-    });
-    resetForm();
-    setIsModalOpen(false);
+    setSending(true);
+    try {
+      const res = await fetch('/api/cms/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formTitle,
+          titleEn: formTitleEn || formTitle,
+          message: formMessage,
+          messageEn: formMessageEn || formMessage,
+          type: formType,
+          target: formTarget,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications((prev) => [data.data, ...prev]);
+        resetForm();
+        setIsModalOpen(false);
+      }
+    } catch {
+      console.error('Failed to send notification');
+    } finally {
+      setSending(false);
+    }
   }
 
-  function handleDelete() {
-    if (deleteId) {
-      deleteNotification(deleteId);
-      setDeleteId(null);
+  async function handleDelete() {
+    if (!deleteId) return;
+    const prev = notifications;
+    setNotifications((prev) => prev.filter((n) => n.id !== deleteId));
+    setDeleteId(null);
+    try {
+      const res = await fetch(`/api/cms/notifications?id=${deleteId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!data.success) setNotifications(prev);
+    } catch {
+      setNotifications(prev);
+    }
+  }
+
+  async function markAsRead(id: string) {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    try {
+      await fetch('/api/cms/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isRead: true }),
+      });
+    } catch {
+      fetchNotifications();
+    }
+  }
+
+  async function markAllAsRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    try {
+      await fetch('/api/cms/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAll: true }),
+      });
+    } catch {
+      fetchNotifications();
     }
   }
 
   function relativeTime(dateStr: string): string {
     const diff = now - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return language === 'ar' ? 'الآن' : 'Just now';
-    if (mins < 60) return language === 'ar' ? `منذ ${mins} دقيقة` : `${mins}m ago`;
+    if (mins < 1) return 'الآن';
+    if (mins < 60) return `منذ ${mins} دقيقة`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return language === 'ar' ? `منذ ${hrs} ساعة` : `${hrs}h ago`;
+    if (hrs < 24) return `منذ ${hrs} ساعة`;
     const days = Math.floor(hrs / 24);
-    return language === 'ar' ? `منذ ${days} يوم` : `${days}d ago`;
+    return `منذ ${days} يوم`;
   }
 
   const filterTypeLabels: Record<FilterType, string> = {
-    ALL: language === 'ar' ? 'الكل' : 'All',
-    info: language === 'ar' ? 'معلومات' : 'Info',
-    success: language === 'ar' ? 'نجاح' : 'Success',
-    warning: language === 'ar' ? 'تحذير' : 'Warning',
-    error: language === 'ar' ? 'خطأ' : 'Error',
+    ALL: 'الكل',
+    info: 'معلومات',
+    success: 'نجاح',
+    warning: 'تحذير',
+    error: 'خطأ',
   };
 
   const filterReadLabels: Record<FilterRead, string> = {
-    ALL: language === 'ar' ? 'الكل' : 'All',
-    read: language === 'ar' ? 'مقروء' : 'Read',
-    unread: language === 'ar' ? 'غير مقروء' : 'Unread',
+    ALL: 'الكل',
+    read: 'مقروء',
+    unread: 'غير مقروء',
   };
 
   const inputClass =
     'w-full px-4 py-2.5 text-sm rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30';
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={32} className="animate-spin text-[#2580eb]" />
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="إدارة الإشعارات"
         breadcrumbs={[
-          { label: language === 'ar' ? 'الرئيسية' : 'Home', href: '/' },
-          { label: language === 'ar' ? 'الإدارة' : 'Admin', href: '/admin' },
-          { label: language === 'ar' ? 'الإشعارات' : 'Notifications' },
+          { label: 'الرئيسية', href: '/' },
+          { label: 'الإدارة', href: '/admin' },
+          { label: 'الإشعارات' },
         ]}
         actions={
           <Button
@@ -156,7 +240,7 @@ export default function NotificationsPage() {
               setIsModalOpen(true);
             }}
           >
-            {language === 'ar' ? 'إرسال إشعار جديد' : 'Send New Notification'}
+            إرسال إشعار جديد
           </Button>
         }
       />
@@ -175,9 +259,7 @@ export default function NotificationsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{total}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {language === 'ar' ? 'إجمالي الإشعارات' : 'Total Notifications'}
-                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">إجمالي الإشعارات</p>
                 </div>
               </div>
             </CardContent>
@@ -197,9 +279,7 @@ export default function NotificationsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{unread}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {language === 'ar' ? 'غير مقروء' : 'Unread'}
-                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">غير مقروء</p>
                 </div>
               </div>
             </CardContent>
@@ -219,9 +299,7 @@ export default function NotificationsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{read}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {language === 'ar' ? 'مقروء' : 'Read'}
-                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">مقروء</p>
                 </div>
               </div>
             </CardContent>
@@ -233,9 +311,7 @@ export default function NotificationsPage() {
         <CardContent>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                {language === 'ar' ? 'النوع:' : 'Type:'}
-              </span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">النوع:</span>
               {(['ALL', 'info', 'success', 'warning', 'error'] as FilterType[]).map((t) => (
                 <button
                   key={t}
@@ -253,9 +329,7 @@ export default function NotificationsPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                {language === 'ar' ? 'الحالة:' : 'Status:'}
-              </span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">الحالة:</span>
               {(['ALL', 'unread', 'read'] as FilterRead[]).map((r) => (
                 <button
                   key={r}
@@ -279,7 +353,7 @@ export default function NotificationsPage() {
                 iconLeft={<CheckCheck size={16} />}
                 onClick={markAllAsRead}
               >
-                {language === 'ar' ? 'تحديد الكل كمقروء' : 'Mark All Read'}
+                تحديد الكل كمقروء
               </Button>
             )}
           </div>
@@ -293,9 +367,7 @@ export default function NotificationsPage() {
                   className="text-center py-12"
                 >
                   <Bell size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                  <p className="text-slate-500 dark:text-slate-400">
-                    {language === 'ar' ? 'لا توجد إشعارات' : 'No notifications'}
-                  </p>
+                  <p className="text-slate-500 dark:text-slate-400">لا توجد إشعارات</p>
                 </motion.div>
               ) : (
                 filtered.map((notification, index) => {
@@ -325,13 +397,8 @@ export default function NotificationsPage() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4
-                            className={cn(
-                              'text-sm font-semibold truncate',
-                              'text-slate-900 dark:text-white'
-                            )}
-                          >
-                            {language === 'ar' ? notification.title : notification.titleEn}
+                          <h4 className={cn('text-sm font-semibold truncate', 'text-slate-900 dark:text-white')}>
+                            {notification.title}
                           </h4>
                           {!notification.isRead && (
                             <span className="w-2 h-2 rounded-full bg-[#2580eb] shrink-0" />
@@ -341,7 +408,7 @@ export default function NotificationsPage() {
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
-                          {language === 'ar' ? notification.message : notification.messageEn}
+                          {notification.message}
                         </p>
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
                           {relativeTime(notification.createdAt)}
@@ -357,7 +424,7 @@ export default function NotificationsPage() {
                             onClick={() => markAsRead(notification.id)}
                             className="text-[#2580eb]"
                           >
-                            {language === 'ar' ? 'مقروء' : 'Read'}
+                            مقروء
                           </Button>
                         )}
                         <Button
@@ -379,34 +446,28 @@ export default function NotificationsPage() {
 
       <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} size="lg">
         <ModalHeader>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            {language === 'ar' ? 'إرسال إشعار جديد' : 'Send New Notification'}
-          </h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">إرسال إشعار جديد</h2>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  {language === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)'}
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">العنوان (عربي)</label>
                 <input
                   type="text"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder={language === 'ar' ? 'أدخل العنوان' : 'Enter title'}
+                  placeholder="أدخل العنوان"
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  {language === 'ar' ? 'العنوان (إنجليزي)' : 'Title (English)'}
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">العنوان (إنجليزي)</label>
                 <input
                   type="text"
                   value={formTitleEn}
                   onChange={(e) => setFormTitleEn(e.target.value)}
-                  placeholder={language === 'ar' ? 'أدخل العنوان بالإنجليزية' : 'Enter title in English'}
+                  placeholder="Enter title in English"
                   className={inputClass}
                 />
               </div>
@@ -414,25 +475,21 @@ export default function NotificationsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  {language === 'ar' ? 'الرسالة (عربي)' : 'Message (Arabic)'}
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">الرسالة (عربي)</label>
                 <textarea
                   value={formMessage}
                   onChange={(e) => setFormMessage(e.target.value)}
-                  placeholder={language === 'ar' ? 'أدخل الرسالة' : 'Enter message'}
+                  placeholder="أدخل الرسالة"
                   rows={3}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  {language === 'ar' ? 'الرسالة (إنجليزي)' : 'Message (English)'}
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">الرسالة (إنجليزي)</label>
                 <textarea
                   value={formMessageEn}
                   onChange={(e) => setFormMessageEn(e.target.value)}
-                  placeholder={language === 'ar' ? 'أدخل الرسالة بالإنجليزية' : 'Enter message in English'}
+                  placeholder="Enter message in English"
                   rows={3}
                   className={inputClass}
                 />
@@ -441,9 +498,7 @@ export default function NotificationsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  {language === 'ar' ? 'نوع الإشعار' : 'Notification Type'}
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">نوع الإشعار</label>
                 <div className="flex flex-wrap gap-2">
                   {(['info', 'success', 'warning', 'error'] as NotificationType[]).map((t) => {
                     const Icon = typeIcons[t];
@@ -468,16 +523,14 @@ export default function NotificationsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  {language === 'ar' ? 'الهدف' : 'Target'}
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">الهدف</label>
                 <div className="flex flex-wrap gap-2">
                   {(
                     [
-                      { value: 'all' as const, label: language === 'ar' ? 'الجميع' : 'Everyone' },
-                      { value: 'customers' as const, label: language === 'ar' ? 'العملاء' : 'Customers' },
-                      { value: 'employees' as const, label: language === 'ar' ? 'الموظفون' : 'Employees' },
-                      { value: 'managers' as const, label: language === 'ar' ? 'المديرون' : 'Managers' },
+                      { value: 'all' as const, label: 'الجميع' },
+                      { value: 'customers' as const, label: 'العملاء' },
+                      { value: 'employees' as const, label: 'الموظفون' },
+                      { value: 'managers' as const, label: 'المديرون' },
                     ] as const
                   ).map((opt) => (
                     <button
@@ -501,37 +554,33 @@ export default function NotificationsPage() {
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
-            {language === 'ar' ? 'إلغاء' : 'Cancel'}
+            إلغاء
           </Button>
           <Button
-            iconLeft={<Send size={16} />}
+            iconLeft={sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             onClick={handleSend}
-            disabled={!formTitle.trim() || !formMessage.trim()}
+            disabled={!formTitle.trim() || !formMessage.trim() || sending}
           >
-            {language === 'ar' ? 'إرسال' : 'Send'}
+            إرسال
           </Button>
         </ModalFooter>
       </Modal>
 
       <Modal open={!!deleteId} onClose={() => setDeleteId(null)} size="sm">
         <ModalHeader>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            {language === 'ar' ? 'حذف الإشعار' : 'Delete Notification'}
-          </h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">حذف الإشعار</h2>
         </ModalHeader>
         <ModalBody>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            {language === 'ar'
-              ? 'هل أنت متأكد من حذف هذا الإشعار؟ لا يمكن التراجع عن هذا الإجراء.'
-              : 'Are you sure you want to delete this notification? This action cannot be undone.'}
+            هل أنت متأكد من حذف هذا الإشعار؟ لا يمكن التراجع عن هذا الإجراء.
           </p>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => setDeleteId(null)}>
-            {language === 'ar' ? 'إلغاء' : 'Cancel'}
+            إلغاء
           </Button>
           <Button variant="danger" iconLeft={<Trash2 size={16} />} onClick={handleDelete}>
-            {language === 'ar' ? 'حذف' : 'Delete'}
+            حذف
           </Button>
         </ModalFooter>
       </Modal>

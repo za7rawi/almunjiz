@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,16 +14,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { useAdminCMSStore } from '@/store/admin-cms-store';
 import { useAuthStore } from '@/store/auth-store';
-import { useOrderStore } from '@/store/order-store';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
-import { usePaymentGatewayStore } from '@/store/payment-gateway-store';
-import { useCouponStore } from '@/store/coupon-store';
 import { getAvailablePaymentMethods, type PaymentMethodDisplay } from '@/lib/payment-providers';
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
+import type { ServiceData } from '@/lib/services-data';
 
 interface UploadedFile {
   id: string;
@@ -87,13 +84,25 @@ export default function CheckoutPage() {
   const serviceId = searchParams.get('service');
   const router = useRouter();
   const { user } = useAuthStore();
-  const { addOrder } = useOrderStore();
   const { language } = useLanguageStore();
   const { dir } = useDirection();
   const { currency } = useCurrencyStore();
-  const { gateways } = usePaymentGatewayStore();
-  const { validateCoupon, applyCoupon } = useCouponStore();
-  const { services: servicesData } = useAdminCMSStore();
+
+  const [servicesData, setServicesData] = useState<ServiceData[]>([]);
+  const [activeGateways, setActiveGateways] = useState<Array<{ id: string; name: string; slug: string; isActive: boolean; isDefault: boolean; supportsApplePay?: boolean; supportsGooglePay?: boolean; supportsInstallments?: boolean; logo?: string }>>([]);
+
+  useEffect(() => {
+    fetch('/api/services?limit=100')
+      .then((r) => r.json())
+      .then((data) => { if (data.success && data.data) setServicesData(data.data); })
+      .catch(() => {});
+    fetch('/api/admin/gateways')
+      .then((r) => r.json())
+      .then((data) => { if (data.success) setActiveGateways(data.data.filter((g: { isActive: boolean }) => g.isActive)); })
+      .catch(() => {});
+  }, []);
+
+  const paymentMethods = useMemo(() => getAvailablePaymentMethods(activeGateways), [activeGateways]);
 
   const [loading, setLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -117,17 +126,7 @@ export default function CheckoutPage() {
     notes: '',
   }));
 
-  const service = useMemo(() => servicesData.find((s) => s.id === serviceId), [serviceId]);
-
-  const activeGateways = useMemo(
-    () => gateways.filter((g) => g.isActive),
-    [gateways],
-  );
-
-  const paymentMethods: PaymentMethodDisplay[] = useMemo(
-    () => getAvailablePaymentMethods(gateways),
-    [gateways],
-  );
+  const service = useMemo(() => servicesData.find((s) => s.id === serviceId), [serviceId, servicesData]);
 
   const displayMethods = useMemo(
     () => paymentMethods.filter((m) => activeGateways.some((g) => g.id === m.id)),
@@ -160,11 +159,23 @@ export default function CheckoutPage() {
     return Object.keys(errors).length === 0;
   }, [formData]);
 
-  const handleApplyPromo = () => {
+  const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
-    const result = validateCoupon(promoCode, price, serviceId || undefined);
-    setPromoResult(result);
-    if (result.valid) applyCoupon(promoCode);
+    try {
+      const res = await fetch('/api/cms/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: promoCode, amount: price, serviceId: serviceId || undefined }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setPromoResult(data.data);
+      } else {
+        setPromoResult({ valid: false, discount: 0, discountType: 'percentage', message: data.error || 'خطأ في التحقق من الكوبون' });
+      }
+    } catch {
+      setPromoResult({ valid: false, discount: 0, discountType: 'percentage', message: 'خطأ في الاتصال' });
+    }
   };
 
   const addFiles = useCallback((files: FileList | File[]) => {
@@ -211,24 +222,27 @@ export default function CheckoutPage() {
     if (!validate() || !service) return;
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 2000));
-      const orderNumber = generateOrderNumber();
-      addOrder({
-        id: Date.now().toString(),
-        orderNumber,
-        serviceName: service.name,
-        serviceId: service.id,
-        amount: price,
-        tax: 0,
-        total,
-        status: 'PENDING',
-        statusAr: 'قيد الانتظار',
-        description: formData.notes,
-        attachments: uploadedFiles.map((f) => f.name),
-        paymentMethod: selectedGatewayId,
-        createdAt: new Date().toISOString(),
-        timeline: [{ status: 'PENDING', label: 'تم استلام الطلب', date: new Date().toISOString() }],
+      const orderRes = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: service.id,
+          serviceName: service.name,
+          amount: price,
+          discount: discount,
+          total,
+          currency: currency === 'SAR' ? 'SAR' : currency === 'USD' ? 'USD' : currency === 'AED' ? 'AED' : 'SAR',
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: `${formData.phoneCode}${formData.phone}`,
+          notes: formData.notes,
+          attachments: uploadedFiles.map((f) => f.name),
+          promoCode: promoResult?.valid ? promoCode : undefined,
+        }),
       });
+      const orderData = await orderRes.json();
+      if (!orderData.success) throw new Error(orderData.error || 'Failed to create order');
+      const orderNumber = orderData.data.orderNumber;
       router.push(`/payment/success?orderId=${orderNumber}`);
     } catch {
       router.push(`/payment/failed?orderId=`);

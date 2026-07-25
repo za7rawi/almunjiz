@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,10 +14,10 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useAdminCMSStore } from '@/store/admin-cms-store';
 import { useCurrencyStore } from '@/store/currency-store';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice } from '@/lib/currency';
+import type { ServiceData } from '@/lib/services-data';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   Globe, FileText, Car, Plane, Building2, Headphones, GraduationCap,
@@ -38,11 +38,44 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const { currency } = useCurrencyStore();
   const { isAuthenticated } = useAuthStore();
-  const { services: servicesData } = useAdminCMSStore();
-  const service = useMemo(() => servicesData.find((s) => s.id === id), [id, servicesData]);
 
+  const [service, setService] = useState<ServiceData | null | undefined>(undefined);
+  const [allServices, setAllServices] = useState<ServiceData[]>([]);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchService() {
+      try {
+        const [serviceRes, allRes] = await Promise.all([
+          fetch(`/api/services/${id}`),
+          fetch('/api/services?limit=100'),
+        ]);
+        const serviceJson = await serviceRes.json();
+        const allJson = await allRes.json();
+        if (serviceJson.success) {
+          setService(serviceJson.data);
+        } else {
+          setService(null);
+        }
+        if (allJson.success) {
+          setAllServices(allJson.data.data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch service:', e);
+        setService(null);
+      }
+    }
+    fetchService();
+  }, [id]);
+
+  if (service === undefined) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#2580eb] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!service) {
     return (
@@ -62,7 +95,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const Icon = iconMap[service.icon] || Star;
-  const relatedServices = servicesData
+  const relatedServices = allServices
     .filter((s) => s.category === service.category && s.id !== service.id && s.isActive)
     .slice(0, 3);
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { usePaymentGatewayStore, type PaymentGatewayConfig, type GatewayProvider } from '@/store/payment-gateway-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -29,6 +28,37 @@ import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { cn } from '@/lib/utils';
 
+type GatewayProvider = 'tap' | 'moyasar' | 'hyperpay' | 'paytabs' | 'myfatoorah' | 'stripe' | 'edfapay' | 'tamara' | 'tabby' | 'custom';
+
+interface PaymentGatewayConfig {
+  id: string;
+  name: string;
+  nameEn: string;
+  provider: GatewayProvider;
+  publicKey: string;
+  secretKey: string;
+  merchantId?: string;
+  webhookSecret?: string;
+  apiEndpoint?: string;
+  environment: 'sandbox' | 'production';
+  callbackUrl?: string;
+  webhookUrl?: string;
+  currency: string;
+  supportedCountries: string[];
+  supportedCurrencies: string[];
+  isActive: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  supportsApplePay: boolean;
+  supportsGooglePay: boolean;
+  supportsInstallments: boolean;
+  description?: string;
+  logo?: string;
+  config?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 const PROVIDER_COLORS: Record<GatewayProvider, { bg: string; text: string; label: string; labelEn: string }> = {
   tap: { bg: 'bg-blue-100 text-blue-700', text: 'text-blue-600', label: 'تيب', labelEn: 'Tap' },
   moyasar: { bg: 'bg-emerald-100 text-emerald-700', text: 'text-emerald-600', label: 'موياسر', labelEn: 'Moyasar' },
@@ -36,6 +66,9 @@ const PROVIDER_COLORS: Record<GatewayProvider, { bg: string; text: string; label
   paytabs: { bg: 'bg-orange-100 text-orange-700', text: 'text-orange-600', label: 'بايتابس', labelEn: 'PayTabs' },
   myfatoorah: { bg: 'bg-teal-100 text-teal-700', text: 'text-teal-600', label: 'ميفاتورة', labelEn: 'MyFatoorah' },
   stripe: { bg: 'bg-violet-100 text-violet-700', text: 'text-violet-600', label: 'سترايب', labelEn: 'Stripe' },
+  edfapay: { bg: 'bg-cyan-100 text-cyan-700', text: 'text-cyan-600', label: 'ادفع باي', labelEn: 'EdfaPay' },
+  tamara: { bg: 'bg-pink-100 text-pink-700', text: 'text-pink-600', label: 'تمارا', labelEn: 'Tamara' },
+  tabby: { bg: 'bg-yellow-100 text-yellow-700', text: 'text-yellow-600', label: 'تابي', labelEn: 'Tabby' },
   custom: { bg: 'bg-slate-100 text-slate-700', text: 'text-slate-600', label: 'مخصص', labelEn: 'Custom' },
 };
 
@@ -62,18 +95,23 @@ function emptyGateway(): Omit<PaymentGatewayConfig, 'id' | 'createdAt' | 'update
     webhookUrl: '',
     currency: 'SAR',
     supportedCountries: [],
+    supportedCurrencies: ['SAR'],
     isActive: true,
     isDefault: false,
+    sortOrder: 0,
+    supportsApplePay: false,
+    supportsGooglePay: false,
+    supportsInstallments: false,
   };
 }
 
 export default function GatewaysPage() {
-  const { gateways, addGateway, updateGateway, deleteGateway, toggleGateway, setDefault, testConnection } =
-    usePaymentGatewayStore();
   const { language } = useLanguageStore();
   const { isRtl } = useDirection();
   const isAr = language === 'ar';
 
+  const [gateways, setGateways] = useState<PaymentGatewayConfig[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingGateway, setEditingGateway] = useState<PaymentGatewayConfig | null>(null);
@@ -83,20 +121,35 @@ export default function GatewaysPage() {
   const [testingId, setTestingId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  const fetchGateways = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/gateways');
+      const data = await res.json();
+      if (data.success) setGateways(data.data);
+    } catch {
+      addToast('error', isAr ? 'فشل تحميل البوابات' : 'Failed to load gateways');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAr]);
+
   const addToast = useCallback((type: Toast['type'], message: string) => {
     const id = Math.random().toString(36).slice(2);
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   }, []);
 
+  useEffect(() => { fetchGateways(); }, [fetchGateways]);
+
   const filteredGateways = gateways.filter((gw) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
       gw.name.toLowerCase().includes(q) ||
-      gw.nameEn.toLowerCase().includes(q) ||
+      (gw.nameEn || gw.name).toLowerCase().includes(q) ||
       gw.provider.toLowerCase().includes(q) ||
-      gw.currency.toLowerCase().includes(q)
+      (gw.supportedCurrencies || ['SAR']).some(c => c.toLowerCase().includes(q))
     );
   });
 
@@ -112,64 +165,139 @@ export default function GatewaysPage() {
       name: gw.name,
       nameEn: gw.nameEn,
       provider: gw.provider,
-      publicKey: gw.publicKey,
-      secretKey: gw.secretKey,
+      publicKey: gw.publicKey || '',
+      secretKey: gw.secretKey || '',
       merchantId: gw.merchantId || '',
       webhookSecret: gw.webhookSecret || '',
       environment: gw.environment,
       callbackUrl: gw.callbackUrl || '',
       webhookUrl: gw.webhookUrl || '',
-      currency: gw.currency,
+      currency: (gw.supportedCurrencies || ['SAR'])[0],
       supportedCountries: [...gw.supportedCountries],
+      supportedCurrencies: [...(gw.supportedCurrencies || ['SAR'])],
       isActive: gw.isActive,
       isDefault: gw.isDefault,
+      sortOrder: gw.sortOrder || 0,
+      supportsApplePay: gw.supportsApplePay || false,
+      supportsGooglePay: gw.supportsGooglePay || false,
+      supportsInstallments: gw.supportsInstallments || false,
     });
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim() || !form.nameEn.trim()) {
       addToast('error', isAr ? 'يرجى إدخال اسم البوابة' : 'Gateway name is required');
       return;
     }
-    if (!form.publicKey.trim() || !form.secretKey.trim()) {
-      addToast('error', isAr ? 'يرجى إدخال المفاتيح المطلوبة' : 'Required keys are missing');
+    if (!form.secretKey.trim()) {
+      addToast('error', isAr ? 'يرجى إدخال المفتاح السري' : 'Secret key is required');
       return;
     }
 
-    if (editingGateway) {
-      updateGateway(editingGateway.id, {
-        ...form,
-        merchantId: form.merchantId || undefined,
-        webhookSecret: form.webhookSecret || undefined,
-        callbackUrl: form.callbackUrl || undefined,
-        webhookUrl: form.webhookUrl || undefined,
-      });
-      addToast('success', isAr ? 'تم تحديث البوابة بنجاح' : 'Gateway updated successfully');
-    } else {
-      addGateway({
-        ...form,
-        merchantId: form.merchantId || undefined,
-        webhookSecret: form.webhookSecret || undefined,
-        callbackUrl: form.callbackUrl || undefined,
-        webhookUrl: form.webhookUrl || undefined,
-      });
-      addToast('success', isAr ? 'تم إضافة البوابة بنجاح' : 'Gateway added successfully');
+    const slug = form.nameEn.toLowerCase().replace(/\s+/g, '-');
+    const payload = {
+      name: form.name,
+      displayName: form.name,
+      displayNameEn: form.nameEn,
+      slug,
+      provider: form.provider.toUpperCase(),
+      publicKey: form.publicKey,
+      secretKey: form.secretKey,
+      merchantId: form.merchantId || undefined,
+      webhookSecret: form.webhookSecret || undefined,
+      environment: form.environment.toUpperCase(),
+      isActive: form.isActive,
+      isDefault: form.isDefault,
+      supportedCurrencies: [form.currency],
+      supportedCountries: form.supportedCountries,
+    };
+
+    try {
+      if (editingGateway) {
+        const res = await fetch(`/api/admin/gateways/${editingGateway.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          addToast('success', isAr ? 'تم تحديث البوابة بنجاح' : 'Gateway updated successfully');
+          fetchGateways();
+        } else {
+          addToast('error', data.error || 'Failed to update gateway');
+        }
+      } else {
+        const res = await fetch('/api/admin/gateways', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+          addToast('success', isAr ? 'تم إضافة البوابة بنجاح' : 'Gateway added successfully');
+          fetchGateways();
+        } else {
+          addToast('error', data.error || 'Failed to add gateway');
+        }
+      }
+      setShowModal(false);
+    } catch {
+      addToast('error', isAr ? 'حدث خطأ' : 'An error occurred');
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteGateway(id);
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/gateways/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        addToast('success', isAr ? 'تم حذف البوابة' : 'Gateway deleted');
+        fetchGateways();
+      }
+    } catch {
+      addToast('error', isAr ? 'فشل الحذف' : 'Failed to delete');
+    }
     setShowDeleteConfirm(null);
-    addToast('success', isAr ? 'تم حذف البوابة' : 'Gateway deleted');
   };
 
   const handleTest = async (id: string) => {
     setTestingId(id);
-    const result = await testConnection(id);
+    try {
+      const res = await fetch(`/api/admin/gateways/${id}/test`, { method: 'POST' });
+      const data = await res.json();
+      addToast(data.data?.success ? 'success' : 'error', data.data?.message || 'Test completed');
+    } catch {
+      addToast('error', isAr ? 'فشل اختبار الاتصال' : 'Connection test failed');
+    }
     setTestingId(null);
-    addToast(result.success ? 'success' : 'error', result.message);
+  };
+
+  const handleToggle = async (id: string, isActive: boolean) => {
+    try {
+      await fetch(`/api/admin/gateways/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
+      fetchGateways();
+    } catch {
+      addToast('error', isAr ? 'فشل التحديث' : 'Failed to update');
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      await fetch(`/api/admin/gateways/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDefault: true }),
+      });
+      addToast('success', isAr ? 'تم تعيين البوابة الافتراضية' : 'Default gateway set');
+      fetchGateways();
+    } catch {
+      addToast('error', isAr ? 'فشل التحديث' : 'Failed to update');
+    }
   };
 
   const toggleSecretKey = (id: string) => {
@@ -264,7 +392,7 @@ export default function GatewaysPage() {
                             )}
                           </div>
                           <button
-                            onClick={() => toggleGateway(gw.id)}
+                            onClick={() => handleToggle(gw.id, gw.isActive)}
                             className="shrink-0"
                             title={gw.isActive ? (isAr ? 'معطل' : 'Active') : (isAr ? 'معطل' : 'Inactive')}
                           >
@@ -293,7 +421,7 @@ export default function GatewaysPage() {
                             {gw.environment}
                           </span>
                           <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400">
-                            {gw.currency}
+                            {(gw.supportedCurrencies || ['SAR']).join(', ')}
                           </span>
                           {gw.supportedCountries.length > 0 && (
                             <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 flex items-center gap-1">
@@ -357,10 +485,7 @@ export default function GatewaysPage() {
                         <div className="flex items-center gap-1.5">
                           {!gw.isDefault && (
                             <button
-                              onClick={() => {
-                                setDefault(gw.id);
-                                addToast('success', isAr ? 'تم تعيين كافتراضي' : 'Set as default');
-                              }}
+                              onClick={() => handleSetDefault(gw.id)}
                               className="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-500/10 text-amber-500 transition-colors"
                               title={isAr ? 'تعيين كافتراضي' : 'Set as default'}
                             >

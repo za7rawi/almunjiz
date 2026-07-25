@@ -1,60 +1,54 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { OrderService } from "@/services/order.service";
-import { OrderSchema } from "@/validators";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+function generateOrderNumber(): string {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `AM-${ts}-${rand}`;
+}
+
+function generateInvoiceNumber(): string {
+  return `INV-${Date.now().toString(36).toUpperCase().slice(0, 6)}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') ?? '1');
+    const limit = parseInt(searchParams.get('limit') ?? '50');
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
 
-    if (!session?.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "غير مصرح / Unauthorized",
-          error: null,
-        },
-        { status: 401 }
-      );
+    const where: Record<string, unknown> = {};
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { customerName: { contains: search, mode: 'insensitive' } },
+        { customerEmail: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "12");
-    const status = searchParams.get("status");
-    const search = searchParams.get("search");
-
-    const userId = (session.user as Record<string, unknown>).id as string;
-    const role = (session.user as Record<string, unknown>).role as string;
-    const isAdmin = ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role);
-
-    const result = await OrderService.findAll({
-      page,
-      limit,
-      status: status ?? undefined,
-      userId: isAdmin ? undefined : userId,
-      search: search ?? undefined,
-    });
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: { service: true, gateway: true, payments: true, invoice: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: result.data,
-      meta: result.meta,
-      message: "تم جلب الطلبات بنجاح / Orders fetched successfully",
-      error: null,
+      data: orders,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error("Error fetching orders:", error);
+    console.error('Failed to fetch orders:', error);
     return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        message: "حدث خطأ في جلب الطلبات / Error fetching orders",
-        error: String(error),
-      },
+      { success: false, error: 'Failed to fetch orders' },
       { status: 500 }
     );
   }
@@ -62,102 +56,111 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "غير مصرح / Unauthorized",
-          error: null,
-        },
-        { status: 401 }
-      );
-    }
-
     const body = await request.json();
-    const validated = OrderSchema.safeParse(body);
+    const {
+      serviceId,
+      serviceName,
+      amount,
+      discount = 0,
+      total,
+      currency = 'SAR',
+      customerName,
+      customerEmail,
+      customerPhone,
+      notes,
+      attachments = [],
+      promoCode,
+    } = body;
 
-    if (!validated.success) {
+    if (!serviceId || !customerName || !customerEmail) {
       return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "بيانات غير صحيحة / Invalid data",
-          error: validated.error.flatten().fieldErrors,
-        },
+        { success: false, error: 'Missing required fields: serviceId, customerName, customerEmail' },
         { status: 400 }
       );
     }
 
-    const service = await prisma.service.findUnique({
-      where: { id: validated.data.serviceId },
-    });
-
+    const service = await prisma.service.findUnique({ where: { id: serviceId } });
     if (!service) {
       return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "الخدمة غير موجودة / Service not found",
-          error: null,
-        },
+        { success: false, error: 'Service not found' },
         { status: 404 }
       );
     }
 
-    if (!service.isActive) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "الخدمة غير متاحة حالياً / Service is currently unavailable",
-          error: null,
+    const orderNumber = generateOrderNumber();
+    const invoiceNumber = generateInvoiceNumber();
+
+    let userId = '';
+    const existingUser = await prisma.user.findUnique({ where: { email: customerEmail } });
+    if (existingUser) {
+      userId = existingUser.id;
+    } else {
+      const newUser = await prisma.user.create({
+        data: {
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone || '',
+          password: 'social-auth',
+          role: 'CUSTOMER',
+          emailVerified: true,
         },
-        { status: 400 }
-      );
+      });
+      userId = newUser.id;
     }
 
-    const userId = (session.user as Record<string, unknown>).id as string;
-
-    const order = await OrderService.create({
-      userId,
-      serviceId: validated.data.serviceId,
-      notes: validated.data.notes,
-      attachments: validated.data.attachments,
-    });
-
-    await prisma.notification.create({
+    const order = await prisma.order.create({
       data: {
+        orderNumber,
         userId,
-        title: "تم إنشاء طلب جديد",
-        titleEn: "New order created",
-        message: `تم إنشاء طلب رقم ${order.orderNumber} بنجاح`,
-        messageEn: `Order ${order.orderNumber} created successfully`,
-        type: "ORDER",
-        link: `/dashboard/orders/${order.id}`,
+        serviceId,
+        amount: Number(amount),
+        discount: Number(discount),
+        tax: 0,
+        total: Number(total || amount),
+        currency,
+        paymentStatus: 'PENDING',
+        customerName,
+        customerEmail,
+        customerPhone: customerPhone || '',
+        notes: notes || '',
+        attachments: attachments || [],
+        status: 'PENDING',
+      },
+      include: { service: true },
+    });
+
+    await prisma.orderTimeline.create({
+      data: {
+        orderId: order.id,
+        status: 'PENDING',
+        description: 'تم استلام الطلب بنجاح',
       },
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: order,
-        message: "تم إنشاء الطلب بنجاح / Order created successfully",
-        error: null,
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        orderId: order.id,
+        userId,
+        subtotal: Number(amount),
+        tax: 0,
+        discount: Number(discount),
+        total: Number(total || amount),
+        status: 'PENDING',
       },
-      { status: 201 }
-    );
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...order,
+        invoiceNumber: invoice.invoiceNumber,
+      },
+    }, { status: 201 });
   } catch (error) {
-    console.error("Error creating order:", error);
+    console.error('Failed to create order:', error);
     return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        message: "حدث خطأ في إنشاء الطلب / Error creating order",
-        error: String(error),
-      },
+      { success: false, error: 'Failed to create order' },
       { status: 500 }
     );
   }

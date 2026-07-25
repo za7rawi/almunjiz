@@ -10,8 +10,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { servicesData } from '@/lib/services-data';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
 
@@ -47,9 +47,31 @@ const item = {
   show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 20 } },
 };
 
+interface ServiceItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  duration: string;
+  price: number;
+  isActive: boolean;
+}
+
 export function ServicesSection() {
-  const topServices = servicesData.filter((s) => s.isActive).slice(0, 8);
+  const [topServices, setTopServices] = useState<ServiceItem[]>([]);
   const { currency } = useCurrencyStore();
+
+  useEffect(() => {
+    fetch('/api/services?limit=8')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) {
+          setTopServices(json.data.data.filter((s: ServiceItem) => s.isActive));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section className="py-20 lg:py-28">

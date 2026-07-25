@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   File,
@@ -12,15 +12,26 @@ import {
   Globe,
   Search,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
-import { useLanguageStore } from '@/store/language-store';
 import { cn } from '@/lib/utils';
-import { useAdminDataStore, type StaticPage } from '@/store/admin-data-store';
+
+interface StaticPage {
+  id: string;
+  title: string;
+  titleEn: string;
+  slug: string;
+  content: string;
+  contentEn: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const inputClass = cn(
   'w-full px-4 py-2.5 text-sm rounded-xl',
@@ -39,14 +50,29 @@ const emptyForm: Omit<StaticPage, 'id' | 'createdAt' | 'updatedAt'> = {
 };
 
 export default function AdminPagesPage() {
-  const { language } = useLanguageStore();
-  const { pages, addPage, updatePage, deletePage } = useAdminDataStore();
-
+  const [pages, setPages] = useState<StaticPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingPage, setEditingPage] = useState<StaticPage | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  const fetchPages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/cms/pages');
+      const data = await res.json();
+      if (data.success) setPages(data.data);
+    } catch {
+      console.error('Failed to load pages');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchPages(); }, [fetchPages]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return pages;
@@ -94,25 +120,65 @@ export default function AdminPagesPage() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title || !form.titleEn || !form.slug) return;
-    if (editingPage) {
-      updatePage(editingPage.id, form);
-    } else {
-      addPage(form);
+    setSaving(true);
+    try {
+      if (editingPage) {
+        const res = await fetch(`/api/cms/pages/${editingPage.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPages((prev) => prev.map((p) => (p.id === editingPage.id ? { ...p, ...form, updatedAt: new Date().toISOString() } : p)));
+        }
+      } else {
+        const res = await fetch('/api/cms/pages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPages((prev) => [...prev, { ...form, id: data.data.id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }]);
+        }
+      }
+      setShowModal(false);
+    } catch {
+      console.error('Failed to save page');
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string) => {
-    deletePage(id);
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/cms/pages/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setPages((prev) => prev.filter((p) => p.id !== id));
+      }
+    } catch {
+      console.error('Failed to delete page');
+    }
     setDeleteConfirm(null);
   };
 
-  const togglePublish = (id: string) => {
+  const togglePublish = async (id: string) => {
     const page = pages.find((p) => p.id === id);
-    if (page) {
-      updatePage(id, { isPublished: !page.isPublished });
+    if (!page) return;
+    const newPublished = !page.isPublished;
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, isPublished: newPublished } : p)));
+    try {
+      await fetch(`/api/cms/pages/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublished: newPublished }),
+      });
+    } catch {
+      setPages((prev) => prev.map((p) => (p.id === id ? { ...p, isPublished: !newPublished } : p)));
     }
   };
 
@@ -123,6 +189,14 @@ export default function AdminPagesPage() {
       day: 'numeric',
     }).format(new Date(dateStr));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={32} className="animate-spin text-[#2580eb]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -395,8 +469,8 @@ export default function AdminPagesPage() {
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={!form.title || !form.titleEn || !form.slug}
-            iconLeft={<ExternalLink size={16} />}
+            disabled={!form.title || !form.titleEn || !form.slug || saving}
+            iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
           >
             {editingPage ? 'حفظ التعديلات' : 'إضافة الصفحة'}
           </Button>

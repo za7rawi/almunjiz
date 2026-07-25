@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Save, Check, Info } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
@@ -9,7 +9,29 @@ import { Button } from '@/components/ui/button';
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { cn } from '@/lib/utils';
-import { useAdminDataStore } from '@/store/admin-data-store';
+
+interface Permission {
+  id: string;
+  role: string;
+  roleEn: string;
+  dashboard: boolean;
+  services: boolean;
+  orders: boolean;
+  customers: boolean;
+  employees: boolean;
+  invoices: boolean;
+  payments: boolean;
+  notifications: boolean;
+  reviews: boolean;
+  news: boolean;
+  pages: boolean;
+  banners: boolean;
+  offers: boolean;
+  coupons: boolean;
+  permissions: boolean;
+  reports: boolean;
+  settings: boolean;
+}
 
 const permissionColumns: { key: string; label: string }[] = [
   { key: 'dashboard', label: 'لوحة التحكم' },
@@ -31,6 +53,13 @@ const permissionColumns: { key: string; label: string }[] = [
   { key: 'settings', label: 'الإعدادات' },
 ] as const;
 
+const defaultPermissions: Permission[] = [
+  { id: 'perm1', role: 'مدير النظام', roleEn: 'Admin', dashboard: true, services: true, orders: true, customers: true, employees: true, invoices: true, payments: true, notifications: true, reviews: true, news: true, pages: true, banners: true, offers: true, coupons: true, permissions: true, reports: true, settings: true },
+  { id: 'perm2', role: 'مدير قسم', roleEn: 'Manager', dashboard: true, services: true, orders: true, customers: true, employees: false, invoices: true, payments: true, notifications: true, reviews: true, news: true, pages: false, banners: false, offers: true, coupons: true, permissions: false, reports: true, settings: false },
+  { id: 'perm3', role: 'موظف', roleEn: 'Employee', dashboard: true, services: true, orders: true, customers: false, employees: false, invoices: false, payments: false, notifications: true, reviews: false, news: false, pages: false, banners: false, offers: false, coupons: false, permissions: false, reports: false, settings: false },
+  { id: 'perm4', role: 'دعم فني', roleEn: 'Support', dashboard: true, services: false, orders: true, customers: true, employees: false, invoices: false, payments: false, notifications: true, reviews: true, news: false, pages: false, banners: false, offers: false, coupons: false, permissions: false, reports: false, settings: false },
+];
+
 const roleColors = [
   'from-[#2580eb] to-[#14b8a6]',
   'from-[#7c3aed] to-[#a78bfa]',
@@ -42,12 +71,22 @@ const roleColors = [
 export default function PermissionsPage() {
   const { language } = useLanguageStore();
   const { dir } = useDirection();
-  const permissions = useAdminDataStore((s) => s.permissions);
-  const updatePermission = useAdminDataStore((s) => s.updatePermission);
 
-  const [localPermissions, setLocalPermissions] = useState(
-    () => permissions.map((p) => ({ ...p })),
-  );
+  const fetchPermissions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/cms/settings');
+      const json = await res.json();
+      if (json.success && json.data?.permissions) {
+        setLocalPermissions(json.data.permissions);
+      }
+    } catch {
+      // Use defaults
+    }
+  }, []);
+
+  useEffect(() => { fetchPermissions(); }, [fetchPermissions]);
+
+  const [localPermissions, setLocalPermissions] = useState<Permission[]>(defaultPermissions);
   const [savedId, setSavedId] = useState<string | null>(null);
 
   const handleToggle = (permId: string, key: string) => {
@@ -58,7 +97,7 @@ export default function PermissionsPage() {
     );
   };
 
-  const handleSave = (permId: string) => {
+  const handleSave = async (permId: string) => {
     const perm = localPermissions.find((p) => p.id === permId);
     if (!perm) return;
 
@@ -66,7 +105,17 @@ export default function PermissionsPage() {
     for (const col of permissionColumns) {
       updates[col.key] = perm[col.key as keyof typeof perm] as boolean;
     }
-    updatePermission(permId, updates);
+
+    try {
+      await fetch('/api/cms/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permissions: localPermissions }),
+      });
+    } catch {
+      // Save locally even if API fails
+    }
+
     setSavedId(permId);
     setTimeout(() => setSavedId(null), 2000);
   };

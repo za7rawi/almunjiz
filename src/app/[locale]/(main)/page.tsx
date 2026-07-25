@@ -34,8 +34,8 @@ import {
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { Button } from '@/components/ui/button';
-import { useAdminCMSStore, type ServiceData } from '@/store/admin-cms-store';
 import { blogsData } from '@/lib/blogs-data';
+import type { ServiceData } from '@/lib/services-data';
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
@@ -104,46 +104,62 @@ const categoryData = [
   { icon: Headphones, titleAr: 'الاستشارات', titleEn: 'Consulting', count: 1, color: '#EF4444', bgColor: 'bg-[#EF4444]/10' },
 ];
 
-const whyUsReasons = [
-  { icon: Zap, titleAr: 'السرعة', titleEn: 'Speed', descAr: 'ننجز طلباتك في أسرع وقت ممكن بفضل أنظمتنا المتطورة وفريقنا المتميز.', descEn: 'We complete your requests in the fastest time possible with our advanced systems and distinguished team.' },
-  { icon: Shield, titleAr: 'الأمان', titleEn: 'Security', descAr: 'نضمن حماية بياناتك ومعلوماتك الشخصية بأعلى معايير الأمان الإلكترونية.', descEn: 'We ensure the protection of your data and personal information with the highest electronic security standards.' },
-  { icon: BadgePercent, titleAr: 'الأسعار', titleEn: 'Prices', descAr: 'نقدم أسعاراً تنافسية و transparentة مع جودة خدمة عالية.', descEn: 'We offer competitive and transparent prices with high service quality.' },
-  { icon: Headphones, titleAr: 'الدعم', titleEn: 'Support', descAr: 'فريق دعم متاح على مدار الساعة للإجابة على استفساراتك ومساعدتك.', descEn: 'Support team available around the clock to answer your inquiries and help you.' },
-  { icon: Award, titleAr: 'الجودة', titleEn: 'Quality', descAr: 'نلتزم بأعلى معايير الجودة في تقديم جميع خدماتنا الإلكترونية.', descEn: 'We are committed to the highest quality standards in providing all our electronic services.' },
-  { icon: Heart, titleAr: 'الثقة', titleEn: 'Trust', descAr: ' أكثر من 10,000 عميل يثقون بنا وينصحون بخدماتنا لعملائهم.', descEn: 'Over 10,000 clients trust us and recommend our services to others.' },
-];
-
-const steps = [
-  { num: '01', titleAr: 'اختر الخدمة', titleEn: 'Choose Service', descAr: 'تصفح خدماتنا واختر ما يناسب احتياجاتك', descEn: 'Browse our services and pick what fits your needs' },
-  { num: '02', titleAr: 'أرسل طلبك', titleEn: 'Submit Request', descAr: 'املأ البيانات المطلوبة وأرسل طلبك بسهولة', descEn: 'Fill in the required details and submit easily' },
-  { num: '03', titleAr: 'تتبع واحصل', titleEn: 'Track & Receive', descAr: 'تابع حالة طلبك واستلم نتائجك', descEn: 'Track your order status and receive your results' },
-];
-
-const testimonials = [
-  { nameAr: 'أحمد الشمري', nameEn: 'Ahmad Al-Shammari', roleAr: 'رائد أعمال', roleEn: 'Entrepreneur', textAr: 'خدمة ممتازة وسريعة جداً. تم إنجاز تأشيرتي خلال يومين فقط. أنصح الجميع بالمنجز.', textEn: 'Excellent and very fast service. My visa was completed in just two days. I recommend everyone to use Al-Munjiz.', rating: 5 },
-  { nameAr: 'سارة العتيبي', nameEn: 'Sara Al-Otaibi', roleAr: 'موظفة حكومية', roleEn: 'Government Employee', textAr: 'منصة سهلة الاستخدام وفريق دعم متعاون. ساعدوني في نقل ملكية سيارتي بسرعة.', textEn: 'Easy to use platform and a helpful support team. They helped me transfer my car ownership quickly.', rating: 5 },
-  { nameAr: 'خالد المطيري', nameEn: 'Khalid Al-Mutairi', roleAr: 'مدير شركة', roleEn: 'Company Manager', textAr: 'أفضل منصة للخدمات الإلكترونية في المنطقة. أسعار منافسة وجودة عالية.', textEn: 'The best electronic services platform in the region. Competitive prices and high quality.', rating: 5 },
-];
-
-const faqItems = [
-  { qAr: 'كيف أستطيع طلب خدمة من المنجز؟', qEn: 'How can I request a service from Al-Munjiz?', aAr: 'ببساطة تصفح خدماتنا، اختر الخدمة التي تحتاجها، املأ البيانات المطلوبة، ثم أرسل طلبك. سيتواصل معك فريقنا لتأكيد التفاصيل.', aEn: 'Simply browse our services, choose the service you need, fill in the required data, then submit your request. Our team will contact you to confirm the details.' },
-  { qAr: 'ما هي طرق الدفع المتاحة؟', qEn: 'What payment methods are available?', aAr: 'نقبل جميع بطاقات الائتمان والخصم،تحويل بنكي، و Apple Pay و STC Pay.', aEn: 'We accept all credit and debit cards, bank transfers, Apple Pay, and STC Pay.' },
-  { qAr: 'كم تستغرق إنجاز المعاملات؟', qEn: 'How long do transactions take?', aAr: 'تختلف المدة حسب نوع الخدمة. بعض الخدمات تُنجز فوراً، والبعض الآخر يستغرق من 1 إلى 7 أيام عمل.', aEn: 'The duration varies by service type. Some are completed instantly, while others take 1 to 7 business days.' },
-  { qAr: 'هل يمكنني تتبع حالة طلبي؟', qEn: 'Can I track my order status?', aAr: 'نعم، يمكنك تتبع حالة طلبك من خلال منصتنا أو عبر رابط التتبع الذي يُرسل إلى بريدك الإلكتروني.', aEn: 'Yes, you can track your order status through our platform or via the tracking link sent to your email.' },
-  { qAr: 'ما هي سياسة استرداد المبالغ؟', qEn: 'What is the refund policy?', aAr: 'في حال عدم إمكانية إنجاز الخدمة، يتم استرداد المبلغ بالكامل خلال 3-5 أيام عمل.', aEn: 'If the service cannot be completed, the full amount is refunded within 3-5 business days.' },
-];
-
 const blogPostsPreview = blogsData.slice(0, 3);
+
+const whyUsIconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  Zap, Shield, BadgePercent, Headphones, Award, Heart,
+};
+
+interface HomepageData {
+  hero: {
+    titleAr: string; titleEn: string;
+    subtitleAr: string; subtitleEn: string;
+    descriptionAr: string; descriptionEn: string;
+    button1Ar: string; button1En: string;
+    button2Ar: string; button2En: string;
+  };
+  stats: { number: string; labelAr: string; labelEn: string }[];
+  whyUs: { icon: string; titleAr: string; titleEn: string; descAr: string; descEn: string }[];
+  steps: { num: string; titleAr: string; titleEn: string; descAr: string; descEn: string }[];
+  testimonials: { nameAr: string; nameEn: string; roleAr: string; roleEn: string; textAr: string; textEn: string; rating: number }[];
+  faq: { questionAr: string; questionEn: string; answerAr: string; answerEn: string }[];
+}
 
 export default function HomePage() {
   const { language } = useLanguageStore();
-  const { services: servicesData } = useAdminCMSStore();
   const { isRtl } = useDirection();
   const isAr = language === 'ar';
   const Arrow = isRtl ? ArrowLeft : ArrowRight;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [servicesData, setServicesData] = useState<ServiceData[]>([]);
+  const [homepage, setHomepage] = useState<HomepageData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [servicesRes, homepageRes] = await Promise.all([
+          fetch('/api/services?limit=100'),
+          fetch('/api/cms/homepage'),
+        ]);
+        const servicesJson = await servicesRes.json();
+        const homepageJson = await homepageRes.json();
+        if (servicesJson.success) {
+          setServicesData(servicesJson.data.data);
+        }
+        if (homepageJson.success) {
+          setHomepage(homepageJson.data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch homepage data:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const popularServices = servicesData.filter((s) => popularServiceIds.includes(s.id));
 
@@ -163,6 +179,16 @@ export default function HomePage() {
   const toggleFaq = useCallback((i: number) => {
     setOpenFaq((prev) => (prev === i ? null : i));
   }, []);
+
+  if (loading || !homepage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#2580eb] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const { hero, stats, whyUs, steps, testimonials, faq } = homepage;
 
   return (
     <div className="overflow-hidden">
@@ -197,12 +223,10 @@ export default function HomePage() {
             transition={{ duration: 0.8, ease: 'easeOut' }}
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold mb-4 sm:mb-6 leading-tight">
-              <span className="text-white">{isAr ? 'منصة ' : 'Platform '}</span>
+              <span className="text-white">{isAr ? hero.titleAr : hero.titleEn} </span>
               <span className="bg-gradient-to-r from-[#2580eb] via-[#14b8a6] to-[#2580eb] bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-premium">
-                {isAr ? 'المنجز' : 'Al-Munjiz'}
+                {isAr ? hero.subtitleAr : hero.subtitleEn}
               </span>
-              <br />
-              <span className="text-white/90">{isAr ? 'للخدمات الإلكترونية' : 'for Electronic Services'}</span>
             </h1>
           </motion.div>
 
@@ -212,7 +236,7 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
             className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            {isAr ? 'حلول سريعة وموثوقة لاحتياجاتك الإلكترونية' : 'Fast and reliable solutions for your electronic needs'}
+            {isAr ? hero.descriptionAr : hero.descriptionEn}
           </motion.p>
 
           <motion.div
@@ -223,12 +247,12 @@ export default function HomePage() {
           >
             <Link href="/services">
               <Button size="lg" className="min-w-[200px]">
-                {isAr ? 'تصفح خدماتنا' : 'Browse Services'}
+                {isAr ? hero.button1Ar : hero.button1En}
               </Button>
             </Link>
             <Link href="/track-order">
               <Button variant="secondary" size="lg" className="min-w-[200px] border-white/25 text-white hover:bg-white/10">
-                {isAr ? 'تتبع طلبك' : 'Track Order'}
+                {isAr ? hero.button2Ar : hero.button2En}
               </Button>
             </Link>
           </motion.div>
@@ -242,15 +266,10 @@ export default function HomePage() {
         >
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { icon: Users, number: '+10,000', labelAr: 'عميل', labelEn: 'Clients' },
-                { icon: Zap, number: '+50,000', labelAr: 'طلب', labelEn: 'Orders' },
-                { icon: Clock, number: '24/7', labelAr: 'دعم', labelEn: 'Support' },
-                { icon: Award, number: '%99', labelAr: 'رضا', labelEn: 'Satisfaction' },
-              ].map((stat) => (
+              {stats.map((stat) => (
                 <div key={stat.labelAr} className="flex items-center gap-3 p-4 rounded-2xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.06]">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2580eb]/20 to-[#14b8a6]/20 flex items-center justify-center shrink-0">
-                    <stat.icon size={18} className="text-[#14b8a6]" />
+                    <Users size={18} className="text-[#14b8a6]" />
                   </div>
                   <div>
                     <div className="text-lg md:text-xl font-extrabold text-white">{stat.number}</div>
@@ -432,22 +451,25 @@ export default function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {whyUsReasons.map((reason, i) => (
-              <motion.div
-                key={reason.titleAr}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="p-6 rounded-2xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] hover:border-white/[0.15] transition-all duration-500"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2580eb]/20 to-[#14b8a6]/20 flex items-center justify-center mb-4">
-                  <reason.icon size={22} className="text-[#14b8a6]" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2">{isAr ? reason.titleAr : reason.titleEn}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{isAr ? reason.descAr : reason.descEn}</p>
-              </motion.div>
-            ))}
+            {whyUs.map((reason, i) => {
+              const WhyIcon = whyUsIconMap[reason.icon] || Zap;
+              return (
+                <motion.div
+                  key={reason.titleAr}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="p-6 rounded-2xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] hover:border-white/[0.15] transition-all duration-500"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2580eb]/20 to-[#14b8a6]/20 flex items-center justify-center mb-4">
+                    <WhyIcon size={22} className="text-[#14b8a6]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{isAr ? reason.titleAr : reason.titleEn}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{isAr ? reason.descAr : reason.descEn}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -582,7 +604,7 @@ export default function HomePage() {
           </motion.div>
 
           <div className="space-y-3">
-            {faqItems.map((item, i) => (
+            {faq.map((item, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -596,7 +618,7 @@ export default function HomePage() {
                   className="w-full flex items-center justify-between gap-4 p-5 text-start hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   <span className="font-semibold text-slate-900">
-                    {isAr ? item.qAr : item.qEn}
+                    {isAr ? item.questionAr : item.questionEn}
                   </span>
                   <motion.div
                     animate={{ rotate: openFaq === i ? 180 : 0 }}
@@ -616,7 +638,7 @@ export default function HomePage() {
                   className="overflow-hidden"
                 >
                   <div className="px-5 pb-5 text-slate-500 text-sm leading-relaxed">
-                    {isAr ? item.aAr : item.aEn}
+                    {isAr ? item.answerAr : item.answerEn}
                   </div>
                 </motion.div>
               </motion.div>

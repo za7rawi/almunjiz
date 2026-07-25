@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Phone,
@@ -18,6 +18,19 @@ import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { NAVIGATION_LINKS, CONTACT_INFO, APP_NAME } from '@/constants';
 import { Logo } from '@/components/ui/logo';
+
+interface SiteSettings {
+  phone?: string;
+  email?: string;
+  whatsapp?: string;
+  address?: string;
+  addressEn?: string;
+  workingHours?: string;
+  workingHoursEn?: string;
+  twitter?: string;
+  instagram?: string;
+  youtube?: string;
+}
 
 const serviceLinks = [
   { label: 'التأشيرات', labelEn: 'Visas', href: '/services' },
@@ -53,17 +66,47 @@ const YoutubeIcon = () => (
   </svg>
 );
 
-const socialIcons = [
-  { Icon: TwitterIcon, href: 'https://twitter.com/almunjiz', label: 'Twitter / X' },
-  { Icon: InstagramIcon, href: 'https://instagram.com/almunjiz', label: 'Instagram' },
-  { Icon: YoutubeIcon, href: 'https://youtube.com/@almunjiz', label: 'YouTube' },
-  { Icon: MessageCircle, href: 'https://wa.me/962791038472', label: 'WhatsApp' },
-];
-
 export function Footer() {
   const { language } = useLanguageStore();
   const { dir, isRtl } = useDirection();
   const [subscribed, setSubscribed] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
+
+  useEffect(() => {
+    fetch('/api/cms/settings')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSiteSettings({
+            phone: json.data.phone || json.data.contact_phone,
+            email: json.data.email || json.data.contact_email,
+            whatsapp: json.data.whatsapp || json.data.contact_whatsapp,
+            address: json.data.address || json.data.contact_address,
+            addressEn: json.data.addressEn || json.data.contact_address_en,
+            workingHours: json.data.workingHours,
+            workingHoursEn: json.data.workingHoursEn,
+            twitter: json.data.twitter,
+            instagram: json.data.instagram,
+            youtube: json.data.youtube,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const phone = siteSettings.phone || CONTACT_INFO.phone;
+  const email = siteSettings.email || CONTACT_INFO.email;
+  const whatsapp = siteSettings.whatsapp || CONTACT_INFO.whatsapp;
+  const whatsappNum = whatsapp.replace(/[^0-9]/g, '');
+  const whatsappMessage = encodeURIComponent(CONTACT_INFO.whatsappMessage);
+  const address = language === 'ar' ? (siteSettings.address || CONTACT_INFO.address) : (siteSettings.addressEn || CONTACT_INFO.addressEn);
+
+  const socialIcons = [
+    { Icon: TwitterIcon, href: siteSettings.twitter || 'https://twitter.com/almunjiz', label: 'Twitter / X' },
+    { Icon: InstagramIcon, href: siteSettings.instagram || 'https://instagram.com/almunjiz', label: 'Instagram' },
+    { Icon: YoutubeIcon, href: siteSettings.youtube || 'https://youtube.com/@almunjiz', label: 'YouTube' },
+    { Icon: MessageCircle, href: `https://wa.me/${whatsappNum}`, label: 'WhatsApp' },
+  ];
 
   const handleNewsletter = () => {
     setSubscribed(true);
@@ -171,26 +214,26 @@ export function Footer() {
             <div className="space-y-3.5">
               <ContactItem
                 icon={<Phone size={15} />}
-                text={CONTACT_INFO.phone}
-                href={`tel:${CONTACT_INFO.phone}`}
+                text={phone}
+                href={`tel:${phone}`}
                 color="text-[#2580eb]"
               />
               <ContactItem
                 icon={<Mail size={15} />}
-                text={CONTACT_INFO.email}
-                href={`mailto:${CONTACT_INFO.email}`}
+                text={email}
+                href={`mailto:${email}`}
                 color="text-[#14b8a6]"
               />
               <ContactItem
                 icon={<MessageCircle size={15} />}
                 text="WhatsApp"
-                href={`https://wa.me/962791038472?text=${encodeURIComponent('مرحباً، أريد الاستفسار عن خدمات المنجز')}`}
+                href={`https://wa.me/${whatsappNum}?text=${whatsappMessage}`}
                 color="text-[#25D366]"
                 target="_blank"
               />
               <ContactItem
                 icon={<MapPin size={15} />}
-                text={language === 'ar' ? CONTACT_INFO.address : CONTACT_INFO.addressEn}
+                text={address}
                 color="text-[#7c3aed]"
               />
               <ContactItem

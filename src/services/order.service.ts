@@ -5,6 +5,13 @@ export class OrderService {
   static async create(data: {
     userId: string;
     serviceId: string;
+    amount?: number;
+    total?: number;
+    discount?: number;
+    currency?: string;
+    customerName?: string;
+    customerEmail?: string;
+    customerPhone?: string;
     notes?: string;
     attachments?: string[];
   }) {
@@ -15,7 +22,13 @@ export class OrderService {
         userId: data.userId,
         serviceId: data.serviceId,
         orderNumber,
-        amount: 0,
+        amount: data.amount || 0,
+        discount: data.discount || 0,
+        total: data.total || data.amount || 0,
+        currency: data.currency || 'SAR',
+        customerName: data.customerName || '',
+        customerEmail: data.customerEmail || '',
+        customerPhone: data.customerPhone || '',
         notes: data.notes,
         attachments: data.attachments ?? [],
       },

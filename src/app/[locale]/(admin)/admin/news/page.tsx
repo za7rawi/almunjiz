@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Newspaper,
@@ -12,15 +12,14 @@ import {
   Search,
   Calendar,
   Check,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
-import { useLanguageStore } from '@/store/language-store';
 import { cn } from '@/lib/utils';
-import { useAdminDataStore, type NewsArticle } from '@/store/admin-data-store';
 
 const categories = [
   'خدمات',
@@ -30,6 +29,21 @@ const categories = [
   'فعاليات',
   'نصائح',
 ];
+
+interface NewsArticle {
+  id: string;
+  title: string;
+  titleEn: string;
+  summary: string;
+  summaryEn: string;
+  content: string;
+  contentEn: string;
+  image: string;
+  category: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const inputClass = cn(
   'w-full px-4 py-2.5 text-sm rounded-xl',
@@ -51,15 +65,30 @@ const emptyForm: Omit<NewsArticle, 'id' | 'createdAt' | 'updatedAt'> = {
 };
 
 export default function AdminNewsPage() {
-  const { language } = useLanguageStore();
-  const { news, addNews, updateNews, deleteNews } = useAdminDataStore();
-
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingNews, setEditingNews] = useState<NewsArticle | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [activeTab, setActiveTab] = useState<'basic' | 'content' | 'settings'>('basic');
+
+  const fetchNews = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/cms/news');
+      const data = await res.json();
+      if (data.success) setNews(data.data);
+    } catch {
+      console.error('Failed to load news');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNews(); }, [fetchNews]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return news;
@@ -102,25 +131,65 @@ export default function AdminNewsPage() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title || !form.titleEn) return;
-    if (editingNews) {
-      updateNews(editingNews.id, form);
-    } else {
-      addNews(form);
+    setSaving(true);
+    try {
+      if (editingNews) {
+        const res = await fetch(`/api/cms/news/${editingNews.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setNews((prev) => prev.map((n) => (n.id === editingNews.id ? { ...n, ...form, updatedAt: new Date().toISOString() } : n)));
+        }
+      } else {
+        const res = await fetch('/api/cms/news', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setNews((prev) => [...prev, { ...form, id: data.data.id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }]);
+        }
+      }
+      setShowModal(false);
+    } catch {
+      console.error('Failed to save news');
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteNews(id);
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/cms/news/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setNews((prev) => prev.filter((n) => n.id !== id));
+      }
+    } catch {
+      console.error('Failed to delete news');
+    }
     setDeleteConfirm(null);
   };
 
-  const togglePublish = (id: string) => {
+  const togglePublish = async (id: string) => {
     const article = news.find((n) => n.id === id);
-    if (article) {
-      updateNews(id, { isPublished: !article.isPublished });
+    if (!article) return;
+    const newPublished = !article.isPublished;
+    setNews((prev) => prev.map((n) => (n.id === id ? { ...n, isPublished: newPublished } : n)));
+    try {
+      await fetch(`/api/cms/news/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublished: newPublished }),
+      });
+    } catch {
+      setNews((prev) => prev.map((n) => (n.id === id ? { ...n, isPublished: !newPublished } : n)));
     }
   };
 
@@ -137,6 +206,14 @@ export default function AdminNewsPage() {
     { key: 'content' as const, label: 'المحتوى' },
     { key: 'settings' as const, label: 'الإعدادات' },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={32} className="animate-spin text-[#2580eb]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -425,8 +502,8 @@ export default function AdminNewsPage() {
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={!form.title || !form.titleEn}
-            iconLeft={<Check size={16} />}
+            disabled={!form.title || !form.titleEn || saving}
+            iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
           >
             {editingNews ? 'حفظ التعديلات' : 'إضافة الخبر'}
           </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp,
@@ -17,72 +17,28 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguageStore } from '@/store/language-store';
 import { cn } from '@/lib/utils';
-
-const revenueValues = [4200, 5800, 4900, 7200, 6100, 8500, 7800];
 const dayLabels = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-const maxRevenue = Math.max(...revenueValues);
-
-const servicesData = [
-  { label: 'تأشيرات', value: 45, color: '#2580eb', gradientFrom: '#2580eb', gradientTo: '#14b8a6' },
-  { label: 'عقود', value: 32, color: '#7c3aed', gradientFrom: '#7c3aed', gradientTo: '#a78bfa' },
-  { label: 'مركبات', value: 28, color: '#14b8a6', gradientFrom: '#14b8a6', gradientTo: '#5eead4' },
-  { label: 'تأمين', value: 18, color: '#f59e0b', gradientFrom: '#f59e0b', gradientTo: '#fbbf24' },
-  { label: 'ترجمة', value: 12, color: '#ef4444', gradientFrom: '#ef4444', gradientTo: '#f87171' },
-];
-const maxService = Math.max(...servicesData.map((s) => s.value));
-
-const ratingsData = [
-  { stars: 5, percentage: 55, color: '#2580eb' },
-  { stars: 4, percentage: 25, color: '#14b8a6' },
-  { stars: 3, percentage: 12, color: '#7c3aed' },
-  { stars: 2, percentage: 5, color: '#f59e0b' },
-  { stars: 1, percentage: 3, color: '#ef4444' },
-];
-
-const monthlyValues = [3200, 4100, 3800, 5200, 6100, 7500];
 const monthLabels = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
-const maxMonthly = Math.max(...monthlyValues);
 
-const statsCards = [
-  {
-    label: 'إجمالي الإيرادات',
-    value: '125,000 ر.س',
-    icon: DollarSign,
-    color: '#16a34a',
-    bgColor: '#16a34a15',
-    trend: 'up',
-    trendValue: '+12.5%',
-  },
-  {
-    label: 'إجمالي الطلبات',
-    value: '1,234',
-    icon: Package,
-    color: '#2580eb',
-    bgColor: '#2580eb15',
-    trend: 'up',
-    trendValue: '+8.2%',
-  },
-  {
-    label: 'عملاء جدد',
-    value: '856',
-    icon: Users,
-    color: '#7c3aed',
-    bgColor: '#7c3aed15',
-    trend: 'up',
-    trendValue: '+15.3%',
-  },
-  {
-    label: 'معدل التحويل',
-    value: '3.2%',
-    icon: TrendingUp,
-    color: '#14b8a6',
-    bgColor: '#14b8a615',
-    trend: 'up',
-    trendValue: '+0.8%',
-  },
+const serviceColors: Record<string, { color: string; gradientFrom: string; gradientTo: string }> = {
+  'تأشيرات': { color: '#2580eb', gradientFrom: '#2580eb', gradientTo: '#14b8a6' },
+  'عقود': { color: '#7c3aed', gradientFrom: '#7c3aed', gradientTo: '#a78bfa' },
+  'مركبات': { color: '#14b8a6', gradientFrom: '#14b8a6', gradientTo: '#5eead4' },
+  'تأمين': { color: '#f59e0b', gradientFrom: '#f59e0b', gradientTo: '#fbbf24' },
+  'ترجمة': { color: '#ef4444', gradientFrom: '#ef4444', gradientTo: '#f87171' },
+};
+
+const fallbackColors = [
+  { color: '#2580eb', gradientFrom: '#2580eb', gradientTo: '#14b8a6' },
+  { color: '#7c3aed', gradientFrom: '#7c3aed', gradientTo: '#a78bfa' },
+  { color: '#14b8a6', gradientFrom: '#14b8a6', gradientTo: '#5eead4' },
+  { color: '#f59e0b', gradientFrom: '#f59e0b', gradientTo: '#fbbf24' },
+  { color: '#ef4444', gradientFrom: '#ef4444', gradientTo: '#f87171' },
 ];
 
-function BarChartSection() {
+function BarChartSection({ revenueValues }: { revenueValues: number[] }) {
+  const maxRevenue = Math.max(...revenueValues, 1);
+
   return (
     <Card>
       <CardContent>
@@ -178,7 +134,9 @@ function BarChartSection() {
   );
 }
 
-function HorizontalBarChartSection() {
+function HorizontalBarChartSection({ servicesData }: { servicesData: { label: string; value: number; color: string; gradientFrom: string; gradientTo: string }[] }) {
+  const maxService = Math.max(...servicesData.map((s) => s.value), 1);
+
   return (
     <Card>
       <CardContent>
@@ -187,7 +145,7 @@ function HorizontalBarChartSection() {
             <h3 className="font-bold text-slate-900 dark:text-white text-lg">الطلبات حسب الخدمة</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">توزيع الطلبات على الخدمات</p>
           </div>
-          <Badge variant="primary" size="sm">5 خدمات</Badge>
+          <Badge variant="primary" size="sm">{servicesData.length} خدمات</Badge>
         </div>
         <div className="space-y-5">
           {servicesData.map((service, i) => (
@@ -216,6 +174,14 @@ function HorizontalBarChartSection() {
 }
 
 function DonutChartSection() {
+  const ratingsData = [
+    { stars: 5, percentage: 55, color: '#2580eb' },
+    { stars: 4, percentage: 25, color: '#14b8a6' },
+    { stars: 3, percentage: 12, color: '#7c3aed' },
+    { stars: 2, percentage: 5, color: '#f59e0b' },
+    { stars: 1, percentage: 3, color: '#ef4444' },
+  ];
+
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
 
@@ -297,7 +263,8 @@ function DonutChartSection() {
   );
 }
 
-function LineChartSection() {
+function LineChartSection({ monthlyValues }: { monthlyValues: number[] }) {
+  const maxMonthly = Math.max(...monthlyValues, 1);
   const svgWidth = 350;
   const svgHeight = 220;
   const paddingX = 45;
@@ -306,17 +273,17 @@ function LineChartSection() {
   const chartHeight = svgHeight - paddingY * 2;
 
   const points = monthlyValues.map((val, i) => ({
-    x: paddingX + (i / (monthlyValues.length - 1)) * chartWidth,
+    x: paddingX + (i / Math.max(monthlyValues.length - 1, 1)) * chartWidth,
     y: paddingY + chartHeight - (val / maxMonthly) * chartHeight,
   }));
 
-  const areaPath = [
+  const areaPath = points.length > 0 ? [
     `M ${points[0].x} ${paddingY + chartHeight}`,
     `L ${points[0].x} ${points[0].y}`,
     ...points.slice(1).map((p) => `L ${p.x} ${p.y}`),
     `L ${points[points.length - 1].x} ${paddingY + chartHeight}`,
     'Z',
-  ].join(' ');
+  ].join(' ') : '';
 
   return (
     <Card>
@@ -366,13 +333,15 @@ function LineChartSection() {
                 </g>
               );
             })}
-            <motion.path
-              d={areaPath}
-              fill="url(#lineAreaGradient)"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-            />
+            {areaPath && (
+              <motion.path
+                d={areaPath}
+                fill="url(#lineAreaGradient)"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.8 }}
+              />
+            )}
             <motion.path
               d={points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')}
               fill="none"
@@ -419,9 +388,116 @@ function LineChartSection() {
 
 export default function AdminReportsPage() {
   const { language } = useLanguageStore();
+  const [orders, setOrders] = useState<{ id: string; serviceName: string; total: number; status: string; createdAt: string; customerEmail?: string; customerName?: string }[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/orders?limit=100')
+      .then((r) => r.json())
+      .then((data) => { if (data.success && data.data) setOrders(data.data); })
+      .catch(() => {});
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+    if (dateFrom) {
+      result = result.filter((o) => o.createdAt >= dateFrom);
+    }
+    if (dateTo) {
+      result = result.filter((o) => o.createdAt <= dateTo + 'T23:59:59');
+    }
+    return result;
+  }, [orders, dateFrom, dateTo]);
+
+  const revenueValues = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(now);
+      day.setDate(now.getDate() - (6 - i));
+      const dayStr = day.toISOString().slice(0, 10);
+      return filteredOrders
+        .filter((o) => o.createdAt.startsWith(dayStr))
+        .reduce((sum, o) => sum + o.total, 0);
+    });
+  }, [filteredOrders]);
+
+  const monthlyValues = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const month = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const prefix = month.toISOString().slice(0, 7);
+      return filteredOrders
+        .filter((o) => o.createdAt.startsWith(prefix))
+        .reduce((sum, o) => sum + o.total, 0);
+    });
+  }, [filteredOrders]);
+
+  const servicesData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredOrders.forEach((o) => {
+      counts[o.serviceName] = (counts[o.serviceName] || 0) + 1;
+    });
+    const total = filteredOrders.length || 1;
+    return Object.entries(counts)
+      .map(([name, count], idx) => {
+        const colors = serviceColors[name] || fallbackColors[idx % fallbackColors.length];
+        return {
+          label: name,
+          value: Math.round((count / total) * 100),
+          ...colors,
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [filteredOrders]);
+
+  const statsCards = useMemo(() => {
+    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.total, 0);
+    const totalOrders = filteredOrders.length;
+    const statuses = new Set(filteredOrders.map((o) => o.customerEmail || o.customerName).filter(Boolean));
+    const completed = filteredOrders.filter((o) => o.status === 'completed' || o.status === 'delivered').length;
+    const conversionRate = totalOrders > 0 ? ((completed / totalOrders) * 100).toFixed(1) + '%' : '0%';
+
+    return [
+      {
+        label: 'إجمالي الإيرادات',
+        value: `${totalRevenue.toLocaleString()} ر.س`,
+        icon: DollarSign,
+        color: '#16a34a',
+        bgColor: '#16a34a15',
+        trend: 'up' as const,
+        trendValue: '+12.5%',
+      },
+      {
+        label: 'إجمالي الطلبات',
+        value: totalOrders.toLocaleString(),
+        icon: Package,
+        color: '#2580eb',
+        bgColor: '#2580eb15',
+        trend: 'up' as const,
+        trendValue: '+8.2%',
+      },
+      {
+        label: 'عملاء جدد',
+        value: statuses.size.toLocaleString(),
+        icon: Users,
+        color: '#7c3aed',
+        bgColor: '#7c3aed15',
+        trend: 'up' as const,
+        trendValue: '+15.3%',
+      },
+      {
+        label: 'معدل التحويل',
+        value: conversionRate,
+        icon: TrendingUp,
+        color: '#14b8a6',
+        bgColor: '#14b8a615',
+        trend: 'up' as const,
+        trendValue: '+0.8%',
+      },
+    ];
+  }, [filteredOrders]);
 
   const handleExport = () => {
     setExporting(true);
@@ -523,14 +599,14 @@ export default function AdminReportsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <BarChartSection />
+          <BarChartSection revenueValues={revenueValues} />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <HorizontalBarChartSection />
+          <HorizontalBarChartSection servicesData={servicesData} />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -544,7 +620,7 @@ export default function AdminReportsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <LineChartSection />
+          <LineChartSection monthlyValues={monthlyValues} />
         </motion.div>
       </div>
 

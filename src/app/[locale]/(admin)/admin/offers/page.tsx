@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Tag,
@@ -12,15 +12,33 @@ import {
   Percent,
   Calendar,
   Hash,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
-import { useLanguageStore } from '@/store/language-store';
 import { cn } from '@/lib/utils';
-import { useAdminDataStore, type Offer, type DiscountType } from '@/store/admin-data-store';
+
+type DiscountType = 'percentage' | 'fixed';
+
+interface Offer {
+  id: string;
+  title: string;
+  titleEn: string;
+  description: string;
+  descriptionEn: string;
+  discount: number;
+  discountType: DiscountType;
+  code: string;
+  startDate: string;
+  endDate: string;
+  maxUses: number;
+  usedCount: number;
+  isActive: boolean;
+  createdAt: string;
+}
 
 const inputClass = cn(
   'w-full px-4 py-2.5 text-sm rounded-xl',
@@ -46,13 +64,28 @@ const emptyForm: OfferFormData = {
 };
 
 export default function AdminOffersPage() {
-  const { language } = useLanguageStore();
-  const { offers, addOffer, updateOffer, deleteOffer, toggleOfferActive } = useAdminDataStore();
-
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState<OfferFormData>(emptyForm);
+
+  const fetchOffers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/cms/offers');
+      const data = await res.json();
+      if (data.success) setOffers(data.data);
+    } catch {
+      console.error('Failed to load offers');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchOffers(); }, [fetchOffers]);
 
   const stats = useMemo(() => {
     const active = offers.filter((o) => o.isActive).length;
@@ -87,19 +120,66 @@ export default function AdminOffersPage() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title || !form.titleEn || !form.code) return;
-    if (editingOffer) {
-      updateOffer(editingOffer.id, form);
-    } else {
-      addOffer(form);
+    setSaving(true);
+    try {
+      if (editingOffer) {
+        const res = await fetch(`/api/cms/offers/${editingOffer.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setOffers((prev) => prev.map((o) => (o.id === editingOffer.id ? { ...o, ...form } : o)));
+        }
+      } else {
+        const res = await fetch('/api/cms/offers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setOffers((prev) => [...prev, { ...form, id: data.data.id, usedCount: 0, createdAt: new Date().toISOString() }]);
+        }
+      }
+      setShowModal(false);
+    } catch {
+      console.error('Failed to save offer');
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteOffer(id);
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/cms/offers/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setOffers((prev) => prev.filter((o) => o.id !== id));
+      }
+    } catch {
+      console.error('Failed to delete offer');
+    }
     setDeleteConfirm(null);
+  };
+
+  const toggleOfferActive = async (id: string) => {
+    const offer = offers.find((o) => o.id === id);
+    if (!offer) return;
+    const newActive = !offer.isActive;
+    setOffers((prev) => prev.map((o) => (o.id === id ? { ...o, isActive: newActive } : o)));
+    try {
+      await fetch(`/api/cms/offers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newActive }),
+      });
+    } catch {
+      setOffers((prev) => prev.map((o) => (o.id === id ? { ...o, isActive: !newActive } : o)));
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -114,6 +194,14 @@ export default function AdminOffersPage() {
     if (offer.maxUses === 0) return 0;
     return Math.min((offer.usedCount / offer.maxUses) * 100, 100);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={32} className="animate-spin text-[#2580eb]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -439,7 +527,8 @@ export default function AdminOffersPage() {
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={!form.title || !form.titleEn || !form.code}
+            disabled={!form.title || !form.titleEn || !form.code || saving}
+            iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : undefined}
           >
             {editingOffer ? 'حفظ التعديلات' : 'إضافة العرض'}
           </Button>

@@ -1,0 +1,113 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { createPaymentProvider } from '@/lib/payment-providers';
+import { writeAuditLog } from '@/lib/audit-log';
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { transactionId, gatewayId, orderId } = body;
+
+    if (!transactionId || !gatewayId) {
+      return NextResponse.json(
+        { success: false, error: 'transactionId and gatewayId are required' },
+        { status: 400 }
+      );
+    }
+
+    const gateway = await prisma.paymentGateway.findUnique({ where: { id: gatewayId } });
+    if (!gateway) {
+      return NextResponse.json(
+        { success: false, error: 'Gateway not found' },
+        { status: 404 }
+      );
+    }
+
+    const provider = createPaymentProvider({
+      id: gateway.id,
+      slug: gateway.slug,
+      provider: gateway.provider,
+      publicKey: gateway.publicKey,
+      secretKey: gateway.secretKey,
+      merchantId: gateway.merchantId,
+      webhookSecret: gateway.webhookSecret,
+      apiEndpoint: gateway.apiEndpoint,
+      environment: gateway.environment,
+      config: gateway.config as Record<string, unknown> | null,
+    });
+
+    const result = await provider.verifyPayment(transactionId);
+
+    if (result.success && orderId) {
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (order) {
+        const newPaymentStatus = result.status === 'COMPLETED' ? 'PAID' : result.status === 'FAILED' ? 'FAILED' : 'PENDING';
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            paymentStatus: newPaymentStatus,
+            status: result.status === 'COMPLETED' ? 'PENDING' : order.status,
+            paidAt: result.status === 'COMPLETED' ? new Date() : null,
+          },
+        });
+
+        await prisma.payment.updateMany({
+          where: { transactionId },
+          data: {
+            status: result.status === 'COMPLETED' ? 'COMPLETED' : result.status === 'FAILED' ? 'FAILED' : 'PENDING',
+            gatewayData: result.rawData ? JSON.parse(JSON.stringify(result.rawData)) : undefined,
+          },
+        });
+
+        if (result.status === 'COMPLETED') {
+          const existingInvoice = await prisma.invoice.findUnique({ where: { orderId } });
+          if (!existingInvoice) {
+            const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+            await prisma.invoice.create({
+              data: {
+                invoiceNumber,
+                orderId,
+                userId: order.userId,
+                subtotal: order.amount,
+                tax: order.tax || 0,
+                discount: order.discount || 0,
+                total: order.total,
+                status: 'PAID',
+                paidAt: new Date(),
+              },
+            });
+          }
+
+          await writeAuditLog({
+            action: 'payment.completed',
+            resource: 'Payment',
+            resourceId: orderId,
+            metadata: { transactionId, gateway: gateway.slug, amount: order.total },
+          });
+        } else {
+          await writeAuditLog({
+            action: 'payment.failed',
+            resource: 'Payment',
+            resourceId: orderId,
+            metadata: { transactionId, status: result.status, error: result.error },
+          });
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: result.success,
+      status: result.status,
+      transactionId: result.transactionId,
+      amount: result.amount,
+      currency: result.currency,
+      error: result.error,
+    });
+  } catch (error) {
+    console.error('Payment verification failed:', error);
+    return NextResponse.json(
+      { success: false, error: 'Payment verification failed' },
+      { status: 500 }
+    );
+  }
+}

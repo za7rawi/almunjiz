@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   CreditCard,
@@ -9,8 +9,6 @@ import {
   DollarSign,
   Clock,
   CheckCircle2,
-  Filter,
-  X,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,12 +17,10 @@ import { PageHeader } from '@/components/ui/page-header';
 import { useLanguageStore } from '@/store/language-store';
 import { cn } from '@/lib/utils';
 
-type MethodFilter = 'ALL' | 'mada' | 'visa' | 'mastercard' | 'apple_pay' | 'bank_transfer';
-type StatusFilter = 'ALL' | 'completed' | 'pending' | 'refunded';
-type PaymentMethod = 'mada' | 'visa' | 'mastercard' | 'apple_pay' | 'bank_transfer';
-type PaymentStatus = 'completed' | 'pending' | 'refunded';
+export type PaymentMethod = 'mada' | 'visa' | 'mastercard' | 'apple_pay' | 'bank_transfer';
+export type PaymentStatus = 'completed' | 'pending' | 'refunded';
 
-interface Payment {
+export interface Payment {
   id: string;
   customer: string;
   amount: number;
@@ -33,18 +29,22 @@ interface Payment {
   date: string;
 }
 
-const payments: Payment[] = [
-  { id: 'PAY-001', customer: 'محمد أحمد', amount: 2500, method: 'mada', status: 'completed', date: '2026-07-23' },
-  { id: 'PAY-002', customer: 'خالد سعيد', amount: 1200, method: 'visa', status: 'completed', date: '2026-07-23' },
-  { id: 'PAY-003', customer: 'فهد العلي', amount: 3400, method: 'mastercard', status: 'pending', date: '2026-07-22' },
-  { id: 'PAY-004', customer: 'أحمد الشمري', amount: 800, method: 'apple_pay', status: 'completed', date: '2026-07-22' },
-  { id: 'PAY-005', customer: 'سعد الدوسري', amount: 5600, method: 'bank_transfer', status: 'completed', date: '2026-07-21' },
-  { id: 'PAY-006', customer: 'عبدالله القحطاني', amount: 1500, method: 'mada', status: 'refunded', date: '2026-07-21' },
-  { id: 'PAY-007', customer: 'يوسف العتيبي', amount: 2200, method: 'visa', status: 'completed', date: '2026-07-20' },
-  { id: 'PAY-008', customer: 'سلطان المطيري', amount: 900, method: 'mastercard', status: 'pending', date: '2026-07-20' },
-  { id: 'PAY-009', customer: 'عمر الحربي', amount: 4100, method: 'apple_pay', status: 'completed', date: '2026-07-19' },
-  { id: 'PAY-010', customer: 'راشد السبيعي', amount: 750, method: 'bank_transfer', status: 'pending', date: '2026-07-19' },
-];
+type MethodFilter = 'ALL' | PaymentMethod;
+type StatusFilter = 'ALL' | PaymentStatus;
+
+const STATUS_MAP: Record<string, PaymentStatus> = {
+  COMPLETED: 'completed',
+  PENDING: 'pending',
+  REFUNDED: 'refunded',
+};
+
+const METHOD_MAP: Record<string, PaymentMethod> = {
+  MADA: 'mada',
+  VISA: 'visa',
+  MASTERCARD: 'mastercard',
+  APPLE_PAY: 'apple_pay',
+  BANK_TRANSFER: 'bank_transfer',
+};
 
 const methodConfig: Record<string, { label: string; labelEn: string; color: string }> = {
   mada: { label: 'مدى', labelEn: 'Mada', color: '#14b8a6' },
@@ -71,13 +71,43 @@ const methodTabs: { id: MethodFilter; label: string; labelEn: string }[] = [
 
 export default function PaymentsPage() {
   const { language } = useLanguageStore();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPayments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/payments?limit=100');
+      const json = await res.json();
+      if (json.success && json.data) {
+        const mapped: Payment[] = json.data.map((p: Record<string, unknown>) => {
+          const user = p.user as { name?: string } | null;
+          return {
+            id: p.id as string,
+            customer: user?.name || '',
+            amount: Number(p.amount ?? 0),
+            method: METHOD_MAP[p.method as string] || 'visa',
+            status: STATUS_MAP[p.status as string] || 'pending',
+            date: p.createdAt ? new Date(p.createdAt as string).toLocaleDateString('sv-SE') : '',
+          };
+        });
+        setPayments(mapped);
+      }
+    } catch {
+      // API may require auth - show empty state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchPayments(); }, [fetchPayments]);
+
   const [activeMethod, setActiveMethod] = useState<MethodFilter>('ALL');
   const [activeStatus, setActiveStatus] = useState<StatusFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [paymentsList, setPaymentsList] = useState<Payment[]>(payments);
 
   const filtered = useMemo(() => {
-    return paymentsList.filter((p) => {
+    return payments.filter((p) => {
       const matchesMethod = activeMethod === 'ALL' || p.method === activeMethod;
       const matchesStatus = activeStatus === 'ALL' || p.status === activeStatus;
       const matchesSearch =
@@ -86,17 +116,17 @@ export default function PaymentsPage() {
         p.id.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesMethod && matchesStatus && matchesSearch;
     });
-  }, [activeMethod, activeStatus, searchQuery, paymentsList]);
+  }, [activeMethod, activeStatus, searchQuery, payments]);
 
   const stats = useMemo(() => ({
-    total: paymentsList.reduce((sum, p) => sum + p.amount, 0),
-    pending: paymentsList.filter((p) => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
-    completed: paymentsList.filter((p) => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0),
-  }), [paymentsList]);
+    total: payments.reduce((sum, p) => sum + p.amount, 0),
+    pending: payments.filter((p) => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
+    completed: payments.filter((p) => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0),
+  }), [payments]);
 
   const handleRefund = (id: string) => {
-    setPaymentsList((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'refunded' as const } : p))
+    setPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, status: 'refunded' as PaymentStatus } : p)),
     );
   };
 
@@ -291,7 +321,7 @@ export default function PaymentsPage() {
           {filtered.length === 0 && (
             <div className="py-12 text-center text-slate-400">
               <CreditCard size={48} className="mx-auto mb-3 opacity-30" />
-              <p>{language === 'ar' ? 'لا توجد مدفوعات' : 'No payments found'}</p>
+              <p>{loading ? (language === 'ar' ? 'جاري التحميل...' : 'Loading...') : (language === 'ar' ? 'لا توجد مدفوعات' : 'No payments found')}</p>
             </div>
           )}
         </CardContent>

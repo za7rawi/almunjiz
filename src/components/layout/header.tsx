@@ -28,11 +28,21 @@ import { CurrencyToggle } from '@/components/ui/currency-toggle';
 import { useAuthStore } from '@/store/auth-store';
 import { getInitials } from '@/lib/utils';
 
+interface SiteSettings {
+  whatsapp?: string;
+  phone?: string;
+  email?: string;
+  logo?: string;
+  siteName?: string;
+  siteNameEn?: string;
+}
+
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeHover, setActiveHover] = useState<string | null>(null);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
   const pathname = usePathname();
   const { language, setLanguage } = useLanguageStore();
   const { dir, isRtl } = useDirection();
@@ -47,11 +57,34 @@ export function Header() {
   }, []);
 
   useEffect(() => {
+    fetch('/api/cms/settings')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSiteSettings({
+            whatsapp: json.data.whatsapp || json.data.contact_whatsapp,
+            phone: json.data.phone || json.data.contact_phone,
+            email: json.data.email || json.data.contact_email,
+            logo: json.data.logo,
+            siteName: json.data.siteName || json.data.site_name,
+            siteNameEn: json.data.siteNameEn || json.data.site_name_en,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (prevPathnameRef.current !== pathname) {
       setMobileOpen(false);
       prevPathnameRef.current = pathname;
     }
   });
+
+  const phone = siteSettings.phone || CONTACT_INFO.phone;
+  const email = siteSettings.email || CONTACT_INFO.email;
+  const whatsapp = siteSettings.whatsapp || CONTACT_INFO.whatsapp;
+  const whatsappMessage = encodeURIComponent(CONTACT_INFO.whatsappMessage);
 
   const handleLangToggle = () => {
     const newLang = language === 'ar' ? 'en' : 'ar';
@@ -62,7 +95,6 @@ export function Header() {
 
   const handleLogout = () => {
     logout();
-    localStorage.removeItem('almunjiz-orders');
     setShowUserMenu(false);
     router.replace('/');
   };
@@ -141,7 +173,7 @@ export function Header() {
             <div className="flex items-center gap-1.5 md:gap-2">
               {/* WhatsApp */}
               <motion.a
-                href={`https://wa.me/962791038472?text=${encodeURIComponent('مرحباً، أريد الاستفسار عن خدمات المنجز')}`}
+                href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.08 }}
@@ -376,21 +408,21 @@ export function Header() {
                       {language === 'ar' ? 'معلومات الاتصال' : 'Contact Info'}
                     </p>
                     <a
-                      href={`tel:${CONTACT_INFO.phone}`}
+                      href={`tel:${phone}`}
                       className="flex items-center gap-3 text-sm text-white/60 hover:text-[#2580eb] transition-colors py-1.5"
                     >
                       <Phone size={15} className="text-[#2580eb]" />
-                      {CONTACT_INFO.phone}
+                      {phone}
                     </a>
                     <a
-                      href={`mailto:${CONTACT_INFO.email}`}
+                      href={`mailto:${email}`}
                       className="flex items-center gap-3 text-sm text-white/60 hover:text-[#14b8a6] transition-colors py-1.5"
                     >
                       <Mail size={15} className="text-[#14b8a6]" />
-                      {CONTACT_INFO.email}
+                      {email}
                     </a>
                     <a
-                      href={`https://wa.me/962791038472?text=${encodeURIComponent('مرحباً، أريد الاستفسار عن خدمات المنجز')}`}
+                      href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}?text=${whatsappMessage}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 text-sm text-white/60 hover:text-[#25D366] transition-colors py-1.5"

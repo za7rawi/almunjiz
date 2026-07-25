@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -9,13 +9,12 @@ import {
   GraduationCap, Shield, Briefcase, Hotel, Laptop,
   MessageSquare, Home, FileSignature, SearchX, Zap, Heart,
 } from 'lucide-react';
-import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useAdminCMSStore, type ServiceData } from '@/store/admin-cms-store';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
+import type { ServiceData } from '@/lib/services-data';
 
 const iconMap: Record<string, React.ComponentType<Record<string, unknown>>> = {
   Globe, FileText, Car, Plane, Building2, Headphones,
@@ -109,9 +108,27 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
 }
 
 export default function ServicesPage() {
-  const { services: servicesData } = useAdminCMSStore();
+  const [servicesData, setServicesData] = useState<ServiceData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        const res = await fetch('/api/services?limit=100');
+        const json = await res.json();
+        if (json.success) {
+          setServicesData(json.data.data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch services:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchServices();
+  }, []);
 
   const filtered = useMemo(() => {
     return servicesData.filter((s) => {
@@ -125,11 +142,11 @@ export default function ServicesPage() {
         s.categoryAr.includes(q);
       return matchCategory && matchSearch && s.isActive;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, servicesData]);
 
   const popularServices = useMemo(() => {
     return servicesData.filter((s) => s.isPopular && s.isActive).slice(0, 4);
-  }, []);
+  }, [servicesData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/5 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -154,68 +171,74 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Popular Services */}
-        {popularServices.length > 0 && activeCategory === 'all' && !searchQuery && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-            <div className="flex items-center gap-3 mb-6">
-              <Heart size={20} className="text-red-500" />
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">الخدمات الأكثر طلباً</h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {popularServices.map((service, i) => (
-                <ServiceCard key={service.id} service={service} index={i} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Category Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-3 mb-6 sm:mb-8 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
-                activeCategory === cat.id
-                  ? 'bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white shadow-lg shadow-[#2580eb]/25'
-                  : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-[#2580eb]/30 hover:bg-[#2580eb]/5'
-              }`}
-            >
-              {cat.icon && <cat.icon size={14} />}
-              {cat.label}
-            </button>
-          ))}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-12 h-12 border-4 border-[#2580eb] border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Popular Services */}
+          {popularServices.length > 0 && activeCategory === 'all' && !searchQuery && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+              <div className="flex items-center gap-3 mb-6">
+                <Heart size={20} className="text-red-500" />
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">الخدمات الأكثر طلباً</h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {popularServices.map((service, i) => (
+                  <ServiceCard key={service.id} service={service} index={i} />
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-        {/* Results Count */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            عرض <span className="font-bold text-slate-900 dark:text-white">{filtered.length}</span> من {servicesData.filter((s) => s.isActive).length} خدمة
-          </p>
+          {/* Category Filters */}
+          <div className="flex gap-2 overflow-x-auto pb-3 mb-6 sm:mb-8 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
+                  activeCategory === cat.id
+                    ? 'bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white shadow-lg shadow-[#2580eb]/25'
+                    : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-[#2580eb]/30 hover:bg-[#2580eb]/5'
+                }`}
+              >
+                {cat.icon && <cat.icon size={14} />}
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Results Count */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              عرض <span className="font-bold text-slate-900 dark:text-white">{filtered.length}</span> من {servicesData.filter((s) => s.isActive).length} خدمة
+            </p>
+          </div>
+
+          {/* Services Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+            {filtered.map((service, i) => (
+              <ServiceCard key={service.id} service={service} index={i} />
+            ))}
+          </div>
+
+          {/* Empty State */}
+          {filtered.length === 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20">
+              <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
+                <SearchX size={36} className="text-slate-300" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">لا توجد نتائج</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">جرّب تغيير كلمة البحث أو الفئة</p>
+              <Button variant="secondary" onClick={() => { setSearchQuery(''); setActiveCategory('all'); }}>
+                مسح الفلتر
+              </Button>
+            </motion.div>
+          )}
         </div>
-
-        {/* Services Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-          {filtered.map((service, i) => (
-            <ServiceCard key={service.id} service={service} index={i} />
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {filtered.length === 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20">
-            <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
-              <SearchX size={36} className="text-slate-300" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">لا توجد نتائج</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">جرّب تغيير كلمة البحث أو الفئة</p>
-            <Button variant="secondary" onClick={() => { setSearchQuery(''); setActiveCategory('all'); }}>
-              مسح الفلتر
-            </Button>
-          </motion.div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -9,7 +9,6 @@ import {
   Edit,
   Trash2,
   Eye,
-  Download,
   DollarSign,
   Clock,
   CheckCircle2,
@@ -22,11 +21,34 @@ import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { StatCard } from '@/components/ui/stat-card';
 import { useLanguageStore } from '@/store/language-store';
-import { useAdminDataStore, type Invoice, type InvoiceStatus } from '@/store/admin-data-store';
 import { printInvoice } from '@/lib/print-invoice';
 import { cn } from '@/lib/utils';
 
+export type InvoiceStatus = 'paid' | 'pending' | 'overdue' | 'cancelled';
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  customer: string;
+  email: string;
+  service: string;
+  amount: number;
+  tax: number;
+  total: number;
+  notes: string;
+  dueDate: string;
+  date: string;
+  status: InvoiceStatus;
+}
+
 type FilterStatus = 'ALL' | InvoiceStatus;
+
+const STATUS_MAP: Record<string, InvoiceStatus> = {
+  PAID: 'paid',
+  PENDING: 'pending',
+  OVERDUE: 'overdue',
+  CANCELLED: 'cancelled',
+};
 
 const statusConfig: Record<InvoiceStatus, { label: string; variant: 'success' | 'warning' | 'danger' | 'secondary' }> = {
   paid: { label: 'مدفوعة', variant: 'success' },
@@ -48,7 +70,42 @@ const emptyForm = {
 
 export default function InvoicesPage() {
   const { language } = useLanguageStore();
-  const { invoices, addInvoice, updateInvoice, deleteInvoice } = useAdminDataStore();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInvoices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/invoices?limit=100');
+      const json = await res.json();
+      if (json.success && json.data) {
+        const mapped: Invoice[] = json.data.map((inv: Record<string, unknown>) => {
+          const user = inv.user as { name?: string; email?: string } | null;
+          return {
+            id: inv.id as string,
+            invoiceNumber: inv.invoiceNumber as string,
+            customer: user?.name || '',
+            email: user?.email || '',
+            service: (inv.order as Record<string, unknown>)?.serviceName as string || '',
+            amount: Number(inv.subtotal ?? inv.amount ?? 0),
+            tax: Number(inv.tax ?? 0),
+            total: Number(inv.total ?? 0),
+            notes: '',
+            dueDate: inv.dueDate ? new Date(inv.dueDate as string).toLocaleDateString('sv-SE') : '',
+            date: inv.createdAt ? new Date(inv.createdAt as string).toLocaleDateString('sv-SE') : '',
+            status: STATUS_MAP[inv.status as string] || 'pending',
+          };
+        });
+        setInvoices(mapped);
+      }
+    } catch {
+      // API may require auth - show empty state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -121,30 +178,31 @@ export default function InvoicesPage() {
     const today = new Date().toISOString().split('T')[0];
 
     if (editInvoice) {
-      updateInvoice(editInvoice.id, {
-        customer: form.customer,
-        email: form.email,
-        service: form.service,
-        amount,
-        tax: 0,
-        total,
-        notes: form.notes,
-        dueDate: form.dueDate,
-        status: form.status,
-      });
+      setInvoices((prev) =>
+        prev.map((inv) =>
+          inv.id === editInvoice.id
+            ? { ...inv, customer: form.customer, email: form.email, service: form.service, amount, tax: 0, total, notes: form.notes, dueDate: form.dueDate, status: form.status }
+            : inv,
+        ),
+      );
     } else {
-      addInvoice({
-        customer: form.customer,
-        email: form.email,
-        service: form.service,
-        amount,
-        tax: 0,
-        total,
-        notes: form.notes,
-        dueDate: form.dueDate,
-        date: today,
-        status: form.status,
-      });
+      setInvoices((prev) => [
+        ...prev,
+        {
+          id: `local-${Date.now()}`,
+          invoiceNumber: `INV-LOCAL-${String(prev.length + 1).padStart(3, '0')}`,
+          customer: form.customer,
+          email: form.email,
+          service: form.service,
+          amount,
+          tax: 0,
+          total,
+          notes: form.notes,
+          dueDate: form.dueDate,
+          date: today,
+          status: form.status,
+        },
+      ]);
     }
     setShowFormModal(false);
     setEditInvoice(null);
@@ -158,7 +216,7 @@ export default function InvoicesPage() {
 
   const handleDelete = () => {
     if (deleteTarget) {
-      deleteInvoice(deleteTarget.id);
+      setInvoices((prev) => prev.filter((inv) => inv.id !== deleteTarget.id));
     }
     setShowDeleteModal(false);
     setDeleteTarget(null);
@@ -376,7 +434,7 @@ export default function InvoicesPage() {
           {filtered.length === 0 && (
             <div className="py-12 text-center text-slate-400">
               <FileText size={48} className="mx-auto mb-3 opacity-30" />
-              <p>{language === 'ar' ? 'لا توجد فواتير' : 'No invoices found'}</p>
+              <p>{loading ? (language === 'ar' ? 'جاري التحميل...' : 'Loading...') : (language === 'ar' ? 'لا توجد فواتير' : 'No invoices found')}</p>
             </div>
           )}
         </CardContent>

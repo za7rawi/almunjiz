@@ -142,13 +142,11 @@ export default function OtpPage() {
 
       if (data.success) {
         setVerified(true);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('isAuthenticated', 'true');
-        if (data.token) localStorage.setItem('authToken', data.token);
-        login(data.user);
+        login(data.data.user);
         sessionStorage.removeItem('otp_identifier');
         sessionStorage.removeItem('otp_type');
         sessionStorage.removeItem('otp_phone_display');
+        sessionStorage.removeItem('otp_dev_code');
         setTimeout(() => {
           router.push(redirectTo);
         }, 1500);

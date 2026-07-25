@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Images,
@@ -14,15 +14,29 @@ import {
   ArrowDown,
   Check,
   Link as LinkIcon,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
-import { useLanguageStore } from '@/store/language-store';
 import { cn } from '@/lib/utils';
-import { useAdminDataStore, type Banner, type BannerPosition } from '@/store/admin-data-store';
+
+type BannerPosition = 'hero' | 'sidebar' | 'footer';
+
+interface Banner {
+  id: string;
+  title: string;
+  titleEn: string;
+  subtitle: string;
+  subtitleEn: string;
+  image: string;
+  link: string;
+  position: BannerPosition;
+  isActive: boolean;
+  order: number;
+}
 
 const inputClass =
   'w-full px-4 py-2.5 text-sm rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30';
@@ -58,13 +72,28 @@ const emptyForm: Omit<Banner, 'id'> = {
 };
 
 export default function AdminBannersPage() {
-  const { language } = useLanguageStore();
-  const { banners, addBanner, updateBanner, deleteBanner, reorderBanners } = useAdminDataStore();
-
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  const fetchBanners = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/cms/banners');
+      const data = await res.json();
+      if (data.success) setBanners(data.data);
+    } catch {
+      console.error('Failed to load banners');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchBanners(); }, [fetchBanners]);
 
   const sortedBanners = useMemo(
     () => [...banners].sort((a, b) => a.order - b.order),
@@ -101,39 +130,129 @@ export default function AdminBannersPage() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title || !form.titleEn) return;
-    if (editingBanner) {
-      updateBanner(editingBanner.id, form);
-    } else {
-      addBanner(form);
+    setSaving(true);
+    try {
+      if (editingBanner) {
+        const res = await fetch(`/api/cms/banners/${editingBanner.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setBanners((prev) => prev.map((b) => (b.id === editingBanner.id ? { ...b, ...form } : b)));
+        }
+      } else {
+        const res = await fetch('/api/cms/banners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setBanners((prev) => [...prev, { ...form, id: data.data.id }]);
+        }
+      }
+      setShowModal(false);
+    } catch {
+      console.error('Failed to save banner');
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteBanner(id);
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/cms/banners/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setBanners((prev) => prev.filter((b) => b.id !== id));
+      }
+    } catch {
+      console.error('Failed to delete banner');
+    }
     setDeleteConfirm(null);
   };
 
-  const toggleActive = (id: string) => {
+  const toggleActive = async (id: string) => {
     const banner = banners.find((b) => b.id === id);
-    if (banner) {
-      updateBanner(id, { isActive: !banner.isActive });
+    if (!banner) return;
+    const newActive = !banner.isActive;
+    setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, isActive: newActive } : b)));
+    try {
+      await fetch(`/api/cms/banners/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newActive }),
+      });
+    } catch {
+      setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, isActive: !newActive } : b)));
     }
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index > 0) {
-      reorderBanners(index, index - 1);
+  const handleMoveUp = async (index: number) => {
+    if (index <= 0) return;
+    const sorted = [...sortedBanners];
+    const item = sorted[index];
+    const prevItem = sorted[index - 1];
+    const updated = sorted.map((b, i) => {
+      if (i === index) return { ...b, order: prevItem.order };
+      if (i === index - 1) return { ...b, order: item.order };
+      return b;
+    });
+    setBanners(updated);
+    try {
+      await fetch(`/api/cms/banners/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: prevItem.order }),
+      });
+      await fetch(`/api/cms/banners/${prevItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: item.order }),
+      });
+    } catch {
+      fetchBanners();
     }
   };
 
-  const handleMoveDown = (index: number) => {
-    if (index < sortedBanners.length - 1) {
-      reorderBanners(index, index + 1);
+  const handleMoveDown = async (index: number) => {
+    if (index >= sortedBanners.length - 1) return;
+    const sorted = [...sortedBanners];
+    const item = sorted[index];
+    const nextItem = sorted[index + 1];
+    const updated = sorted.map((b, i) => {
+      if (i === index) return { ...b, order: nextItem.order };
+      if (i === index + 1) return { ...b, order: item.order };
+      return b;
+    });
+    setBanners(updated);
+    try {
+      await fetch(`/api/cms/banners/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: nextItem.order }),
+      });
+      await fetch(`/api/cms/banners/${nextItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: item.order }),
+      });
+    } catch {
+      fetchBanners();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={32} className="animate-spin text-[#2580eb]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -460,8 +579,8 @@ export default function AdminBannersPage() {
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={!form.title || !form.titleEn}
-            iconLeft={<Check size={16} />}
+            disabled={!form.title || !form.titleEn || saving}
+            iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
           >
             {editingBanner ? 'حفظ التعديلات' : 'إضافة البانر'}
           </Button>

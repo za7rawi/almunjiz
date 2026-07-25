@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, FileText, ArrowLeft, CornerDownLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NAVIGATION_LINKS } from '@/constants';
-import { servicesData } from '@/lib/services-data';
 import { useLanguageStore } from '@/store/language-store';
 
 interface SearchResult {
@@ -21,7 +20,7 @@ interface SearchResult {
   icon: string;
 }
 
-function buildSearchIndex(): SearchResult[] {
+function buildSearchIndex(serviceResults: SearchResult[]): SearchResult[] {
   const pages: SearchResult[] = NAVIGATION_LINKS.map((link) => ({
     id: `page-${link.href}`,
     title: link.label,
@@ -41,20 +40,6 @@ function buildSearchIndex(): SearchResult[] {
     { id: 'page-about', title: 'من نحن', titleEn: 'About Us', description: 'تعرف على المنجز', descriptionEn: 'About AL-MUNJIZ', href: '/about', category: 'الصفحات', categoryEn: 'Pages', icon: 'ℹ️' },
     { id: 'page-offers', title: 'العروض', titleEn: 'Offers', description: 'عروض وخصومات حصرية', descriptionEn: 'Exclusive offers and discounts', href: '/offers', category: 'الصفحات', categoryEn: 'Pages', icon: '🏷️' },
   ];
-
-  const serviceResults: SearchResult[] = servicesData
-    .filter((s) => s.isActive)
-    .map((service) => ({
-      id: `service-${service.id}`,
-      title: service.name,
-      titleEn: service.nameEn,
-      description: service.categoryAr,
-      descriptionEn: service.category,
-      href: `/services/${service.id}`,
-      category: 'الخدمات',
-      categoryEn: 'Services',
-      icon: service.icon,
-    }));
 
   return [...pages, ...extraPages, ...serviceResults];
 }
@@ -92,7 +77,34 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const searchIndex = useMemo(() => buildSearchIndex(), []);
+  const [serviceResults, setServiceResults] = useState<SearchResult[]>([]);
+
+  useEffect(() => {
+    fetch('/api/services?limit=100')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) {
+          setServiceResults(
+            json.data.data
+              .filter((s: { isActive: boolean }) => s.isActive)
+              .map((s: { id: string; name: string; nameEn: string; categoryAr: string; category: string; icon: string }) => ({
+                id: `service-${s.id}`,
+                title: s.name,
+                titleEn: s.nameEn,
+                description: s.categoryAr,
+                descriptionEn: s.category,
+                href: `/services/${s.id}`,
+                category: 'الخدمات',
+                categoryEn: 'Services',
+                icon: s.icon,
+              })),
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const searchIndex = useMemo(() => buildSearchIndex(serviceResults), [serviceResults]);
 
   const filtered = query.trim()
     ? searchIndex.filter((item) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -15,13 +15,44 @@ import {
   Layers,
   Power,
   GripVertical,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAdminCMSStore, type ServiceData } from '@/store/admin-cms-store';
 import { cn } from '@/lib/utils';
+
+interface ServiceData {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  descriptionEn: string;
+  fullDescription: string;
+  fullDescriptionEn: string;
+  icon: string;
+  category: string;
+  categoryAr: string;
+  price: number;
+  priceNote: string;
+  priceNoteEn: string;
+  duration: string;
+  durationEn: string;
+  features: string[];
+  featuresEn: string[];
+  requirements: string[];
+  requirementsEn: string[];
+  steps: { title: string; description: string; icon: string }[];
+  stepsEn: { title: string; description: string; icon: string }[];
+  faq: { question: string; answer: string }[];
+  faqEn: { question: string; answer: string }[];
+  requiredDocuments: string[];
+  requiredDocumentsEn: string[];
+  isPopular: boolean;
+  isActive: boolean;
+  gradient: string;
+}
 
 const categories = [
   { value: 'VISAS', label: 'التأشيرات' },
@@ -253,14 +284,30 @@ function FAQEditor({
 }
 
 export default function AdminServicesPage() {
-  const { services, addService, updateService, deleteService, toggleServiceActive } =
-    useAdminCMSStore();
+  const [services, setServices] = useState<ServiceData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<ServiceData | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState<ServiceData>({ ...emptyService });
   const [activeTab, setActiveTab] = useState<'basic' | 'details' | 'features' | 'steps' | 'faq'>('basic');
+
+  const fetchServices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/cms/services');
+      const data = await res.json();
+      if (data.success) setServices(data.data);
+    } catch {
+      console.error('Failed to load services');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchServices(); }, [fetchServices]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return services;
@@ -294,19 +341,66 @@ export default function AdminServicesPage() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.nameEn || !form.price) return;
-    if (editingService) {
-      updateService(editingService.id, form);
-    } else {
-      addService(form);
+    setSaving(true);
+    try {
+      if (editingService) {
+        const res = await fetch(`/api/cms/services/${editingService.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setServices((prev) => prev.map((s) => (s.id === editingService.id ? { ...s, ...form } : s)));
+        }
+      } else {
+        const res = await fetch('/api/cms/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setServices((prev) => [...prev, { ...form, id: data.data.id }]);
+        }
+      }
+      setShowModal(false);
+    } catch {
+      console.error('Failed to save service');
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteService(id);
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/cms/services/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setServices((prev) => prev.filter((s) => s.id !== id));
+      }
+    } catch {
+      console.error('Failed to delete service');
+    }
     setDeleteConfirm(null);
+  };
+
+  const toggleServiceActive = async (id: string) => {
+    const svc = services.find((s) => s.id === id);
+    if (!svc) return;
+    const newActive = !svc.isActive;
+    setServices((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: newActive } : s)));
+    try {
+      await fetch(`/api/cms/services/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newActive }),
+      });
+    } catch {
+      setServices((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: !newActive } : s)));
+    }
   };
 
   const tabs = [
@@ -316,6 +410,14 @@ export default function AdminServicesPage() {
     { key: 'steps' as const, label: 'الخطوات' },
     { key: 'faq' as const, label: 'الأسئلة الشائعة' },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={32} className="animate-spin text-[#2580eb]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -833,8 +935,8 @@ export default function AdminServicesPage() {
                 <Button
                   variant="primary"
                   onClick={handleSave}
-                  disabled={!form.name || !form.nameEn || !form.price}
-                  iconLeft={<Check size={16} />}
+                  disabled={!form.name || !form.nameEn || !form.price || saving}
+                  iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                 >
                   {editingService ? 'حفظ التعديلات' : 'إضافة الخدمة'}
                 </Button>

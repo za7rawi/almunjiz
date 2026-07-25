@@ -70,7 +70,6 @@ export function Sidebar({ user, isOpen: externalOpen, onClose }: SidebarProps) {
 
   const handleLogout = () => {
     logout();
-    localStorage.removeItem('almunjiz-orders');
     handleClose();
     router.replace('/');
   };

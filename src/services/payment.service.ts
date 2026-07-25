@@ -27,7 +27,8 @@ export class PaymentService {
   }
 
   static async createPayment(data: {
-    invoiceId: string;
+    orderId: string;
+    invoiceId?: string;
     userId: string;
     amount: number;
     method: string;
@@ -36,6 +37,7 @@ export class PaymentService {
   }) {
     const payment = await prisma.payment.create({
       data: {
+        orderId: data.orderId,
         invoiceId: data.invoiceId,
         userId: data.userId,
         amount: data.amount,

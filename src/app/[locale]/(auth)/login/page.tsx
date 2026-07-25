@@ -94,23 +94,15 @@ export default function LoginPage() {
   const handleGoogleCredentialResponse = async (response: { credential: string }) => {
     setGoogleLoading(true);
     try {
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: response.credential }),
+      const result = await loginWithGoogle({
+        idToken: response.credential,
+        name: '',
+        email: '',
       });
-      const data = await res.json();
-      if (data.success && data.user) {
-        const result = loginWithGoogle({
-          name: data.user.name,
-          email: data.user.email,
-          avatar: data.user.avatar,
-        });
-        if (result.success) {
-          router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
-        }
+      if (result.success) {
+        router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
       } else {
-        setErrors({ general: data.message || 'فشل تسجيل الدخول بـ Google' });
+        setErrors({ general: result.message || 'فشل تسجيل الدخول بـ Google' });
       }
     } catch {
       setErrors({ general: 'حدث خطأ أثناء التواصل مع Google' });
@@ -183,7 +175,7 @@ export default function LoginPage() {
     if (emailErr || passErr) return;
 
     setLoading(true);
-    const result = loginEmail(email, password);
+    const result = await loginEmail(email, password);
     if (result.success) {
       router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
     } else {
