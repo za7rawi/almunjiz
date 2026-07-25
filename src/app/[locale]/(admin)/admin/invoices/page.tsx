@@ -80,17 +80,18 @@ export default function InvoicesPage() {
       const json = await res.json();
       if (json.success && json.data) {
         const mapped: Invoice[] = json.data.map((inv: Record<string, unknown>) => {
-          const user = inv.user as { name?: string; email?: string } | null;
+          const user = inv.user as { name?: string; email?: string; phone?: string } | null;
+          const order = inv.order as { orderNumber?: string; serviceName?: string; service?: { name?: string } } | null;
           return {
             id: inv.id as string,
             invoiceNumber: inv.invoiceNumber as string,
             customer: user?.name || '',
             email: user?.email || '',
-            service: (inv.order as Record<string, unknown>)?.serviceName as string || '',
+            service: order?.service?.name || order?.serviceName || '',
             amount: Number(inv.subtotal ?? inv.amount ?? 0),
             tax: Number(inv.tax ?? 0),
             total: Number(inv.total ?? 0),
-            notes: '',
+            notes: (inv.notes as string) || '',
             dueDate: inv.dueDate ? new Date(inv.dueDate as string).toLocaleDateString('sv-SE') : '',
             date: inv.createdAt ? new Date(inv.createdAt as string).toLocaleDateString('sv-SE') : '',
             status: STATUS_MAP[inv.status as string] || 'pending',

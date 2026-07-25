@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
-        include: { service: true, gateway: true, payments: true, invoice: true },
+        include: { service: true, gateway: true, payments: true, invoice: true, timeline: { orderBy: { createdAt: 'desc' } } },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
@@ -43,7 +43,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: orders,
+      data: orders.map((o) => ({
+        ...o,
+        amount: Number(o.amount),
+        discount: Number(o.discount),
+        tax: Number(o.tax),
+        total: Number(o.total),
+      })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {

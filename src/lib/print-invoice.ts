@@ -1,5 +1,3 @@
-import QRCode from 'qrcode';
-
 export interface PrintInvoiceData {
   invoiceNumber: string;
   orderNumber?: string;
@@ -45,13 +43,7 @@ export async function printInvoice(data: PrintInvoiceData) {
   const statusColor = statusColors[data.status] || '#6b7280';
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://munjiz.store';
   const trackUrl = `${siteUrl}/track-order?order=${data.orderNumber || data.invoiceNumber}`;
-
-  let qrDataUrl = '';
-  try {
-    qrDataUrl = await QRCode.toDataURL(trackUrl, { width: 120, margin: 1, color: { dark: '#1a1a2e', light: '#ffffff' } });
-  } catch {
-    qrDataUrl = '';
-  }
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(trackUrl)}&format=png&margin=8`;
 
   const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -641,10 +633,7 @@ export async function printInvoice(data: PrintInvoiceData) {
       <!-- QR Code Section -->
       <div style="display:flex;justify-content:center;margin-bottom:32px;">
         <div style="text-align:center;padding:16px 24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
-          ${qrDataUrl ? `<img src="${qrDataUrl}" width="120" height="120" alt="QR Code" style="border-radius:8px;" />` : `
-          <div style="width:120px;height:120px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-            <span style="color:#94a3b8;font-size:12px;">QR</span>
-          </div>`}
+          <img src="${qrApiUrl}" width="120" height="120" alt="QR Code" style="border-radius:8px;" />
           <p style="font-size:10px;color:#94a3b8;margin-top:8px;font-family:'Inter',sans-serif;letter-spacing:1px;">امسح للطلب / Scan to Track</p>
           <p style="font-size:9px;color:#94a3b8;margin-top:2px;font-family:'Inter',sans-serif;word-break:break-all;">${trackUrl}</p>
         </div>

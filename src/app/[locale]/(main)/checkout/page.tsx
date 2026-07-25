@@ -272,7 +272,7 @@ export default function CheckoutPage() {
 
       router.push(`/payment/success?orderId=${orderId}`);
     } catch {
-      router.push(`/payment/failed?orderId=`);
+      router.push('/payment/failed');
     } finally {
       setLoading(false);
     }

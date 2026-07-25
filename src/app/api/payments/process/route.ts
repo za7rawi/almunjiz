@@ -95,15 +95,29 @@ export async function POST(request: NextRequest) {
     const result = await provider.createPayment(paymentParams);
 
     if (result.success && result.transactionId) {
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+
+      const METHOD_MAP: Record<string, string> = {
+        VISA: 'VISA', visa: 'VISA',
+        MASTERCARD: 'MASTER_CARD', mastercard: 'MASTER_CARD',
+        MADA: 'MADA', mada: 'MADA',
+        APPLE_PAY: 'APPLE_PAY', apple_pay: 'APPLE_PAY',
+        GOOGLE_PAY: 'GOOGLE_PAY', google_pay: 'GOOGLE_PAY',
+        STC_PAY: 'STC_PAY', stc_pay: 'STC_PAY',
+        BANK_TRANSFER: 'BANK_TRANSFER', bank_transfer: 'BANK_TRANSFER',
+      };
+
+      const paymentMethod = METHOD_MAP[gateway.slug] || 'VISA';
+
       await prisma.payment.create({
         data: {
           orderId,
           idempotencyKey: idemKey,
-          userId: (await prisma.order.findUnique({ where: { id: orderId } }))?.userId || '',
+          userId: order?.userId || '',
           gatewayId: gateway.id,
           amount: Number(amount),
           currency,
-          method: 'VISA',
+          method: paymentMethod as never,
           status: 'PENDING',
           transactionId: result.transactionId,
           gatewayData: result.rawData ? JSON.parse(JSON.stringify(result.rawData)) : undefined,

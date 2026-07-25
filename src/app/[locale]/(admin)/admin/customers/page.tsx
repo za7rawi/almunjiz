@@ -46,7 +46,7 @@ export default function CustomersPage() {
   const customersList = useMemo<CustomerRow[]>(() => {
     return users.map((u) => {
       const customerOrders = orders.filter((o) => o.customerEmail?.toLowerCase() === u.email.toLowerCase());
-      return { id: u.id, name: u.name, email: u.email, phone: u.phone, orders: customerOrders.length, totalSpent: customerOrders.reduce((sum, o) => sum + o.total, 0), joinDate: typeof u.createdAt === 'string' ? u.createdAt : u.createdAt.toISOString(), status: 'ACTIVE' as const };
+      return { id: u.id, name: u.name, email: u.email, phone: u.phone, orders: customerOrders.length, totalSpent: customerOrders.reduce((sum, o) => sum + Number(o.total || 0), 0), joinDate: typeof u.createdAt === 'string' ? u.createdAt : u.createdAt.toISOString(), status: 'ACTIVE' as const };
     });
   }, [users, orders]);
 

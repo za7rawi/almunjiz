@@ -108,9 +108,9 @@ export default function OrdersPage() {
       email: order.customerEmail || '',
       phone: order.customerPhone || '',
       service: order.service?.name || '',
-      amount: (order.total || 0) - (order.tax || 0),
-      tax: order.tax || 0,
-      total: order.total || 0,
+      amount: Number(order.total || 0) - Number(order.tax || 0),
+      tax: Number(order.tax || 0),
+      total: Number(order.total || 0),
       date: invDate,
       dueDate: invDate,
       status: order.paymentStatus === 'PAID' ? 'paid' : 'pending',
@@ -213,7 +213,7 @@ export default function OrdersPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-300 hidden lg:table-cell">{order.service?.name || '-'}</td>
-                      <td className="py-3 px-4 text-end font-bold text-slate-900 dark:text-white hidden md:table-cell">{order.total} ر.س</td>
+                      <td className="py-3 px-4 text-end font-bold text-slate-900 dark:text-white hidden md:table-cell">{Number(order.total || 0).toLocaleString()} ر.س</td>
                       <td className="py-3 px-4 hidden md:table-cell">
                         {order.paymentStatus && paymentStatusConfig[order.paymentStatus] ? (
                           <Badge variant={paymentStatusConfig[order.paymentStatus].variant} size="sm">{paymentStatusConfig[order.paymentStatus].label}</Badge>
@@ -286,9 +286,9 @@ export default function OrdersPage() {
                   <DollarSign size={18} className="text-[#7c3aed] mt-0.5" />
                   <div>
                     <p className="text-xs text-slate-400">{language === 'ar' ? 'المبلغ' : 'Amount'}</p>
-                    <p className="font-bold text-slate-900 dark:text-white">{selectedOrder.total} ر.س</p>
-                    {selectedOrder.discount > 0 && <p className="text-[10px] text-green-500">خصم: {selectedOrder.discount} ر.س</p>}
-                    {selectedOrder.tax > 0 && <p className="text-[10px] text-slate-400">ضريبة: {selectedOrder.tax} ر.س</p>}
+                    <p className="font-bold text-slate-900 dark:text-white">{Number(selectedOrder.total || 0).toLocaleString()} ر.س</p>
+                    {Number(selectedOrder.discount || 0) > 0 && <p className="text-[10px] text-green-500">خصم: {Number(selectedOrder.discount || 0).toLocaleString()} ر.س</p>}
+                    {Number(selectedOrder.tax || 0) > 0 && <p className="text-[10px] text-slate-400">ضريبة: {Number(selectedOrder.tax || 0).toLocaleString()} ر.س</p>}
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">

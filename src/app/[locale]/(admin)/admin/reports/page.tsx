@@ -419,7 +419,7 @@ export default function AdminReportsPage() {
       const dayStr = day.toISOString().slice(0, 10);
       return filteredOrders
         .filter((o) => o.createdAt.startsWith(dayStr))
-        .reduce((sum, o) => sum + o.total, 0);
+        .reduce((sum, o) => sum + Number(o.total || 0), 0);
     });
   }, [filteredOrders]);
 
@@ -430,7 +430,7 @@ export default function AdminReportsPage() {
       const prefix = month.toISOString().slice(0, 7);
       return filteredOrders
         .filter((o) => o.createdAt.startsWith(prefix))
-        .reduce((sum, o) => sum + o.total, 0);
+        .reduce((sum, o) => sum + Number(o.total || 0), 0);
     });
   }, [filteredOrders]);
 

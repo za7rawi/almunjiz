@@ -34,7 +34,8 @@ export default function PaymentSuccessPage() {
     }
   }, [orderId]);
 
-  const amount = order?.total ?? 0;
+  const amount = Number(order?.total ?? 0);
+  const tax = Number(order?.tax ?? 0);
   const date = order?.createdAt
     ? new Date(order.createdAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -44,7 +45,8 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     if (gatewayId && orderId && paymentVerified === null) {
       setVerifying(true);
-      fetch('/api/payments/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gatewayId, orderId, transactionId: orderId }) })
+      const txnId = order?.payments?.[0]?.transactionId || orderId;
+      fetch('/api/payments/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gatewayId, orderId, transactionId: txnId }) })
         .then((r) => r.json())
         .then((data) => {
           setPaymentVerified(data.success && data.status === 'COMPLETED');
@@ -68,8 +70,8 @@ export default function PaymentSuccessPage() {
       email: order?.customerEmail || '',
       phone: order?.customerPhone || '',
       service: order?.service?.name || 'خدمة',
-      amount: amount - (order?.tax || 0),
-      tax: order?.tax || 0,
+      amount: amount - tax,
+      tax: tax,
       total: amount,
       dueDate: date, date,
       status: order?.paymentStatus === 'PAID' ? 'paid' : order?.status === 'COMPLETED' ? 'paid' : 'pending',

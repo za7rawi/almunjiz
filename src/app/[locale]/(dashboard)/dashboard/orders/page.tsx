@@ -24,15 +24,21 @@ const tabs = [
 
 const statusConfig: Record<string, { variant: 'primary' | 'success' | 'warning' | 'danger' | 'info'; progress: number }> = {
   PENDING: { variant: 'warning', progress: 10 },
+  UNDER_REVIEW: { variant: 'primary', progress: 20 },
+  WAITING_CLIENT: { variant: 'warning', progress: 30 },
   IN_PROGRESS: { variant: 'info', progress: 55 },
   COMPLETED: { variant: 'success', progress: 100 },
+  DELIVERED: { variant: 'success', progress: 100 },
   CANCELLED: { variant: 'danger', progress: 0 },
 }
 
 const statusLabels: Record<string, { ar: string; en: string }> = {
   PENDING: { ar: 'قيد الانتظار', en: 'Pending' },
+  UNDER_REVIEW: { ar: 'قيد المراجعة', en: 'Under Review' },
+  WAITING_CLIENT: { ar: 'بانتظار العميل', en: 'Waiting for Client' },
   IN_PROGRESS: { ar: 'قيد التنفيذ', en: 'In Progress' },
   COMPLETED: { ar: 'مكتمل', en: 'Completed' },
+  DELIVERED: { ar: 'تم التسليم', en: 'Delivered' },
   CANCELLED: { ar: 'ملغي', en: 'Cancelled' },
 }
 
@@ -117,7 +123,7 @@ export default function OrdersPage() {
                       </div>
                       <div className="flex items-center gap-4 sm:text-left">
                         <div className="hidden sm:block text-left min-w-[120px]"><Progress value={st.progress} height="sm" /><p className="text-[11px] text-slate-400 mt-1">{st.progress}%</p></div>
-                        <div className="text-left min-w-[100px]"><p className="text-lg font-bold text-slate-900 dark:text-white">{formatCurrency(order.total)}</p><p className="text-xs text-slate-400">{formatDate(order.createdAt)}</p></div>
+                        <div className="text-left min-w-[100px]"><p className="text-lg font-bold text-slate-900 dark:text-white">{formatCurrency(Number(order.total))}</p><p className="text-xs text-slate-400">{formatDate(order.createdAt)}</p></div>
                         <Eye size={18} className="text-slate-400" />
                       </div>
                     </div>

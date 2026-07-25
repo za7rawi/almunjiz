@@ -17,8 +17,11 @@ import type { ApiOrder } from '@/types/api-order'
 
 const statusMap: Record<string, { variant: 'primary' | 'success' | 'warning' | 'danger' | 'info'; labelAr: string }> = {
   PENDING: { variant: 'warning', labelAr: 'قيد الانتظار' },
+  UNDER_REVIEW: { variant: 'primary', labelAr: 'قيد المراجعة' },
+  WAITING_CLIENT: { variant: 'warning', labelAr: 'بانتظار العميل' },
   IN_PROGRESS: { variant: 'info', labelAr: 'قيد التنفيذ' },
   COMPLETED: { variant: 'success', labelAr: 'مكتمل' },
+  DELIVERED: { variant: 'success', labelAr: 'تم التسليم' },
   CANCELLED: { variant: 'danger', labelAr: 'ملغي' },
 }
 
@@ -39,7 +42,7 @@ export default function DashboardPage() {
 
   const recentOrders = orders.slice(0, 5)
   const totalOrders = orders.length
-  const totalPaid = orders.filter(o => o.status === 'COMPLETED' || o.paymentStatus === 'PAID').reduce((s, o) => s + o.total, 0)
+  const totalPaid = orders.filter(o => o.status === 'COMPLETED' || o.paymentStatus === 'PAID').reduce((s, o) => s + Number(o.total), 0)
   const pendingOrders = orders.filter(o => o.status === 'PENDING').length
 
   const quickActions = [
@@ -87,7 +90,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="text-left flex items-center gap-3">
                           <Badge variant={st.variant} size="sm">{st.labelAr}</Badge>
-                          <div className="text-left"><p className="text-sm font-semibold text-slate-900 dark:text-white">{formatCurrency(order.total)}</p><p className="text-[11px] text-slate-400">{formatDate(order.createdAt)}</p></div>
+                          <div className="text-left"><p className="text-sm font-semibold text-slate-900 dark:text-white">{formatCurrency(Number(order.total))}</p><p className="text-[11px] text-slate-400">{formatDate(order.createdAt)}</p></div>
                         </div>
                       </motion.div>
                     )
