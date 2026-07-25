@@ -2,10 +2,6 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export class AuthService {
-  static async findByPhone(phone: string) {
-    return prisma.user.findUnique({ where: { phone } });
-  }
-
   static async findByEmail(email: string) {
     return prisma.user.findUnique({ where: { email } });
   }
@@ -17,7 +13,7 @@ export class AuthService {
   static async create(data: {
     name: string;
     email: string;
-    phone: string;
+    phone?: string;
     password: string;
     role?: "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "EMPLOYEE" | "SUPPORT" | "ACCOUNTANT" | "CUSTOMER";
   }) {
@@ -87,13 +83,6 @@ export class AuthService {
     return prisma.user.update({
       where: { id },
       data: { emailVerified: true },
-    });
-  }
-
-  static async verifyPhone(id: string) {
-    return prisma.user.update({
-      where: { id },
-      data: { phoneVerified: true },
     });
   }
 }

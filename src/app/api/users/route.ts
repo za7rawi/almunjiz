@@ -1,19 +1,30 @@
 import { NextResponse } from "next/server";
-import { users } from "@/lib/store";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const allUsers = Array.from(users.values()).map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      phone: u.phone,
-      role: u.role,
-      avatar: u.avatar,
-      createdAt: u.createdAt,
-    }));
+    const allUsers = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        avatar: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-    return NextResponse.json({ success: true, data: allUsers });
+    return NextResponse.json({
+      success: true,
+      data: allUsers.map((u) => ({
+        ...u,
+        role: u.role.toLowerCase(),
+        avatar: u.avatar || "",
+        createdAt: u.createdAt.toISOString(),
+      })),
+    });
   } catch {
     return NextResponse.json(
       { success: false, data: [], error: "Failed to fetch users" },

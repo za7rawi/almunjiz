@@ -15,18 +15,18 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        phone: { label: "Phone", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.phone || !credentials?.password) {
-          throw new Error("رقم الهاتف وكلمة المرور مطلوبان / Phone and password are required");
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("البريد الإلكتروني وكلمة المرور مطلوبان");
         }
 
-        const user = await AuthService.findByPhone(credentials.phone);
+        const user = await AuthService.findByEmail(credentials.email);
 
         if (!user) {
-          throw new Error("المستخدم غير موجود / User not found");
+          throw new Error("المستخدم غير موجود");
         }
 
         const isValid = await AuthService.verifyPassword(
@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isValid) {
-          throw new Error("كلمة المرور غير صحيحة / Incorrect password");
+          throw new Error("كلمة المرور غير صحيحة");
         }
 
         await AuthService.updateLastLogin(user.id);
@@ -44,7 +44,6 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
-          phone: user.phone,
           role: user.role,
           avatar: user.avatar,
         };
@@ -56,7 +55,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as unknown as Record<string, unknown>).role;
-        token.phone = (user as unknown as Record<string, unknown>).phone;
         token.avatar = (user as unknown as Record<string, unknown>).avatar;
       }
       return token;
@@ -65,7 +63,6 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as unknown as Record<string, unknown>).id = token.id;
         (session.user as unknown as Record<string, unknown>).role = token.role;
-        (session.user as unknown as Record<string, unknown>).phone = token.phone;
         (session.user as unknown as Record<string, unknown>).avatar = token.avatar;
       }
       return session;

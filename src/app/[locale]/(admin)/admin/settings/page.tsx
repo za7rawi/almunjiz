@@ -189,7 +189,7 @@ export default function SettingsPage() {
     paymentMastercard: true,
     paymentApplePay: false,
     paymentBankTransfer: true,
-    otpProvider: 'unifonic',
+    otpProvider: 'email',
     otpApiKey: '',
     smtpHost: '',
     smtpPort: '587',
@@ -571,9 +571,7 @@ export default function SettingsPage() {
                     onChange={(e) => updateSettings({ otpProvider: e.target.value })}
                     className={inputClass}
                   >
-                    <option value="unifonic">Unifonic</option>
-                    <option value="taqnyat">Taqnyat</option>
-                    <option value="twilio">Twilio</option>
+                    <option value="email">Email (Resend)</option>
                   </select>
                 </div>
                 <div>

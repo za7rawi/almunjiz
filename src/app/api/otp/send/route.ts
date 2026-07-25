@@ -1,75 +1,39 @@
-import { NextRequest } from "next/server";
-import { generateOTP, storeOTP, getOTPProvider } from "@/lib/otp";
-import { isValidEmail, isValidPhone } from "@/lib/api/validation";
-import { success, error } from "@/lib/api/response";
+import { NextRequest, NextResponse } from "next/server";
+import { generateOTP, storeOTP } from "@/lib/otp";
+import { sendEmailOTP } from "@/lib/otp/email";
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { phone, email, provider: providerName } = await request.json();
+    const body = await req.json();
+    const { email } = body;
 
-    const identifier = phone || email;
-
-    if (!identifier) {
-      return error("رقم الهاتف أو البريد الإلكتروني مطلوب");
+    if (!email) {
+      return NextResponse.json({ error: "البريد الإلكتروني مطلوب" }, { status: 400 });
     }
 
-    if (phone && !isValidPhone(phone)) {
-      return error("رقم الهاتف غير صحيح");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: "البريد الإلكتروني غير صحيح" }, { status: 400 });
     }
 
-    if (email && !isValidEmail(email)) {
-      return error("البريد الإلكتروني غير صحيح");
-    }
-
-    const activeProvider = providerName || process.env.OTP_PROVIDER || "twilio";
-    const provider = getOTPProvider(activeProvider);
-
-    console.log(`[OTP Send] Provider: ${provider.name}, Identifier: ${identifier}`);
-
-    if (provider.name === "twilio") {
-      // Twilio Verify generates its own code — no local storage needed
-      const result = await provider.sendOTP(identifier, "");
-
-      if (!result.success) {
-        console.error(`[OTP Send] Twilio failed: ${result.error}`);
-        return error(result.error || "فشل إرسال رمز التحقق", 500);
-      }
-
-      console.log(`[OTP Send] Twilio OTP sent successfully to ${identifier}`);
-      return success(
-        { identifier, provider: provider.name },
-        "تم إرسال رمز التحقق بنجاح"
-      );
-    }
-
-    // For non-Twilio providers: generate code locally, store, and send
     const code = generateOTP();
-    const storeResult = storeOTP(identifier, code);
+    await storeOTP(email, code);
 
-    if (!storeResult.success) {
-      return error(storeResult.error || "حدث خطأ", 429);
+    const result = await sendEmailOTP(email, code);
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error || "فشل إرسال رمز التحقق" }, { status: 500 });
     }
 
-    try {
-      const result = await provider.sendOTP(identifier, code);
-      if (!result.success) {
-        console.error(`[OTP Send] Provider ${provider.name} failed: ${result.error}`);
-      }
-    } catch (err) {
-      console.error(`[OTP Send] Provider ${provider.name} exception:`, err);
+    const response: Record<string, unknown> = { success: true, message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني" };
+
+    if (process.env.NODE_ENV !== "production") {
+      response.devCode = code;
     }
 
-    const isDev = process.env.NODE_ENV !== "production";
-    const message = isDev
-      ? `تم إرسال رمز التحقق${identifier.includes("@") ? " إلى بريدك الإلكتروني" : " إلى هاتفك"}. للتجربة، الرمز هو: ${code}`
-      : "تم إرسال رمز التحقق بنجاح";
-
-    const responseData: Record<string, string> = { identifier, provider: provider.name };
-    if (isDev) responseData.devCode = code;
-
-    return success(responseData, message);
-  } catch (err) {
-    console.error("[OTP Send] Unhandled error:", err);
-    return error("حدث خطأ أثناء إرسال الكود", 500);
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error("[OTP Send] Error:", error);
+    return NextResponse.json({ error: "حدث خطأ في الخادم" }, { status: 500 });
   }
 }

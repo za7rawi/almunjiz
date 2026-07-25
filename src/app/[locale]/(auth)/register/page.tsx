@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,30 +10,17 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Phone,
   UserPlus,
   CheckCircle,
   AlertCircle,
-  ShieldCheck,
   Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CountrySelect } from '@/components/ui/country-select';
-import { getDefaultCountry, validatePhone, type Country } from '@/lib/countries';
 import { useAuthStore } from '@/store/auth-store';
-
-interface FormData {
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-}
 
 interface FormErrors {
   name?: string;
   email?: string;
-  phone?: string;
   password?: string;
   confirmPassword?: string;
   general?: string;
@@ -73,73 +60,132 @@ export default function RegisterPage() {
   const { register, loginWithGoogle } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<Country>(getDefaultCountry());
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
-  const passwordStrength = useMemo(() => {
-    const pwd = formData.password;
-    if (!pwd) return { score: 0, label: '', color: '' };
-    let score = 0;
-    if (pwd.length >= 8) score++;
-    if (/[A-Z]/.test(pwd)) score++;
-    if (/[0-9]/.test(pwd)) score++;
-    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+  const handleGoogleCredentialResponse = useCallback(
+    async (response: { credential: string }) => {
+      setGoogleLoading(true);
+      try {
+        const result = await loginWithGoogle({
+          idToken: response.credential,
+          name: '',
+          email: '',
+        });
+        if (result.success) {
+          router.push(result.redirect === '/admin' ? '/admin' : '/');
+        } else {
+          setErrors({ general: result.message || 'فشل التسجيل بـ Google' });
+        }
+      } catch {
+        setErrors({ general: 'حدث خطأ أثناء التواصل مع Google' });
+      }
+      setGoogleLoading(false);
+    },
+    [loginWithGoogle, router]
+  );
 
-    if (score <= 1) return { score: 1, label: 'ضعيف', color: 'bg-red-500' };
-    if (score <= 2) return { score: 2, label: 'متوسط', color: 'bg-amber-500' };
-    if (score <= 3) return { score: 3, label: 'قوي', color: 'bg-blue-500' };
-    return { score: 4, label: 'قوي جداً', color: 'bg-emerald-500' };
-  }, [formData.password]);
+  const handleGoogleSignup = () => {
+    setGoogleLoading(true);
+    setErrors({});
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+        callback: handleGoogleCredentialResponse,
+      });
+      window.google.accounts.id.prompt((n) => {
+        if (n.isNotDisplayed() || n.isSkippedMoment()) {
+          setGoogleLoading(false);
+          setErrors({ general: 'يرجى السماح لنافذة التسجيل أو تجربة طريقة أخرى' });
+        }
+      });
+    } else {
+      setGoogleLoading(false);
+      setErrors({ general: 'جاري تحميل خدمات Google...' });
+    }
+  };
 
-  const passwordChecks = useMemo(() => [
-    { label: '8 أحرف على الأقل', met: formData.password.length >= 8 },
-    { label: 'يحتوي على رقم', met: /[0-9]/.test(formData.password) },
-    { label: 'يحتوي على حرف كبير', met: /[A-Z]/.test(formData.password) },
-  ], [formData.password]);
+  const validate = (field: string, value: string): string => {
+    switch (field) {
+      case 'name':
+        if (!value) return 'الاسم مطلوب';
+        if (value.trim().length < 3) return 'الاسم يجب أن يكون 3 أحرف على الأقل';
+        return '';
+      case 'email':
+        if (!value) return 'البريد الإلكتروني مطلوب';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'البريد الإلكتروني غير صحيح';
+        return '';
+      case 'password':
+        if (!value) return 'كلمة المرور مطلوبة';
+        if (value.length < 8) return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+        return '';
+      case 'confirmPassword':
+        if (!value) return 'تأكيد كلمة المرور مطلوب';
+        if (value !== formData.password) return 'كلمتا المرور غير متطابقتين';
+        return '';
+      default:
+        return '';
+    }
+  };
 
-  const validate = useCallback((): FormErrors => {
-    const newErrors: FormErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'الاسم مطلوب';
-    else if (formData.name.trim().length < 3) newErrors.name = 'الاسم يجب أن يكون 3 أحرف على الأقل';
-    if (!formData.email) newErrors.email = 'البريد الإلكتروني مطلوب';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'البريد الإلكتروني غير صحيح';
-    if (!formData.phone) newErrors.phone = 'رقم الجوال مطلوب';
-    else if (!validatePhone(formData.phone, selectedCountry)) newErrors.phone = 'رقم الجوال غير صحيح';
-    if (!formData.password) newErrors.password = 'كلمة المرور مطلوبة';
-    else if (formData.password.length < 8) newErrors.password = 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'تأكيد كلمة المرور مطلوب';
-    else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'كلمتا المرور غير متطابقتين';
-    return newErrors;
-  }, [formData, selectedCountry]);
+  const updateField = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      setErrors((prev) => ({ ...prev, [field]: validate(field, value) }));
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setErrors((prev) => ({
+      ...prev,
+      [field]: validate(field, formData[field as keyof typeof formData]),
+    }));
+  };
+
+  const getPasswordStrength = (pwd: string): { level: number; label: string; color: string } => {
+    let level = 0;
+    if (pwd.length >= 8) level++;
+    if (/[A-Z]/.test(pwd)) level++;
+    if (/[0-9]/.test(pwd)) level++;
+    if (/[^A-Za-z0-9]/.test(pwd)) level++;
+
+    if (level <= 1) return { level, label: 'ضعيفة', color: 'bg-red-500' };
+    if (level === 2) return { level, label: 'متوسطة', color: 'bg-yellow-500' };
+    if (level === 3) return { level, label: 'جيدة', color: 'bg-blue-500' };
+    return { level, label: 'قوية', color: 'bg-emerald-500' };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const newErrors: FormErrors = {};
+    newErrors.name = validate('name', formData.name);
+    newErrors.email = validate('email', formData.email);
+    newErrors.password = validate('password', formData.password);
+    newErrors.confirmPassword = validate('confirmPassword', formData.confirmPassword);
+
+    setErrors(newErrors);
+    setTouched({ name: true, email: true, password: true, confirmPassword: true });
+
+    if (Object.values(newErrors).some(Boolean)) return;
     if (!agreeTerms) {
-      setErrors({ general: 'يجب الموافقة على الشروط والأحكام' });
+      setErrors((prev) => ({ ...prev, general: 'يجب الموافقة على الشروط والأحكام' }));
       return;
     }
-    const validationErrors = validate();
-    setErrors(validationErrors);
-    setTouched({ name: true, email: true, phone: true, password: true, confirmPassword: true });
-
-    if (Object.keys(validationErrors).length > 0) return;
 
     setLoading(true);
-    const fullPhone = `${selectedCountry.dialCode}${formData.phone}`;
     const result = await register({
-      name: formData.name.trim(),
+      name: formData.name,
       email: formData.email,
-      phone: fullPhone,
       password: formData.password,
     });
     if (result.success) {
@@ -150,46 +196,16 @@ export default function RegisterPage() {
     setLoading(false);
   };
 
-  const handleGoogleSignup = async () => {
-    const result = await loginWithGoogle({
-      idToken: '',
-      name: 'مستخدم Google',
-      email: `user${Date.now()}@gmail.com`,
-    });
-    if (result.success) {
-      router.push('/');
-    }
-  };
+  const getFieldError = (field: keyof FormErrors) =>
+    touched[field] ? errors[field] : undefined;
 
-  const handleBlur = (field: string) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
-    const newErrors = validate();
-    setErrors(prev => ({ ...prev, general: undefined, ...newErrors }));
-  };
-
-  const getFieldError = (field: keyof FormErrors) => {
-    if (!touched[field]) return undefined;
-    return errors[field];
-  };
-
-  const getFieldValid = (field: keyof FormErrors) => {
-    if (!touched[field] || !formData[field as keyof FormData]) return false;
-    return !errors[field];
-  };
+  const strength = getPasswordStrength(formData.password);
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
-      <motion.div variants={itemVariants} className="text-center mb-7">
-        <motion.div
-          className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2580eb] to-[#14b8a6] mb-4 shadow-lg shadow-[#2580eb]/30"
-          initial={{ rotate: -10, scale: 0.8 }}
-          animate={{ rotate: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-        >
-          <ShieldCheck className="w-7 h-7 text-white" />
-        </motion.div>
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">إنشاء حساب</h2>
-        <p className="text-white/50 text-sm">انضم إلى منصة المنجز الآن</p>
+      <motion.div variants={itemVariants} className="text-center mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">إنشاء حساب جديد</h2>
+        <p className="text-white/50 text-sm">أدخل بياناتك لإنشاء حسابك</p>
       </motion.div>
 
       <AnimatePresence>
@@ -207,301 +223,160 @@ export default function RegisterPage() {
       </AnimatePresence>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-1.5">الاسم الكامل</label>
-          <div className="relative">
+          <label className="block text-sm font-medium text-white/70 mb-2">الاسم الكامل</label>
+          <div className="relative group">
             <User size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => {
-                setFormData(prev => ({ ...prev, name: e.target.value }));
-                if (touched.name) {
-                  const nameErr = !e.target.value.trim() ? 'الاسم مطلوب' : e.target.value.trim().length < 3 ? 'الاسم يجب أن يكون 3 أحرف على الأقل' : undefined;
-                  setErrors(prev => ({ ...prev, name: nameErr }));
-                }
-              }}
+              onChange={(e) => updateField('name', e.target.value)}
               onBlur={() => handleBlur('name')}
               placeholder="محمد أحمد"
-              className={`w-full pr-10 pl-10 py-3 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('name')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                  : getFieldValid('name')
+                  : formData.name && !getFieldError('name')
                   ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
                   : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
               }`}
             />
-            <AnimatePresence>
-              {getFieldValid('name') && (
-                <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0 }} className="absolute left-3 top-1/2 -translate-y-1/2">
-                  <CheckCircle className="w-4.5 h-4.5 text-emerald-400" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {formData.name && !getFieldError('name') && (
+              <CheckCircle size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
+            )}
           </div>
           <AnimatePresence>
             {getFieldError('name') && (
-              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-1.5">
-                <AlertCircle size={12} />
-                {getFieldError('name')}
+              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-2">
+                <AlertCircle size={12} />{getFieldError('name')}
               </motion.p>
             )}
           </AnimatePresence>
         </motion.div>
 
+        {/* Email */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-1.5">البريد الإلكتروني</label>
-          <div className="relative">
+          <label className="block text-sm font-medium text-white/70 mb-2">البريد الإلكتروني</label>
+          <div className="relative group">
             <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => {
-                setFormData(prev => ({ ...prev, email: e.target.value }));
-                if (touched.email) {
-                  const emailErr = !e.target.value ? 'البريد الإلكتروني مطلوب' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value) ? 'البريد الإلكتروني غير صحيح' : undefined;
-                  setErrors(prev => ({ ...prev, email: emailErr }));
-                }
-              }}
+              onChange={(e) => updateField('email', e.target.value)}
               onBlur={() => handleBlur('email')}
               placeholder="example@email.com"
               dir="ltr"
-              className={`w-full pr-10 pl-10 py-3 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('email')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                  : getFieldValid('email')
+                  : formData.email && !getFieldError('email')
                   ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
                   : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
               }`}
             />
-            <AnimatePresence>
-              {getFieldValid('email') && (
-                <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0 }} className="absolute left-3 top-1/2 -translate-y-1/2">
-                  <CheckCircle className="w-4.5 h-4.5 text-emerald-400" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {formData.email && !getFieldError('email') && (
+              <CheckCircle size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
+            )}
           </div>
           <AnimatePresence>
             {getFieldError('email') && (
-              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-1.5">
-                <AlertCircle size={12} />
-                {getFieldError('email')}
+              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-2">
+                <AlertCircle size={12} />{getFieldError('email')}
               </motion.p>
             )}
           </AnimatePresence>
         </motion.div>
 
+        {/* Password */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-1.5">رقم الجوال</label>
-          <div className="flex gap-2">
-            <CountrySelect value={selectedCountry.code} onChange={setSelectedCountry} />
-            <div className="relative flex-1">
-              <Phone size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d]/g, '');
-                  setFormData(prev => ({ ...prev, phone: val }));
-                  if (touched.phone) {
-                    const phoneErr = !val ? 'رقم الجوال مطلوب' : !validatePhone(val, selectedCountry) ? 'رقم الجوال غير صحيح' : undefined;
-                    setErrors(prev => ({ ...prev, phone: phoneErr }));
-                  }
-                }}
-                onBlur={() => handleBlur('phone')}
-                placeholder={selectedCountry.phonePlaceholder}
-                dir="ltr"
-                className={`w-full pr-10 pl-4 py-3 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
-                  getFieldError('phone')
-                    ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                    : getFieldValid('phone')
-                    ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
-                    : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
-                }`}
-              />
-              <AnimatePresence>
-                {getFieldValid('phone') && (
-                  <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0 }} className="absolute left-3 top-1/2 -translate-y-1/2">
-                    <CheckCircle className="w-4.5 h-4.5 text-emerald-400" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-          <AnimatePresence>
-            {getFieldError('phone') && (
-              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-1.5">
-                <AlertCircle size={12} />
-                {getFieldError('phone')}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-1.5">كلمة المرور</label>
-          <div className="relative">
+          <label className="block text-sm font-medium text-white/70 mb-2">كلمة المرور</label>
+          <div className="relative group">
             <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
-              onChange={(e) => {
-                setFormData(prev => ({ ...prev, password: e.target.value }));
-                if (touched.password) {
-                  const passErr = !e.target.value ? 'كلمة المرور مطلوبة' : e.target.value.length < 8 ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' : undefined;
-                  setErrors(prev => ({ ...prev, password: passErr, confirmPassword: formData.confirmPassword && e.target.value !== formData.confirmPassword ? 'كلمتا المرور غير متطابقتين' : undefined }));
-                }
-              }}
+              onChange={(e) => updateField('password', e.target.value)}
               onBlur={() => handleBlur('password')}
               placeholder="••••••••"
-              className={`w-full pr-10 pl-12 py-3 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('password')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                  : getFieldValid('password')
-                  ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
                   : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
               }`}
             />
-            <motion.button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-              whileTap={{ scale: 0.9 }}
-            >
-              <AnimatePresence mode="wait">
-                {showPassword ? (
-                  <motion.div key="eyeoff" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15 }}>
-                    <EyeOff size={18} />
-                  </motion.div>
-                ) : (
-                  <motion.div key="eye" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15 }}>
-                    <Eye size={18} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <motion.button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors" whileTap={{ scale: 0.9 }}>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </motion.button>
           </div>
           <AnimatePresence>
             {getFieldError('password') && (
-              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-1.5">
-                <AlertCircle size={12} />
-                {getFieldError('password')}
+              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-2">
+                <AlertCircle size={12} />{getFieldError('password')}
               </motion.p>
             )}
           </AnimatePresence>
-
-          <AnimatePresence>
-            {formData.password && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-full ${passwordStrength.color}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(passwordStrength.score / 4) * 100}%` }}
-                      transition={{ duration: 0.4, ease: 'easeOut' }}
-                    />
-                  </div>
-                  <span className="text-xs text-white/50 font-medium min-w-[50px] text-left">{passwordStrength.label}</span>
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                  {passwordChecks.map((check) => (
-                    <motion.div
-                      key={check.label}
-                      className="flex items-center gap-1.5"
-                      animate={{ opacity: check.met ? 1 : 0.4 }}
-                    >
-                      {check.met ? (
-                        <CheckCircle size={12} className="text-emerald-400" />
-                      ) : (
-                        <div className="w-3 h-3 rounded-full border border-white/20" />
-                      )}
-                      <span className={`text-xs ${check.met ? 'text-emerald-400' : 'text-white/40'}`}>{check.label}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {formData.password && (
+            <div className="mt-2">
+              <div className="flex gap-1">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= strength.level ? strength.color : 'bg-white/10'}`} />
+                ))}
+              </div>
+              <p className="text-xs text-white/40 mt-1">{strength.label}</p>
+            </div>
+          )}
         </motion.div>
 
+        {/* Confirm Password */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-1.5">تأكيد كلمة المرور</label>
-          <div className="relative">
+          <label className="block text-sm font-medium text-white/70 mb-2">تأكيد كلمة المرور</label>
+          <div className="relative group">
             <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
               type={showConfirmPassword ? 'text' : 'password'}
               value={formData.confirmPassword}
-              onChange={(e) => {
-                setFormData(prev => ({ ...prev, confirmPassword: e.target.value }));
-                if (touched.confirmPassword) {
-                  const confirmErr = !e.target.value ? 'تأكيد كلمة المرور مطلوب' : formData.password !== e.target.value ? 'كلمتا المرور غير متطابقتين' : undefined;
-                  setErrors(prev => ({ ...prev, confirmPassword: confirmErr }));
-                }
-              }}
+              onChange={(e) => updateField('confirmPassword', e.target.value)}
               onBlur={() => handleBlur('confirmPassword')}
               placeholder="••••••••"
-              className={`w-full pr-10 pl-12 py-3 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('confirmPassword')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                  : getFieldValid('confirmPassword')
+                  : formData.confirmPassword && !getFieldError('confirmPassword')
                   ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
                   : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
               }`}
             />
-            <motion.button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-              whileTap={{ scale: 0.9 }}
-            >
+            <motion.button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors" whileTap={{ scale: 0.9 }}>
               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </motion.button>
           </div>
           <AnimatePresence>
             {getFieldError('confirmPassword') && (
-              <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-1.5">
-                <AlertCircle size={12} />
-                {getFieldError('confirmPassword')}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <label className="flex items-start gap-2.5 cursor-pointer group">
-            <div className="relative mt-0.5">
-              <input
-                type="checkbox"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className={`w-5 h-5 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
-                agreeTerms ? 'border-[#2580eb] bg-[#2580eb]' : 'border-white/15'
-              }`}>
-                <CheckCircle size={12} className={`text-white transition-opacity duration-200 ${agreeTerms ? 'opacity-100' : 'opacity-0'}`} />
-              </div>
-            </div>
-            <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors leading-5">
-              أوافق على{' '}
-              <Link href="/terms" className="text-[#2580eb] hover:text-[#2580eb]/80 font-medium">الشروط والأحكام</Link>
-              {' '}و{' '}
-              <Link href="/privacy" className="text-[#2580eb] hover:text-[#2580eb]/80 font-medium">سياسة الخصوصية</Link>
-            </span>
-          </label>
-          <AnimatePresence>
-            {!agreeTerms && touched.name && (
               <motion.p initial={{ opacity: 0, y: -5, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -5, height: 0 }} className="flex items-center gap-1.5 text-xs text-red-400 mt-2">
-                <AlertCircle size={12} />
-                يجب الموافقة على الشروط والأحكام
+                <AlertCircle size={12} />{getFieldError('confirmPassword')}
               </motion.p>
             )}
           </AnimatePresence>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="pt-1">
+        {/* Terms */}
+        <motion.div variants={itemVariants} className="flex items-start gap-3 pt-2">
+          <button type="button" onClick={() => setAgreeTerms(!agreeTerms)} className="mt-0.5 shrink-0">
+            <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${agreeTerms ? 'border-[#2580eb] bg-[#2580eb]' : 'border-white/15'}`}>
+              {agreeTerms && <CheckCircle size={12} className="text-white" />}
+            </div>
+          </button>
+          <p className="text-xs text-white/40 leading-relaxed">
+            أوافق على{' '}
+            <Link href="/terms" className="text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">الشروط والأحكام</Link>
+            {' '}و{' '}
+            <Link href="/privacy" className="text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">سياسة الخصوصية</Link>
+          </p>
+        </motion.div>
+
+        {/* Submit */}
+        <motion.div variants={itemVariants} className="pt-2">
           <Button
             type="submit"
             variant="primary"
@@ -511,12 +386,13 @@ export default function RegisterPage() {
             iconLeft={!loading ? <UserPlus size={18} /> : undefined}
             className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 hover:shadow-2xl hover:shadow-[#2580eb]/30 transition-all duration-300"
           >
-            إنشاء حساب
+            إنشاء الحساب
           </Button>
         </motion.div>
       </form>
 
-      <motion.div variants={itemVariants} className="relative my-6">
+      {/* Divider */}
+      <motion.div variants={itemVariants} className="relative my-8">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-white/[0.08]" />
         </div>
@@ -525,19 +401,22 @@ export default function RegisterPage() {
         </div>
       </motion.div>
 
+      {/* Google */}
       <motion.div variants={itemVariants}>
         <motion.button
           type="button"
           onClick={handleGoogleSignup}
+          disabled={googleLoading}
           whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.08)' }}
           whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm font-medium transition-all duration-200 hover:border-white/[0.15] shadow-lg shadow-black/10"
+          className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm font-medium transition-all duration-200 hover:border-white/[0.15] disabled:opacity-50 shadow-lg shadow-black/10"
         >
-          <GoogleIcon />
-          Google
+          {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
+          التسجيل بـ Google
         </motion.button>
       </motion.div>
 
+      {/* Login link */}
       <motion.div variants={itemVariants} className="mt-6 text-center">
         <p className="text-sm text-white/40">
           لديك حساب بالفعل؟{' '}

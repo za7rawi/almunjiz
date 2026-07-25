@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { users, generateId } from "@/lib/store";
+import { prisma } from "@/lib/prisma";
 import { success, error, conflict } from "@/lib/api/response";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, phone } = await request.json();
+    const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
       return error("جميع الحقول مطلوبة");
@@ -22,27 +22,22 @@ export async function POST(request: NextRequest) {
       return error("كلمة المرور يجب أن تكون 8 أحرف على الأقل");
     }
 
-    if (phone && !/^(\+?966|0)?5[0-9]{8}$/.test(phone)) {
-      return error("رقم الهاتف غير صحيح");
-    }
-
-    const existingEmail = Array.from(users.values()).find((u) => u.email === email);
-    if (existingEmail) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
       return conflict("البريد الإلكتروني مستخدم بالفعل");
     }
 
-    const user = {
-      id: generateId("user"),
-      name: name.trim(),
-      email,
-      phone: phone ?? "",
-      password,
-      role: "CUSTOMER",
-      avatar: null,
-      createdAt: new Date(),
-    };
+    const bcrypt = await import("bcryptjs");
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    users.set(email, user);
+    const user = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email,
+        password: hashedPassword,
+        role: "CUSTOMER",
+      },
+    });
 
     const token = `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 
@@ -52,8 +47,9 @@ export async function POST(request: NextRequest) {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role,
-          avatar: user.avatar,
+          role: user.role.toLowerCase(),
+          avatar: user.avatar || "",
+          createdAt: user.createdAt.toISOString(),
         },
         token,
       },

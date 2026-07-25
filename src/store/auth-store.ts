@@ -20,7 +20,7 @@ interface AuthStore {
   login: (user: User) => void;
   loginEmail: (email: string, password: string) => Promise<{ success: boolean; message: string; redirect?: string }>;
   loginAdmin: (email: string, password: string) => { success: boolean; message: string };
-  register: (data: { name: string; email: string; phone: string; password: string }) => Promise<{ success: boolean; message: string }>;
+  register: (data: { name: string; email: string; password: string }) => Promise<{ success: boolean; message: string }>;
   loginWithGoogle: (data: { idToken: string; name: string; email: string; avatar?: string }) => Promise<{ success: boolean; message: string; redirect: string }>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
@@ -120,7 +120,6 @@ export const useAuthStore = create<AuthStore>()(
             body: JSON.stringify({
               name: data.name,
               email: data.email.toLowerCase().trim(),
-              phone: data.phone,
               password: data.password,
             }),
           });
