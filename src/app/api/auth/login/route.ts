@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api/response";
+import { sendWelcomeEmail } from "@/lib/email/service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,10 +30,18 @@ export async function POST(request: NextRequest) {
       return error("كلمة المرور غير صحيحة", 401);
     }
 
+    const isFirstLogin = !user.lastLoginAt;
+
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
+
+    if (isFirstLogin) {
+      sendWelcomeEmail(user.email, user.name).catch((err) =>
+        console.error("[Login] Failed to send welcome email:", err)
+      );
+    }
 
     const token = `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 

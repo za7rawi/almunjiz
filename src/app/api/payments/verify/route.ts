@@ -77,6 +77,11 @@ export async function POST(request: NextRequest) {
                 paidAt: new Date(),
               },
             });
+          } else {
+            await prisma.invoice.update({
+              where: { id: existingInvoice.id },
+              data: { status: 'PAID', paidAt: new Date() },
+            });
           }
 
           await writeAuditLog({

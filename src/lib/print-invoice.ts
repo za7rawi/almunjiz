@@ -1,5 +1,8 @@
+import QRCode from 'qrcode';
+
 export interface PrintInvoiceData {
   invoiceNumber: string;
+  orderNumber?: string;
   customer: string;
   email: string;
   phone?: string;
@@ -32,14 +35,23 @@ const statusColors: Record<string, string> = {
   cancelled: '#6b7280',
 };
 
-export function printInvoice(data: PrintInvoiceData) {
+export async function printInvoice(data: PrintInvoiceData) {
   const companyNameAr = data.companyNameAr || 'المنجز';
   const companyNameEn = data.companyNameEn || 'AL-MUNJIZ';
   const companyPhone = data.companyPhone || '+962 79 103 8472';
-  const companyEmail = data.companyEmail || 'info@almunjiz.com';
+  const companyEmail = data.companyEmail || 'info@munjiz.store';
   const companyAddress = data.companyAddress || 'المملكة الأردنية الهاشمية - عمان';
   const statusLabel = statusLabels[data.status] || data.status;
   const statusColor = statusColors[data.status] || '#6b7280';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://munjiz.store';
+  const trackUrl = `${siteUrl}/track-order?order=${data.orderNumber || data.invoiceNumber}`;
+
+  let qrDataUrl = '';
+  try {
+    qrDataUrl = await QRCode.toDataURL(trackUrl, { width: 120, margin: 1, color: { dark: '#1a1a2e', light: '#ffffff' } });
+  } catch {
+    qrDataUrl = '';
+  }
 
   const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -577,7 +589,8 @@ export function printInvoice(data: PrintInvoiceData) {
           <div class="name">${data.customer}</div>
           <div class="detail">${data.email}</div>
           ${data.phone ? `<div class="detail">هاتف: ${data.phone}</div>` : ''}
-          <div class="detail">رقم الطلب: ${data.invoiceNumber}</div>
+          <div class="detail">رقم الطلب: ${data.orderNumber || data.invoiceNumber}</div>
+          <div class="detail">رقم الفاتورة: ${data.invoiceNumber}</div>
           <div class="detail">تاريخ الطلب: ${data.date}</div>
         </div>
       </div>
@@ -628,37 +641,12 @@ export function printInvoice(data: PrintInvoiceData) {
       <!-- QR Code Section -->
       <div style="display:flex;justify-content:center;margin-bottom:32px;">
         <div style="text-align:center;padding:16px 24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
-          <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="120" height="120" rx="8" fill="#f1f5f9"/>
-            <rect x="10" y="10" width="35" height="35" rx="4" fill="#1a1a2e"/>
-            <rect x="15" y="15" width="25" height="25" rx="2" fill="#fff"/>
-            <rect x="18" y="18" width="19" height="19" rx="1" fill="#1a1a2e"/>
-            <rect x="75" y="10" width="35" height="35" rx="4" fill="#1a1a2e"/>
-            <rect x="80" y="15" width="25" height="25" rx="2" fill="#fff"/>
-            <rect x="83" y="18" width="19" height="19" rx="1" fill="#1a1a2e"/>
-            <rect x="10" y="75" width="35" height="35" rx="4" fill="#1a1a2e"/>
-            <rect x="15" y="80" width="25" height="25" rx="2" fill="#fff"/>
-            <rect x="18" y="83" width="19" height="19" rx="1" fill="#1a1a2e"/>
-            <rect x="50" y="10" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="62" y="10" width="8" height="8" rx="1" fill="#2580eb"/>
-            <rect x="50" y="22" width="8" height="8" rx="1" fill="#14b8a6"/>
-            <rect x="62" y="22" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="50" y="50" width="20" height="20" rx="4" fill="#1a1a2e"/>
-            <rect x="53" y="53" width="14" height="14" rx="2" fill="#fff"/>
-            <rect x="56" y="56" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="50" y="75" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="62" y="75" width="8" height="8" rx="1" fill="#14b8a6"/>
-            <rect x="75" y="50" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="87" y="50" width="8" height="8" rx="1" fill="#2580eb"/>
-            <rect x="100" y="50" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="75" y="62" width="8" height="8" rx="1" fill="#14b8a6"/>
-            <rect x="87" y="62" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="75" y="87" width="35" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="75" y="100" width="8" height="8" rx="1" fill="#2580eb"/>
-            <rect x="87" y="100" width="8" height="8" rx="1" fill="#1a1a2e"/>
-            <rect x="100" y="100" width="8" height="8" rx="1" fill="#14b8a6"/>
-          </svg>
-          <p style="font-size:10px;color:#94a3b8;margin-top:8px;font-family:'Inter',sans-serif;letter-spacing:1px;">QR CODE</p>
+          ${qrDataUrl ? `<img src="${qrDataUrl}" width="120" height="120" alt="QR Code" style="border-radius:8px;" />` : `
+          <div style="width:120px;height:120px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+            <span style="color:#94a3b8;font-size:12px;">QR</span>
+          </div>`}
+          <p style="font-size:10px;color:#94a3b8;margin-top:8px;font-family:'Inter',sans-serif;letter-spacing:1px;">امسح للطلب / Scan to Track</p>
+          <p style="font-size:9px;color:#94a3b8;margin-top:2px;font-family:'Inter',sans-serif;word-break:break-all;">${trackUrl}</p>
         </div>
       </div>
 

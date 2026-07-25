@@ -42,19 +42,28 @@ export default function PaymentSuccessPage() {
   const isAr = language === 'ar';
 
   useEffect(() => {
-    if (gatewayId && orderId) {
+    if (gatewayId && orderId && paymentVerified === null) {
       setVerifying(true);
       fetch('/api/payments/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gatewayId, orderId, transactionId: orderId }) })
         .then((r) => r.json())
-        .then((data) => setPaymentVerified(data.success && data.status === 'COMPLETED'))
+        .then((data) => {
+          setPaymentVerified(data.success && data.status === 'COMPLETED');
+          if (data.success) {
+            fetch(`/api/orders?search=${encodeURIComponent(orderId)}&limit=1`)
+              .then((r) => r.json())
+              .then((d) => { if (d.success && d.data?.[0]) setOrder(d.data[0]); })
+              .catch(() => {});
+          }
+        })
         .catch(() => setPaymentVerified(false))
         .finally(() => setVerifying(false));
     }
-  }, [gatewayId, orderId]);
+  }, [gatewayId, orderId, paymentVerified]);
 
-  const handleDownloadInvoice = () => {
-    printInvoice({
-      invoiceNumber: order?.invoice?.invoiceNumber || `INV-${orderId}`,
+  const handleDownloadInvoice = async () => {
+    await printInvoice({
+      invoiceNumber: order?.invoice?.invoiceNumber || `INV-${order?.orderNumber || orderId}`,
+      orderNumber: order?.orderNumber || orderId,
       customer: order?.customerName || 'عميل',
       email: order?.customerEmail || '',
       phone: order?.customerPhone || '',
@@ -63,7 +72,7 @@ export default function PaymentSuccessPage() {
       tax: order?.tax || 0,
       total: amount,
       dueDate: date, date,
-      status: order?.status === 'COMPLETED' || order?.paymentStatus === 'PAID' ? 'paid' : 'pending',
+      status: order?.paymentStatus === 'PAID' ? 'paid' : order?.status === 'COMPLETED' ? 'paid' : 'pending',
     });
   };
 

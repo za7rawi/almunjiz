@@ -3,75 +3,61 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Package, Users, DollarSign, ArrowUpRight, ShoppingCart, Wrench, Pencil, Check, X } from 'lucide-react';
+import { Package, Users, DollarSign, ArrowUpRight, ShoppingCart, Wrench, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useLanguageStore } from '@/store/language-store';
 
 interface ApiOrder {
   id: string; orderNumber: string; status: string; amount: number; total: number;
   customerName: string; customerEmail: string; createdAt: string;
+  paymentStatus?: string;
   service?: { name: string };
 }
 
 const statusConfig: Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'info' | 'danger' }> = {
   PENDING: { label: 'قيد الانتظار', variant: 'warning' },
+  UNDER_REVIEW: { label: 'قيد المراجعة', variant: 'info' },
   IN_PROGRESS: { label: 'جار التنفيذ', variant: 'primary' },
   COMPLETED: { label: 'مكتمل', variant: 'success' },
+  DELIVERED: { label: 'تم التسليم', variant: 'success' },
   CANCELLED: { label: 'ملغى', variant: 'danger' },
 };
-
-const revenueData = [
-  { day: 'السبت', value: 4200 }, { day: 'الأحد', value: 5800 }, { day: 'الاثنين', value: 4900 },
-  { day: 'الثلاثاء', value: 7200 }, { day: 'الأربعاء', value: 6100 }, { day: 'الخميس', value: 8500 },
-  { day: 'الجمعة', value: 7800 },
-];
 
 const quickActions = [
   { label: 'إضافة خدمة', href: '/admin/services', icon: Wrench, color: '#2580eb' },
   { label: 'إدارة الطلبات', href: '/admin/orders', icon: Package, color: '#14b8a6' },
-  { label: 'إضافة كوبون', href: '/admin/coupons', icon: DollarSign, color: '#7c3aed' },
+  { label: 'المدفوعات', href: '/admin/payments', icon: DollarSign, color: '#7c3aed' },
 ];
 
-function EditableStat({ label, value, icon: Icon, color }: { label: string; value: string; icon: React.ElementType; color: string }) {
-  const [editing, setEditing] = useState(false);
-  const [tempValue, setTempValue] = useState(value);
-  useEffect(() => { setTempValue(value); }, [value]);
-  return (
-    <Card className="hover:shadow-lg">
-      <CardContent>
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</p>
-            {editing ? (
-              <div className="flex items-center gap-2 mt-1">
-                <input type="text" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && setEditing(false)} autoFocus className="w-full text-2xl font-extrabold bg-transparent border-b-2 border-[#2580eb] text-slate-900 dark:text-white focus:outline-none py-0.5" />
-                <button onClick={() => setEditing(false)} className="p-1 rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition-colors"><Check size={14} /></button>
-                <button onClick={() => { setTempValue(value); setEditing(false); }} className="p-1 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"><X size={14} /></button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{value}</p>
-                <button onClick={() => { setTempValue(value); setEditing(true); }} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-[#2580eb] transition-colors"><Pencil size={12} /></button>
-              </div>
-            )}
-          </div>
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}15` }}>
-            <Icon size={20} style={{ color }} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function AdminDashboardPage() {
+  const { language } = useLanguageStore();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [customerCount, setCustomerCount] = useState(0);
+  const [weeklyRevenue, setWeeklyRevenue] = useState<{ day: string; value: number }[]>([]);
 
   useEffect(() => {
-    fetch('/api/orders?limit=50')
+    fetch('/api/orders?limit=200')
       .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setOrders(data.data); })
+      .then((data) => {
+        if (data.success && data.data) {
+          setOrders(data.data);
+          const paidOrders = data.data.filter((o: ApiOrder) => o.paymentStatus === 'PAID' || o.status === 'COMPLETED' || o.status === 'DELIVERED');
+          const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+          const now = new Date();
+          const weekData: { day: string; value: number }[] = [];
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            const dayStr = d.toISOString().split('T')[0];
+            const dayTotal = paidOrders
+              .filter((o: ApiOrder) => o.createdAt.startsWith(dayStr))
+              .reduce((sum: number, o: ApiOrder) => sum + (Number(o.total) || 0), 0);
+            weekData.push({ day: dayNames[d.getDay()], value: dayTotal });
+          }
+          setWeeklyRevenue(weekData);
+        }
+      })
       .catch(() => {});
     fetch('/api/users')
       .then((r) => r.json())
@@ -83,16 +69,18 @@ export default function AdminDashboardPage() {
       .catch(() => {});
   }, []);
 
-  const maxRevenue = Math.max(...revenueData.map((d) => d.value));
-  const recentOrders = orders.slice(-5).reverse();
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || o.amount || 0), 0).toLocaleString() + ' ر.س';
-  const newOrders = orders.filter((o) => o.status === 'PENDING').length.toString();
+  const maxRevenue = Math.max(...weeklyRevenue.map((d) => d.value), 1);
+  const recentOrders = orders.slice(0, 5);
+  const totalRevenue = orders
+    .filter((o) => o.paymentStatus === 'PAID' || o.status === 'COMPLETED' || o.status === 'DELIVERED')
+    .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const newOrders = orders.filter((o) => o.status === 'PENDING').length;
 
   const statCards = [
-    { label: 'إجمالي الطلبات', value: orders.length.toString(), key: 'totalOrders' as const, icon: Package, color: '#2580eb' },
-    { label: 'الإيرادات', value: totalRevenue, key: 'totalRevenue' as const, icon: DollarSign, color: '#14b8a6' },
-    { label: 'العملاء النشطين', value: customerCount.toString(), key: 'activeCustomers' as const, icon: Users, color: '#7c3aed' },
-    { label: 'الطلبات الجديدة', value: newOrders, key: 'newOrders' as const, icon: ShoppingCart, color: '#f59e0b' },
+    { label: 'إجمالي الطلبات', value: orders.length.toString(), icon: Package, color: '#2580eb' },
+    { label: 'الإيرادات', value: `${totalRevenue.toLocaleString()} ر.س`, icon: DollarSign, color: '#14b8a6' },
+    { label: 'العملاء', value: customerCount.toString(), icon: Users, color: '#7c3aed' },
+    { label: 'طلبات جديدة', value: newOrders.toString(), icon: ShoppingCart, color: '#f59e0b' },
   ];
 
   return (
@@ -104,8 +92,20 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
-          <motion.div key={stat.key} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-            <EditableStat label={stat.label} value={stat.value} icon={stat.icon} color={stat.color} />
+          <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+            <Card className="hover:shadow-lg">
+              <CardContent>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{stat.label}</p>
+                    <p className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-1">{stat.value}</p>
+                  </div>
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${stat.color}15` }}>
+                    <stat.icon size={20} style={{ color: stat.color }} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
       </div>
@@ -142,7 +142,7 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="py-3 px-2 text-slate-600 dark:text-slate-300">{order.service?.name || '-'}</td>
                         <td className="py-3 px-2"><Badge variant={statusConfig[order.status]?.variant || 'primary'} size="sm">{statusConfig[order.status]?.label || order.status}</Badge></td>
-                        <td className="py-3 px-2 text-end font-bold text-slate-900 dark:text-white">{order.total || order.amount} ر.س</td>
+                        <td className="py-3 px-2 text-end font-bold text-slate-900 dark:text-white">{Number(order.total || 0).toLocaleString()} ر.س</td>
                       </tr>
                     ))}
                     {recentOrders.length === 0 && <tr><td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500">لا توجد طلبات بعد</td></tr>}
@@ -173,12 +173,12 @@ export default function AdminDashboardPage() {
       </div>
 
       <Card>
-        <CardHeader><h3 className="font-bold text-slate-900 dark:text-white">إيرادات آخر 7 أيام</h3></CardHeader>
+        <CardHeader><h3 className="font-bold text-slate-900 dark:text-white">إيرادات آخر 7 أيام (المدفوعة فقط)</h3></CardHeader>
         <CardContent>
           <div className="h-52 flex items-end justify-between gap-3 px-2">
-            {revenueData.map((item, i) => (
+            {weeklyRevenue.map((item, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <motion.div initial={{ height: 0 }} animate={{ height: `${(item.value / maxRevenue) * 100}%` }} transition={{ delay: i * 0.1, type: 'spring', stiffness: 200 }} className="w-full rounded-t-lg bg-gradient-to-t from-[#2580eb] to-[#14b8a6] hover:opacity-80 transition-opacity cursor-pointer relative group">
+                <motion.div initial={{ height: 0 }} animate={{ height: item.value > 0 ? `${(item.value / maxRevenue) * 100}%` : '4px' }} transition={{ delay: i * 0.1, type: 'spring', stiffness: 200 }} className="w-full rounded-t-lg bg-gradient-to-t from-[#2580eb] to-[#14b8a6] hover:opacity-80 transition-opacity cursor-pointer relative group min-h-[4px]">
                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{item.value.toLocaleString()} ر.س</div>
                 </motion.div>
                 <span className="text-xs text-slate-400">{item.day}</span>

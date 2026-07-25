@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPaymentProvider } from '@/lib/payment-providers';
 import { writeAuditLog } from '@/lib/audit-log';
+import { sendPaymentSuccessEmail, sendInvoiceEmail } from '@/lib/email/service';
 
 export async function POST(
   request: NextRequest,
@@ -110,6 +111,49 @@ export async function POST(
             resourceId: payment.orderId,
             metadata: { transactionId: webhookResult.transactionId, provider: providerSlug, source: 'webhook' },
           });
+
+          const orderUser = await prisma.user.findUnique({ where: { id: payment.order.userId } });
+          if (orderUser) {
+            const invoiceRec = await prisma.invoice.findUnique({ where: { orderId: payment.orderId } });
+            sendPaymentSuccessEmail({
+              email: orderUser.email,
+              name: orderUser.name,
+              transactionId: webhookResult.transactionId,
+              amount: String(payment.order.total),
+              currency: payment.order.currency,
+              orderNumber: payment.order.orderNumber,
+              paymentMethod: gateway.displayName,
+            }).catch((err) => console.error("[Webhook] Failed to send payment email:", err));
+
+            if (invoiceRec) {
+              sendInvoiceEmail({
+                email: orderUser.email,
+                name: orderUser.name,
+                invoiceNumber: invoiceRec.invoiceNumber,
+                amount: String(payment.order.total),
+                currency: payment.order.currency,
+                orderNumber: payment.order.orderNumber,
+              }).catch((err) => console.error("[Webhook] Failed to send invoice email:", err));
+            }
+          }
+
+          const adminUsers = await prisma.user.findMany({
+            where: { role: { in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] } },
+            select: { id: true },
+          });
+          for (const admin of adminUsers) {
+            await prisma.notification.create({
+              data: {
+                userId: admin.id,
+                title: 'دفع ناجح',
+                titleEn: 'Payment Successful',
+                message: `تم الدفع بنجاح لطلب ${payment.order.orderNumber} - ${payment.order.total} ${payment.order.currency}`,
+                messageEn: `Payment completed for order ${payment.order.orderNumber} - ${payment.order.total} ${payment.order.currency}`,
+                type: 'PAYMENT',
+                link: `/admin/orders`,
+              },
+            });
+          }
         } else if (webhookResult.status === 'FAILED' || webhookResult.status === 'CANCELLED') {
           orderUpdate.paymentStatus = 'FAILED';
           await writeAuditLog({
@@ -118,6 +162,24 @@ export async function POST(
             resourceId: payment.orderId,
             metadata: { transactionId: webhookResult.transactionId, status: webhookResult.status, provider: providerSlug },
           });
+
+          const failAdminUsers = await prisma.user.findMany({
+            where: { role: { in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] } },
+            select: { id: true },
+          });
+          for (const admin of failAdminUsers) {
+            await prisma.notification.create({
+              data: {
+                userId: admin.id,
+                title: 'فشل الدفع',
+                titleEn: 'Payment Failed',
+                message: `فشل الدفع لطلب ${payment.order.orderNumber} عبر ${gateway.displayName}`,
+                messageEn: `Payment failed for order ${payment.order.orderNumber} via ${gateway.displayName}`,
+                type: 'PAYMENT',
+                link: `/admin/orders`,
+              },
+            });
+          }
         }
 
         await prisma.order.update({

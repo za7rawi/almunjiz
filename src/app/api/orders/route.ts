@@ -169,6 +169,24 @@ export async function POST(request: NextRequest) {
       orderNumber,
     }).catch((err) => console.error("[Orders] Failed to send invoice email:", err));
 
+    const adminUsers = await prisma.user.findMany({
+      where: { role: { in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] } },
+      select: { id: true },
+    });
+    for (const admin of adminUsers) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: 'طلب جديد',
+          titleEn: 'New Order',
+          message: `طلب جديد من ${customerName} - ${service.name} (${Number(total || amount)} ر.س)`,
+          messageEn: `New order from ${customerName} - ${service.name} (${Number(total || amount)} SAR)`,
+          type: 'ORDER',
+          link: `/admin/orders`,
+        },
+      });
+    }
+
     return NextResponse.json({
       success: true,
       data: {

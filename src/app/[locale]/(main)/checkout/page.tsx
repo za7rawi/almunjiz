@@ -242,8 +242,35 @@ export default function CheckoutPage() {
       });
       const orderData = await orderRes.json();
       if (!orderData.success) throw new Error(orderData.error || 'Failed to create order');
+      const orderId = orderData.data.id;
       const orderNumber = orderData.data.orderNumber;
-      router.push(`/payment/success?orderId=${orderNumber}`);
+
+      if (selectedGatewayId) {
+        const payRes = await fetch('/api/payments/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId,
+            gatewayId: selectedGatewayId,
+            amount: total,
+            currency: currency === 'SAR' ? 'SAR' : currency === 'USD' ? 'USD' : currency === 'AED' ? 'AED' : 'SAR',
+            customerName: formData.name,
+            customerEmail: formData.email,
+            customerPhone: `${formData.phoneCode}${formData.phone}`,
+          }),
+        });
+        const payData = await payRes.json();
+        if (payData.success && payData.data?.paymentUrl) {
+          window.location.href = payData.data.paymentUrl;
+          return;
+        }
+        if (payData.success && payData.data?.clientSecret) {
+          router.push(`/payment/success?orderId=${orderId}&gatewayId=${selectedGatewayId}`);
+          return;
+        }
+      }
+
+      router.push(`/payment/success?orderId=${orderId}`);
     } catch {
       router.push(`/payment/failed?orderId=`);
     } finally {

@@ -15,25 +15,18 @@ export function welcomeTemplate(opts: {
   return baseLayout({
     title: "مرحبًا بك في المنجز",
     subtitle: "حسابك جاهز للاستخدام",
-    preheader: `مرحبًا ${opts.customerName}! تم إنشاء حسابك بنجاح في المنجز.`,
+    preheader: `مرحبًا ${opts.customerName}! تم تسجيل دخولك بنجاح في المنجز.`,
     content: `
       ${greeting(opts.customerName)}
-      ${heading("🎉 أهلاً وسهلاً بك في المنجز")}
-      ${textBlock("يسعدنا انضمامك إلينا! تم إنشاء حسابك بنجاح ويمكنك الآن الاستمتاع بجميع خدماتنا.")}
+      ${textBlock("شكراً لاستخدام منصة المنجز للخدمات الإلكترونية.")}
+      ${textBlock("تم تسجيل دخولك بنجاح.")}
+      ${textBlock("يمكنك الآن طلب خدماتك ومتابعة جميع الطلبات والفواتير من حسابك.")}
+      ${textBlock("نتمنى لك تجربة مميزة.")}
 
-      <div style="background:linear-gradient(135deg,#f0f7ff,#eef5ff);border-radius:12px;padding:20px;margin:20px 0;">
-        <p style="color:#2580eb;font-size:14px;font-weight:700;margin:0 0 8px 0;">✦ ما الذي يمكنك فعله الآن؟</p>
-        <ul style="color:#555;font-size:13px;line-height:2;margin:0;padding-right:16px;">
-          <li>استعرض خدماتنا المتنوعة</li>
-          <li>أرسل طلبك بسهولة وأمان</li>
-          <li>تابع حالة طلباتك من لوحة التحكم</li>
-          <li>استمتع بدعم فني على مدار الساعة</li>
-        </ul>
-      </div>
+      ${ctaButton("استعرض خدماتنا", `${SITE_URL}/services`)}
 
-      ${ctaButton("استعرض خدماتنا 🚀", `${SITE_URL}/services`)}
       ${divider()}
-      ${textBlock("نشكرك على اختيارك المنجز. نحن هنا لخدمتك في كل وقت.")}
+      ${textBlock("<strong>فريق المنجز</strong>")}
     `,
   });
 }

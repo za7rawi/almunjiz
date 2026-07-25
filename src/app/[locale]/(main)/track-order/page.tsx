@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Package, Clock, CheckCircle, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
+import { useSearchParams } from 'next/navigation';
 
 interface TimelineStep { status: string; date: string | null; done: boolean }
 interface OrderData {
@@ -18,19 +19,22 @@ interface OrderData {
 const statusColors: Record<string, string> = { PENDING: 'warning', IN_PROGRESS: 'info', COMPLETED: 'success', DELIVERED: 'success' };
 
 export default function TrackOrderPage() {
-  const [orderNumber, setOrderNumber] = useState('');
+  const searchParams = useSearchParams();
+  const initialOrder = searchParams.get('order') || '';
+  const [orderNumber, setOrderNumber] = useState(initialOrder);
   const [foundOrder, setFoundOrder] = useState<OrderData | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
   const { currency } = useCurrencyStore();
 
-  const handleSearch = async () => {
-    if (!orderNumber.trim()) return;
+  const handleSearch = async (searchVal?: string) => {
+    const q = searchVal || orderNumber;
+    if (!q.trim()) return;
     setSearching(true);
     setFoundOrder(null);
     setError('');
     try {
-      const res = await fetch(`/api/orders?search=${encodeURIComponent(orderNumber.trim())}&limit=1`);
+      const res = await fetch(`/api/orders?search=${encodeURIComponent(q.trim())}&limit=1`);
       const data = await res.json();
       if (data.success && data.data?.length > 0) {
         const o = data.data[0];
@@ -63,6 +67,14 @@ export default function TrackOrderPage() {
     }
   };
 
+  useEffect(() => {
+    if (initialOrder) {
+      setOrderNumber(initialOrder);
+      handleSearch(initialOrder);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/5">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -74,7 +86,7 @@ export default function TrackOrderPage() {
               <input type="text" value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} placeholder="ادخل رقم الطلب (مثال: AM-ABC-1234)" className="w-full pr-12 pl-4 py-3.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all font-mono" dir="ltr" />
               <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
-            <button onClick={handleSearch} disabled={searching || !orderNumber.trim()} className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white font-semibold shadow-lg shadow-[#2580eb]/25 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={() => handleSearch()} disabled={searching || !orderNumber.trim()} className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white font-semibold shadow-lg shadow-[#2580eb]/25 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
               {searching ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />جاري البحث...</span> : 'تتبع'}
             </button>
           </div>
