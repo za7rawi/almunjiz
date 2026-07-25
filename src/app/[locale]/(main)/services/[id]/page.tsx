@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCurrencyStore } from '@/store/currency-store';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice } from '@/lib/currency';
-import type { ServiceData } from '@/lib/services-data';
+import type { ServiceData } from '@/types/service-data';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   Globe, FileText, Car, Plane, Building2, Headphones, GraduationCap,

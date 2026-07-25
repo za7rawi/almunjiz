@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET() {
   try {
@@ -28,6 +29,8 @@ function generateSlug(name: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const body = await request.json();
 
@@ -60,16 +63,32 @@ export async function POST(request: NextRequest) {
         nameEn: body.nameEn,
         description: body.description,
         descriptionEn: body.descriptionEn,
+        fullDescription: body.fullDescription || null,
+        fullDescriptionEn: body.fullDescriptionEn || null,
         slug: body.slug,
         icon: body.icon || null,
         image: body.image || null,
         category: body.category,
+        categoryAr: body.categoryAr || null,
         price: body.price,
+        priceNote: body.priceNote || null,
+        priceNoteEn: body.priceNoteEn || null,
         duration: body.duration || null,
+        durationEn: body.durationEn || null,
         durationUnit: body.durationUnit || null,
         isActive: body.isActive ?? true,
+        isPopular: body.isPopular ?? false,
         features: body.features || [],
+        featuresEn: body.featuresEn || body.features || [],
         requirements: body.requirements || [],
+        requirementsEn: body.requirementsEn || body.requirements || [],
+        steps: body.steps || null,
+        stepsEn: body.stepsEn || null,
+        faq: body.faq || null,
+        faqEn: body.faqEn || null,
+        requiredDocuments: body.requiredDocuments || [],
+        requiredDocumentsEn: body.requiredDocumentsEn || body.requiredDocuments || [],
+        gradient: body.gradient || null,
         sortOrder: body.sortOrder ?? 0,
       },
     });

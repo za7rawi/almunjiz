@@ -35,6 +35,15 @@ function isStaticAsset(pathname: string): boolean {
   return extensions.some((ext) => pathname.endsWith(ext));
 }
 
+function isAdminRoute(pathname: string): boolean {
+  const adminPatterns = ['/admin/'];
+  return adminPatterns.some((p) => pathname.includes(p));
+}
+
+function isAdminLogin(pathname: string): boolean {
+  return pathname.includes('/admin/login');
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -46,13 +55,24 @@ export function middleware(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
 
-  if (pathnameHasLocale) {
-    return NextResponse.next();
+  if (!pathnameHasLocale) {
+    const locale = getLocaleFromHeaders(request);
+    const newUrl = new URL(`/${locale}${pathname}`, request.url);
+    return NextResponse.redirect(newUrl);
   }
 
-  const locale = getLocaleFromHeaders(request);
-  const newUrl = new URL(`/${locale}${pathname}`, request.url);
-  return NextResponse.redirect(newUrl);
+  if (isAdminRoute(pathname) && !isAdminLogin(pathname)) {
+    const sessionToken = request.cookies.get('next-auth.session-token')?.value
+      || request.cookies.get('__Secure-next-auth.session-token')?.value;
+
+    if (!sessionToken) {
+      const locale = pathname.split('/')[1] || 'ar';
+      const loginUrl = new URL(`/${locale}/admin/login`, request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

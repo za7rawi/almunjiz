@@ -1,0 +1,30 @@
+export interface ServiceData {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  descriptionEn: string;
+  fullDescription: string;
+  fullDescriptionEn: string;
+  icon: string;
+  category: string;
+  categoryAr: string;
+  price: number;
+  priceNote: string;
+  priceNoteEn: string;
+  duration: string;
+  durationEn: string;
+  features: string[];
+  featuresEn: string[];
+  requirements: string[];
+  requirementsEn: string[];
+  steps: { title: string; description: string; icon: string }[];
+  stepsEn: { title: string; description: string; icon: string }[];
+  faq: { question: string; answer: string }[];
+  faqEn: { question: string; answer: string }[];
+  requiredDocuments: string[];
+  requiredDocumentsEn: string[];
+  isPopular: boolean;
+  isActive: boolean;
+  gradient: string;
+}

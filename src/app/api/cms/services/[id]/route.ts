@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET(
   _request: NextRequest,
@@ -30,6 +31,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -59,16 +62,32 @@ export async function PUT(
         ...(body.nameEn !== undefined && { nameEn: body.nameEn }),
         ...(body.description !== undefined && { description: body.description }),
         ...(body.descriptionEn !== undefined && { descriptionEn: body.descriptionEn }),
+        ...(body.fullDescription !== undefined && { fullDescription: body.fullDescription }),
+        ...(body.fullDescriptionEn !== undefined && { fullDescriptionEn: body.fullDescriptionEn }),
         ...(body.slug !== undefined && { slug: body.slug }),
         ...(body.icon !== undefined && { icon: body.icon }),
         ...(body.image !== undefined && { image: body.image }),
         ...(body.category !== undefined && { category: body.category }),
+        ...(body.categoryAr !== undefined && { categoryAr: body.categoryAr }),
         ...(body.price !== undefined && { price: body.price }),
+        ...(body.priceNote !== undefined && { priceNote: body.priceNote }),
+        ...(body.priceNoteEn !== undefined && { priceNoteEn: body.priceNoteEn }),
         ...(body.duration !== undefined && { duration: body.duration }),
+        ...(body.durationEn !== undefined && { durationEn: body.durationEn }),
         ...(body.durationUnit !== undefined && { durationUnit: body.durationUnit }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
+        ...(body.isPopular !== undefined && { isPopular: body.isPopular }),
         ...(body.features !== undefined && { features: body.features }),
+        ...(body.featuresEn !== undefined && { featuresEn: body.featuresEn }),
         ...(body.requirements !== undefined && { requirements: body.requirements }),
+        ...(body.requirementsEn !== undefined && { requirementsEn: body.requirementsEn }),
+        ...(body.steps !== undefined && { steps: body.steps }),
+        ...(body.stepsEn !== undefined && { stepsEn: body.stepsEn }),
+        ...(body.faq !== undefined && { faq: body.faq }),
+        ...(body.faqEn !== undefined && { faqEn: body.faqEn }),
+        ...(body.requiredDocuments !== undefined && { requiredDocuments: body.requiredDocuments }),
+        ...(body.requiredDocumentsEn !== undefined && { requiredDocumentsEn: body.requiredDocumentsEn }),
+        ...(body.gradient !== undefined && { gradient: body.gradient }),
         ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
       },
     });
@@ -86,6 +105,8 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
 

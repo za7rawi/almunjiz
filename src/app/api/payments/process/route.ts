@@ -4,8 +4,12 @@ import { createPaymentProvider } from '@/lib/payment-providers';
 import type { CreatePaymentParams } from '@/lib/payment-providers';
 import { generateIdempotencyKey } from '@/lib/encryption';
 import { writeAuditLog } from '@/lib/audit-log';
+import { requireAuth } from '@/lib/admin-auth';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if ('error' in auth) return auth.error;
+
   try {
     const body = await request.json();
     const {

@@ -151,27 +151,43 @@ model User {
 }
 
 model Service {
-  id              String          @id @default(uuid())
-  name            String
-  nameEn          String
-  description     String          @db.Text
-  descriptionEn   String          @db.Text
-  slug            String          @unique
-  icon            String
-  image           String?
-  category        ServiceCategory
-  price           Decimal         @db.Decimal(10, 2)
-  duration        String?
-  durationUnit    String?
-  isActive        Boolean         @default(true)
-  features        String[]
-  requirements    String[]
-  sortOrder       Int             @default(0)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                String          @id @default(uuid())
+  name              String
+  nameEn            String
+  description       String          @db.Text
+  descriptionEn     String          @db.Text
+  fullDescription   String?         @db.Text
+  fullDescriptionEn String?         @db.Text
+  slug              String          @unique
+  icon              String
+  image             String?
+  category          ServiceCategory
+  categoryAr        String?
+  price             Decimal         @db.Decimal(10, 2)
+  priceNote         String?         @default("يبدأ من")
+  priceNoteEn       String?         @default("Starting from")
+  duration          String?
+  durationEn        String?
+  durationUnit      String?
+  isActive          Boolean         @default(true)
+  isPopular         Boolean         @default(false)
+  features          String[]
+  featuresEn        String[]
+  requirements      String[]
+  requirementsEn    String[]
+  steps             Json?
+  stepsEn           Json?
+  faq               Json?
+  faqEn             Json?
+  requiredDocuments String[]
+  requiredDocumentsEn String[]
+  gradient          String?
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  orders          Order[]
-  reviews         Review[]
+  orders            Order[]
+  reviews           Review[]
 
   @@map("services")
 }

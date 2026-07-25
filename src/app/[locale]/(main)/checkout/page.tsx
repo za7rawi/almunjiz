@@ -20,7 +20,7 @@ import { formatPrice } from '@/lib/currency';
 import { getAvailablePaymentMethods, type PaymentMethodDisplay } from '@/lib/payment-providers';
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
-import type { ServiceData } from '@/lib/services-data';
+import type { ServiceData } from '@/types/service-data';
 
 interface UploadedFile {
   id: string;

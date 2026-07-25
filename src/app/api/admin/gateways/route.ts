@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { encrypt, decrypt, encryptGatewayKeys, decryptGatewayKeys } from '@/lib/encryption';
 import { writeAuditLog } from '@/lib/audit-log';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const SENSITIVE_FIELDS = ['secretKey', 'webhookSecret', 'publicKey'];
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const gateways = await prisma.paymentGateway.findMany({
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
@@ -51,6 +54,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const body = await request.json();
     const {

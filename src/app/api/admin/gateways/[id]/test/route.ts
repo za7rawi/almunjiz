@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { createPaymentProvider } from '@/lib/payment-providers';
 import type { CreatePaymentParams, PaymentProvider } from '@/lib/payment-providers';
 import { writeAuditLog } from '@/lib/audit-log';
+import { requireAdmin } from '@/lib/admin-auth';
 
 interface TestResult {
   provider: string;
@@ -147,6 +148,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
     const { all = false } = await request.json().catch(() => ({}));

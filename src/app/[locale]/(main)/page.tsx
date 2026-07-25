@@ -35,7 +35,7 @@ import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { Button } from '@/components/ui/button';
 import { blogsData } from '@/lib/blogs-data';
-import type { ServiceData } from '@/lib/services-data';
+import type { ServiceData } from '@/types/service-data';
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);

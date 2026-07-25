@@ -3,8 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { createPaymentProvider } from '@/lib/payment-providers';
 import { writeAuditLog } from '@/lib/audit-log';
 import { sendPaymentSuccessEmail } from '@/lib/email/service';
+import { requireAuth } from '@/lib/admin-auth';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if ('error' in auth) return auth.error;
+
   try {
     const body = await request.json();
     const { transactionId, gatewayId, orderId } = body;

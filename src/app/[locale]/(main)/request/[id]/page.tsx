@@ -20,7 +20,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
 import { getAvailablePaymentMethods, type PaymentMethodDisplay } from '@/lib/payment-providers';
-import type { ServiceData } from '@/lib/services-data';
+import type { ServiceData } from '@/types/service-data';
 
 interface GatewayData {
   id: string;

@@ -3,8 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { createPaymentProvider } from '@/lib/payment-providers';
 import type { RefundParams } from '@/lib/payment-providers';
 import { writeAuditLog } from '@/lib/audit-log';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
+
   try {
     const body = await request.json();
     const { paymentId, orderId, amount, reason } = body;

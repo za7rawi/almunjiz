@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { servicesData } from '@/lib/services-data';
 import { success, error } from '@/lib/api/response';
 
 export async function GET(request: NextRequest) {
@@ -11,75 +10,42 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const search = searchParams.get('search');
 
-    let dbServices = await prisma.service.findMany({
+    const dbServices = await prisma.service.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
 
-    if (dbServices.length === 0) {
-      for (const s of servicesData) {
-        const existing = await prisma.service.findUnique({ where: { id: s.id } });
-        if (!existing) {
-          await prisma.service.create({
-            data: {
-              id: s.id,
-              name: s.name,
-              nameEn: s.nameEn,
-              description: s.description,
-              descriptionEn: s.descriptionEn,
-              slug: s.id,
-              icon: s.icon,
-              category: s.category as never,
-              price: s.price,
-              duration: s.duration,
-              isActive: s.isActive,
-              features: s.features,
-              requirements: s.requirements,
-              sortOrder: servicesData.indexOf(s),
-            },
-          });
-        }
-      }
-      dbServices = await prisma.service.findMany({
-        where: { isActive: true },
-        orderBy: { sortOrder: 'asc' },
-      });
-    }
-
-    const enriched = dbServices.map((svc) => {
-      const seed = servicesData.find((s) => s.id === svc.id);
-      return {
-        id: svc.id,
-        name: svc.name,
-        nameEn: svc.nameEn,
-        description: svc.description,
-        descriptionEn: svc.descriptionEn,
-        fullDescription: seed?.fullDescription ?? svc.description,
-        fullDescriptionEn: seed?.fullDescriptionEn ?? svc.descriptionEn,
-        icon: svc.icon,
-        category: svc.category,
-        categoryAr: seed?.categoryAr ?? svc.category,
-        price: Number(svc.price),
-        priceNote: seed?.priceNote ?? 'يبدأ من',
-        priceNoteEn: seed?.priceNoteEn ?? 'Starting from',
-        duration: svc.duration ?? seed?.duration ?? '',
-        durationEn: seed?.durationEn ?? svc.duration ?? '',
-        features: svc.features,
-        featuresEn: seed?.featuresEn ?? svc.features,
-        requirements: svc.requirements,
-        requirementsEn: seed?.requirementsEn ?? svc.requirements,
-        steps: seed?.steps ?? [],
-        stepsEn: seed?.stepsEn ?? [],
-        faq: seed?.faq ?? [],
-        faqEn: seed?.faqEn ?? [],
-        requiredDocuments: seed?.requiredDocuments ?? [],
-        requiredDocumentsEn: seed?.requiredDocumentsEn ?? [],
-        isPopular: seed?.isPopular ?? false,
-        isActive: svc.isActive,
-        sortOrder: svc.sortOrder,
-        gradient: seed?.gradient ?? '',
-      };
-    });
+    const enriched = dbServices.map((svc) => ({
+      id: svc.id,
+      name: svc.name,
+      nameEn: svc.nameEn,
+      description: svc.description,
+      descriptionEn: svc.descriptionEn,
+      fullDescription: svc.fullDescription || svc.description,
+      fullDescriptionEn: svc.fullDescriptionEn || svc.descriptionEn,
+      icon: svc.icon,
+      category: svc.category,
+      categoryAr: svc.categoryAr || svc.category,
+      price: Number(svc.price),
+      priceNote: svc.priceNote || 'يبدأ من',
+      priceNoteEn: svc.priceNoteEn || 'Starting from',
+      duration: svc.duration || '',
+      durationEn: svc.durationEn || svc.duration || '',
+      features: svc.features,
+      featuresEn: svc.featuresEn.length > 0 ? svc.featuresEn : svc.features,
+      requirements: svc.requirements,
+      requirementsEn: svc.requirementsEn.length > 0 ? svc.requirementsEn : svc.requirements,
+      steps: (svc.steps as { title: string; description: string; icon: string }[] | null) || [],
+      stepsEn: (svc.stepsEn as { title: string; description: string; icon: string }[] | null) || [],
+      faq: (svc.faq as { question: string; answer: string }[] | null) || [],
+      faqEn: (svc.faqEn as { question: string; answer: string }[] | null) || [],
+      requiredDocuments: svc.requiredDocuments,
+      requiredDocumentsEn: svc.requiredDocumentsEn.length > 0 ? svc.requiredDocumentsEn : svc.requiredDocuments,
+      isPopular: svc.isPopular,
+      isActive: svc.isActive,
+      sortOrder: svc.sortOrder,
+      gradient: svc.gradient || '',
+    }));
 
     let filtered = enriched;
 

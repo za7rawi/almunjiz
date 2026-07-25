@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { encryptGatewayKeys } from '@/lib/encryption';
 import { writeAuditLog } from '@/lib/audit-log';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const SENSITIVE_FIELDS = ['secretKey', 'webhookSecret', 'publicKey'];
 
@@ -9,6 +10,8 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
     const gateway = await prisma.paymentGateway.findUnique({ where: { id } });
@@ -29,6 +32,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -112,6 +117,8 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
     const existing = await prisma.paymentGateway.findUnique({ where: { id } });

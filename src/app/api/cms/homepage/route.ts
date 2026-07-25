@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const DEFAULT_HOMEPAGE = {
   hero: {
@@ -65,6 +66,8 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const body = await request.json();
 

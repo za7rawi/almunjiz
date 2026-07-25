@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import Stripe from 'stripe';
+import { requireAuth } from '@/lib/admin-auth';
 
 interface PaymentIntentRequest {
   amount: number;
@@ -11,6 +12,9 @@ interface PaymentIntentRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if ('error' in auth) return auth.error;
+
   try {
     const body: PaymentIntentRequest = await request.json();
 

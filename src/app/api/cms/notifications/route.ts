@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const typeMap: Record<string, string> = {
   info: 'SYSTEM',
@@ -68,6 +69,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const body = await request.json();
     const { title, titleEn, message, messageEn, type, target } = body;
@@ -117,6 +120,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const body = await request.json();
     const { id, isRead, markAll } = body;
@@ -165,6 +170,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

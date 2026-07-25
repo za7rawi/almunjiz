@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
 import { useLanguageStore } from '@/store/language-store';
-import { useAuthStore } from '@/store/auth-store';
 import { printInvoice } from '@/lib/print-invoice';
 import type { ApiOrder } from '@/types/api-order';
 import { cn } from '@/lib/utils';
@@ -40,7 +39,6 @@ const paymentStatusConfig: Record<string, { label: string; variant: 'warning' | 
 
 export default function OrdersPage() {
   const { language } = useLanguageStore();
-  const { user } = useAuthStore();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState<OrderStatus>('ALL');
@@ -91,7 +89,7 @@ export default function OrdersPage() {
       const res = await fetch(`/api/orders/${selectedOrder.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, internalNotes: internalNotes || undefined, _adminUserId: user?.id }),
+        body: JSON.stringify({ status, internalNotes: internalNotes || undefined }),
       });
       if (res.ok) {
         const data = await res.json();

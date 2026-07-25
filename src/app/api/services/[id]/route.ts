@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { servicesData } from '@/lib/services-data';
 import { success, error, notFound } from '@/lib/api/response';
 
 export async function GET(
@@ -20,38 +19,36 @@ export async function GET(
       return notFound('الخدمة غير موجودة');
     }
 
-    const seed = servicesData.find((s) => s.id === service!.id);
-
     const enriched = {
       id: service.id,
       name: service.name,
       nameEn: service.nameEn,
       description: service.description,
       descriptionEn: service.descriptionEn,
-      fullDescription: seed?.fullDescription ?? service.description,
-      fullDescriptionEn: seed?.fullDescriptionEn ?? service.descriptionEn,
+      fullDescription: service.fullDescription || service.description,
+      fullDescriptionEn: service.fullDescriptionEn || service.descriptionEn,
       icon: service.icon,
       category: service.category,
-      categoryAr: seed?.categoryAr ?? service.category,
+      categoryAr: service.categoryAr || service.category,
       price: Number(service.price),
-      priceNote: seed?.priceNote ?? 'يبدأ من',
-      priceNoteEn: seed?.priceNoteEn ?? 'Starting from',
-      duration: service.duration ?? seed?.duration ?? '',
-      durationEn: seed?.durationEn ?? service.duration ?? '',
+      priceNote: service.priceNote || 'يبدأ من',
+      priceNoteEn: service.priceNoteEn || 'Starting from',
+      duration: service.duration || '',
+      durationEn: service.durationEn || service.duration || '',
       features: service.features,
-      featuresEn: seed?.featuresEn ?? service.features,
+      featuresEn: service.featuresEn.length > 0 ? service.featuresEn : service.features,
       requirements: service.requirements,
-      requirementsEn: seed?.requirementsEn ?? service.requirements,
-      steps: seed?.steps ?? [],
-      stepsEn: seed?.stepsEn ?? [],
-      faq: seed?.faq ?? [],
-      faqEn: seed?.faqEn ?? [],
-      requiredDocuments: seed?.requiredDocuments ?? [],
-      requiredDocumentsEn: seed?.requiredDocumentsEn ?? [],
-      isPopular: seed?.isPopular ?? false,
+      requirementsEn: service.requirementsEn.length > 0 ? service.requirementsEn : service.requirements,
+      steps: (service.steps as { title: string; description: string; icon: string }[] | null) || [],
+      stepsEn: (service.stepsEn as { title: string; description: string; icon: string }[] | null) || [],
+      faq: (service.faq as { question: string; answer: string }[] | null) || [],
+      faqEn: (service.faqEn as { question: string; answer: string }[] | null) || [],
+      requiredDocuments: service.requiredDocuments,
+      requiredDocumentsEn: service.requiredDocumentsEn.length > 0 ? service.requiredDocumentsEn : service.requiredDocuments,
+      isPopular: service.isPopular,
       isActive: service.isActive,
       sortOrder: service.sortOrder,
-      gradient: seed?.gradient ?? '',
+      gradient: service.gradient || '',
     };
 
     return success(enriched);

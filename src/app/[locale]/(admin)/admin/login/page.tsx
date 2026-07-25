@@ -2,39 +2,62 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
-import { useAuthStore } from '@/store/auth-store';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [hintPassword, setHintPassword] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
-  const { loginAdmin } = useAuthStore();
   const locale = pathname.split('/')[1] || 'ar';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      const success = loginAdmin(email, password);
-      if (success) {
-        router.push(`/${locale}/admin`);
-      } else {
+    try {
+      const result = await signIn('credentials', {
+        email: email.toLowerCase().trim(),
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
         setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
         setLoading(false);
+        return;
       }
-    }, 500);
+
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
+      });
+      const json = await res.json();
+
+      if (json.success && json.data?.user) {
+        const role = json.data.user.role?.toLowerCase();
+        if (role === 'admin' || role === 'super_admin' || role === 'manager') {
+          router.push(`/${locale}/admin`);
+        } else {
+          setError('غير مصرح - هذا الحساب ليس حساب مدير');
+          setLoading(false);
+        }
+      } else {
+        setError(json.error || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        setLoading(false);
+      }
+    } catch {
+      setError('حدث خطأ أثناء الاتصال بالخادم');
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,20 +121,13 @@ export default function AdminLoginPage() {
               <div className="relative">
                 <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pr-10 pl-10 py-3 bg-white/5 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#2580eb] focus:ring-1 focus:ring-[#2580eb]/50 transition-colors"
+                  className="w-full pr-10 pl-4 py-3 bg-white/5 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#2580eb] focus:ring-1 focus:ring-[#2580eb]/50 transition-colors"
                   placeholder="••••••••"
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
             </div>
 
@@ -132,43 +148,6 @@ export default function AdminLoginPage() {
               )}
             </motion.button>
           </form>
-
-          <div className="mt-6 pt-5 border-t border-white/10">
-            <button
-              type="button"
-              onClick={() => setShowHint(!showHint)}
-              className="w-full text-xs text-slate-500 hover:text-slate-400 transition-colors text-center"
-            >
-              {showHint ? 'إخفاء بيانات الدخول' : 'عرض بيانات الدخول'}
-            </button>
-            {showHint && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mt-3 bg-white/5 rounded-xl p-3 space-y-1.5 text-xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">البريد:</span>
-                  <span className="text-slate-300 font-mono">admin@gmail.com</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">كلمة المرور:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-300 font-mono">
-                      {hintPassword ? 'admin123' : '••••••••'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setHintPassword(!hintPassword)}
-                      className="text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {hintPassword ? <EyeOff size={12} /> : <Eye size={12} />}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
         </div>
 
         <p className="text-center text-slate-600 text-xs mt-6">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { requireAdmin } from "@/lib/admin-auth";
 import { OrderService } from "@/services/order.service";
 import { sendOrderStatusEmail, sendOrderCompletedEmail } from "@/lib/email/service";
 
@@ -63,45 +64,13 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const auth = await requireAdmin();
+    if ('error' in auth) {
+      return auth.error;
+    }
+
     const body = await request.json();
     const { status, notes, estimatedDelivery, internalNotes } = body;
-
-    let isAuthorized = false;
-    let adminName = 'مدير النظام';
-
-    if (session?.user) {
-      const role = (session.user as Record<string, unknown>).role as string;
-      if (["SUPER_ADMIN", "ADMIN", "MANAGER", "EMPLOYEE"].includes(role)) {
-        isAuthorized = true;
-      }
-    }
-
-    if (!isAuthorized && body._adminUserId) {
-      if (body._adminUserId === 'admin-001') {
-        isAuthorized = true;
-      } else {
-        const { prisma } = await import("@/lib/prisma");
-        const adminUser = await prisma.user.findUnique({
-          where: { id: body._adminUserId },
-          select: { id: true, role: true, name: true },
-        });
-        if (adminUser) {
-          const r = (adminUser.role as unknown as string || '').toUpperCase();
-          if (["SUPER_ADMIN", "ADMIN", "MANAGER", "EMPLOYEE"].includes(r)) {
-            isAuthorized = true;
-            adminName = adminUser.name;
-          }
-        }
-      }
-    }
-
-    if (!isAuthorized) {
-      return NextResponse.json(
-        { success: false, data: null, message: "غير مصرح / Unauthorized", error: null },
-        { status: 403 }
-      );
-    }
 
     const { id } = await params;
 
