@@ -48,7 +48,6 @@ export async function sendEmail(
       return { success: false, error: error.message || "فشل إرسال البريد" };
     }
 
-    console.log(`[EmailService] Sent to ${opts.to}: ${opts.subject}`);
     return { success: true };
   } catch (err) {
     console.error("[EmailService] Exception:", err);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -8,21 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Rating } from '@/components/ui/rating';
 
-interface Testimonial {
-  name: string;
+interface Review {
+  id: string;
   rating: number;
-  review: string;
-  service: string;
+  comment: string;
+  isApproved: boolean;
+  user: { name: string };
+  service: { name: string };
 }
-
-const testimonials: Testimonial[] = [
-  { name: 'محمد العتيبي', rating: 5, review: 'خدمة ممتازة وسرعة في الإنجاز. تم تأسيس شركتي في وقت قياسي. أنصح بالتعامل معهم بشدة.', service: 'خدمات قطاع الأعمال' },
-  { name: 'فاطمة الحربي', rating: 5, review: 'تجربة رائعة من البداية للنهاية. الفريق محترف ومتعاون. حصلت على تأشيرتي بسرعة كبيرة.', service: 'تأشيرات السعودية' },
-  { name: 'عبدالله الشمري', rating: 5, review: 'منصة سهلة الاستخدام وخدمة عملاء ممتازة. تم نقل ملكية مركبتي بدون أي مشاكل.', service: 'نقل ملكية المركبات' },
-  { name: 'نورة السعيد', rating: 4, review: 'خدمة جيدة جداً وأسعار منافسة. ساعدوني في التسجيل بالجامعة الأردنية بكل سهولة.', service: 'التسجيل بالجامعات الأردنية' },
-  { name: 'خالد المطيري', rating: 5, review: 'أفضل منصة للخدمات الإلكترونية في السعودية. سرعة الإنجاز والجودة لا مثيل لهما.', service: 'الخدمات الحكومية' },
-  { name: 'سارة القحطاني', rating: 5, review: 'فريق عمل محترف ومتعاون. حجزوا لي رحلتي وفندقي بأفضل الأسعار. شكراً لكم.', service: 'إدارة حجوزات السفر' },
-];
 
 const container = {
   hidden: { opacity: 0 },
@@ -39,6 +32,20 @@ const item = {
 
 export function TestimonialsSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/cms/reviews?all=true')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setReviews(json.data.filter((r: Review) => r.isApproved));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const scroll = (direction: 'start' | 'end') => {
     if (!scrollRef.current) return;
@@ -68,62 +75,106 @@ export function TestimonialsSection() {
               نفخر بثقة عملائنا ونسعى دائماً لتقديم أفضل تجربة خدمة
             </p>
           </div>
-          <div className="flex items-center gap-2 mt-4 sm:mt-0">
-            <button
-              onClick={() => scroll('end')}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <ChevronRight size={18} className="text-slate-600 dark:text-slate-400" />
-            </button>
-            <button
-              onClick={() => scroll('start')}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <ChevronLeft size={18} className="text-slate-600 dark:text-slate-400" />
-            </button>
-          </div>
+          {!loading && reviews.length > 0 && (
+            <div className="flex items-center gap-2 mt-4 sm:mt-0">
+              <button
+                onClick={() => scroll('end')}
+                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <ChevronRight size={18} className="text-slate-600 dark:text-slate-400" />
+              </button>
+              <button
+                onClick={() => scroll('start')}
+                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <ChevronLeft size={18} className="text-slate-600 dark:text-slate-400" />
+              </button>
+            </div>
+          )}
         </motion.div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-50px' }}
-          ref={scrollRef}
-          className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {testimonials.map((testimonial) => (
-            <motion.div
-              key={testimonial.name}
-              variants={item}
-              className="min-w-[340px] sm:min-w-[380px] snap-start"
-            >
-              <Card glass className="h-full">
-                <div className="p-6">
-                  <Quote className="w-8 h-8 text-[#2580eb]/20 mb-4" />
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-6 min-h-[80px]">
-                    {testimonial.review}
-                  </p>
-                  <div className="flex items-center justify-between">
+        {loading ? (
+          <div className="flex gap-6 overflow-hidden pb-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="min-w-[340px] sm:min-w-[380px]">
+                <Card glass className="h-full">
+                  <div className="p-6 space-y-4">
+                    <div className="w-8 h-8 rounded bg-slate-200 dark:bg-white/10 animate-pulse" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-full animate-pulse" />
+                      <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-3/4 animate-pulse" />
+                    </div>
                     <div className="flex items-center gap-3">
-                      <Avatar name={testimonial.name} size="md" />
-                      <div>
-                        <p className="font-semibold text-slate-900 dark:text-white text-sm">
-                          {testimonial.name}
-                        </p>
-                        <Badge variant="secondary" size="sm" className="mt-1">
-                          {testimonial.service}
-                        </Badge>
+                      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 animate-pulse" />
+                      <div className="space-y-1">
+                        <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-24 animate-pulse" />
+                        <div className="h-3 bg-slate-200 dark:bg-white/10 rounded w-16 animate-pulse" />
                       </div>
                     </div>
-                    <Rating value={testimonial.rating} readonly size={16} />
                   </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
+                </Card>
+              </div>
+            ))}
+          </div>
+        ) : reviews.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center py-16"
+          >
+            <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-5">
+              <Quote className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              لا توجد تقييمات بعد
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              كن أول من يشارك تجربته معنا. نقدّر ملاحظاتك ونسعى لتحسين خدماتنا باستمرار.
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-50px' }}
+            ref={scrollRef}
+            className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {reviews.map((review) => (
+              <motion.div
+                key={review.id}
+                variants={item}
+                className="min-w-[340px] sm:min-w-[380px] snap-start"
+              >
+                <Card glass className="h-full">
+                  <div className="p-6">
+                    <Quote className="w-8 h-8 text-[#2580eb]/20 mb-4" />
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed mb-6 min-h-[80px]">
+                      {review.comment}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={review.user.name} size="md" />
+                        <div>
+                          <p className="font-semibold text-slate-900 dark:text-white text-sm">
+                            {review.user.name}
+                          </p>
+                          <Badge variant="secondary" size="sm" className="mt-1">
+                            {review.service.name}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Rating value={review.rating} readonly size={16} />
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </section>
   );

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sendOrderCreatedEmail, sendInvoiceEmail } from '@/lib/email/service';
 
 function generateOrderNumber(): string {
@@ -14,6 +16,10 @@ function generateInvoiceNumber(): string {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as Record<string, unknown>)?.id as string | undefined;
+    const role = (session?.user as Record<string, unknown>)?.role as string | undefined;
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') ?? '1');
     const limit = parseInt(searchParams.get('limit') ?? '50');
@@ -21,6 +27,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
 
     const where: Record<string, unknown> = {};
+    if (role !== 'SUPER_ADMIN' && role !== 'ADMIN' && role !== 'MANAGER' && userId) {
+      where.userId = userId;
+    }
     if (status) where.status = status;
     if (search) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search);

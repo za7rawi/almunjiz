@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Phone, Mail, MapPin, Clock, MessageCircle,
-  Send, CheckCircle,
+  Send, CheckCircle, AlertCircle, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
@@ -13,15 +13,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SOCIAL_LINKS } from '@/constants';
 
-interface ContactInfo {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  href?: string;
-  color: string;
+interface SiteSettings {
+  phone?: string;
+  email?: string;
+  whatsapp?: string;
+  address?: string;
+  addressEn?: string;
+  workingHours?: string;
 }
 
-const contactInfo: ContactInfo[] = [
+const fallbackContactInfo = [
   { icon: Phone, label: 'الهاتف', value: '+962791038472', href: 'tel:+962791038472', color: 'text-[#2580eb]' },
   { icon: Mail, label: 'البريد الإلكتروني', value: 'support@almunjiz.com', href: 'mailto:support@almunjiz.com', color: 'text-[#14b8a6]' },
   { icon: MessageCircle, label: 'واتساب', value: '+962791038472', href: 'https://wa.me/962791038472?text=مرحباً، أريد الاستفسار عن خدمات المنجز', color: 'text-emerald-500' },
@@ -39,6 +40,42 @@ export function ContactSection() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
+
+  useEffect(() => {
+    fetch('/api/cms/settings')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSiteSettings({
+            phone: json.data.phone || json.data.contact_phone,
+            email: json.data.email || json.data.contact_email,
+            whatsapp: json.data.whatsapp || json.data.contact_whatsapp,
+            address: json.data.address || json.data.contact_address,
+            addressEn: json.data.addressEn || json.data.contact_address_en,
+            workingHours: json.data.workingHours,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const phone = siteSettings.phone || fallbackContactInfo[0].value;
+  const email = siteSettings.email || fallbackContactInfo[1].value;
+  const whatsapp = siteSettings.whatsapp || fallbackContactInfo[2].value;
+  const whatsappNum = whatsapp.replace(/[^0-9]/g, '');
+  const address = siteSettings.address || fallbackContactInfo[3].value;
+  const workingHours = siteSettings.workingHours || fallbackContactInfo[4].value;
+
+  const contactInfo = [
+    { icon: Phone, label: 'الهاتف', value: phone, href: `tel:${phone}`, color: 'text-[#2580eb]' },
+    { icon: Mail, label: 'البريد الإلكتروني', value: email, href: `mailto:${email}`, color: 'text-[#14b8a6]' },
+    { icon: MessageCircle, label: 'واتساب', value: whatsapp, href: `https://wa.me/${whatsappNum}?text=${encodeURIComponent('مرحباً، أريد الاستفسار عن خدمات المنجز')}`, color: 'text-emerald-500' },
+    { icon: MapPin, label: 'العنوان', value: address, color: 'text-[#7c3aed]' },
+    { icon: Clock, label: 'ساعات العمل', value: workingHours, color: 'text-amber-500' },
+  ];
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -52,14 +89,32 @@ export function ContactSection() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      setSubmitted(true);
-      setTimeout(() => {
-        setSubmitted(false);
+    if (!validate()) return;
+
+    setSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        setSubmitted(true);
         setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-      }, 3000);
+      } else {
+        setSubmitError(json.message || 'حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.');
+      }
+    } catch {
+      setSubmitError('حدث خطأ في الاتصال بالخادم. حاول مرة أخرى.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -110,6 +165,12 @@ export function ContactSection() {
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-5">
+                    {submitError && (
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+                        <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <Input
                         label="الاسم الكامل"
@@ -165,8 +226,14 @@ export function ContactSection() {
                         <p className="text-xs text-red-500">{errors.message}</p>
                       )}
                     </div>
-                    <Button type="submit" size="lg" fullWidth iconLeft={<Send size={18} />}>
-                      إرسال الرسالة
+                    <Button
+                      type="submit"
+                      size="lg"
+                      fullWidth
+                      iconLeft={submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                      disabled={submitting}
+                    >
+                      {submitting ? 'جاري الإرسال...' : 'إرسال الرسالة'}
                     </Button>
                   </form>
                 )}
@@ -243,7 +310,7 @@ export function ContactSection() {
                 <div className="text-center">
                   <MapPin className="w-10 h-10 text-[#2580eb]/40 mx-auto mb-2" />
                   <p className="text-sm text-slate-400">خريطة الموقع</p>
-                  <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">الرياض، المملكة العربية السعودية</p>
+                  <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">{address}</p>
                 </div>
               </div>
             </Card>

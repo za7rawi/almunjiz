@@ -9,8 +9,6 @@ import {
   MessageCircle,
   MapPin,
   Clock,
-  Send,
-  CheckCircle,
   ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -27,9 +25,15 @@ interface SiteSettings {
   addressEn?: string;
   workingHours?: string;
   workingHoursEn?: string;
+}
+
+interface SocialLinks {
   twitter?: string;
   instagram?: string;
   youtube?: string;
+  tiktok?: string;
+  facebook?: string;
+  linkedin?: string;
 }
 
 const serviceLinks = [
@@ -66,11 +70,23 @@ const YoutubeIcon = () => (
   </svg>
 );
 
+const FacebookIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const TiktokIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.46V13.2a8.16 8.16 0 004.77 1.52V11.3a4.85 4.85 0 01-.81.07c-.94 0-1.82-.32-2.53-.86v.18z" />
+  </svg>
+);
+
 export function Footer() {
   const { language } = useLanguageStore();
   const { dir, isRtl } = useDirection();
-  const [subscribed, setSubscribed] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
 
   useEffect(() => {
     fetch('/api/cms/settings')
@@ -85,10 +101,16 @@ export function Footer() {
             addressEn: json.data.addressEn || json.data.contact_address_en,
             workingHours: json.data.workingHours,
             workingHoursEn: json.data.workingHoursEn,
-            twitter: json.data.twitter,
-            instagram: json.data.instagram,
-            youtube: json.data.youtube,
           });
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/cms/social')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSocialLinks(json.data);
         }
       })
       .catch(() => {});
@@ -101,30 +123,24 @@ export function Footer() {
   const whatsappMessage = encodeURIComponent(CONTACT_INFO.whatsappMessage);
   const address = language === 'ar' ? (siteSettings.address || CONTACT_INFO.address) : (siteSettings.addressEn || CONTACT_INFO.addressEn);
 
-  const socialIcons = [
-    { Icon: TwitterIcon, href: siteSettings.twitter || 'https://twitter.com/almunjiz', label: 'Twitter / X' },
-    { Icon: InstagramIcon, href: siteSettings.instagram || 'https://instagram.com/almunjiz', label: 'Instagram' },
-    { Icon: YoutubeIcon, href: siteSettings.youtube || 'https://youtube.com/@almunjiz', label: 'YouTube' },
-    { Icon: MessageCircle, href: `https://wa.me/${whatsappNum}`, label: 'WhatsApp' },
-  ];
-
-  const handleNewsletter = () => {
-    setSubscribed(true);
-    setTimeout(() => setSubscribed(false), 3000);
-  };
+  const socialEntries = [
+    { Icon: TwitterIcon, href: socialLinks.twitter || 'https://twitter.com/almunjiz', label: 'Twitter / X', show: !!socialLinks.twitter },
+    { Icon: InstagramIcon, href: socialLinks.instagram || 'https://instagram.com/almunjiz', label: 'Instagram', show: !!socialLinks.instagram },
+    { Icon: YoutubeIcon, href: socialLinks.youtube || 'https://youtube.com/@almunjiz', label: 'YouTube', show: !!socialLinks.youtube },
+    { Icon: FacebookIcon, href: socialLinks.facebook || '', label: 'Facebook', show: !!socialLinks.facebook },
+    { Icon: TiktokIcon, href: socialLinks.tiktok || '', label: 'TikTok', show: !!socialLinks.tiktok },
+    { Icon: MessageCircle, href: `https://wa.me/${whatsappNum}`, label: 'WhatsApp', show: true },
+  ].filter((s) => s.show || s.label === 'WhatsApp');
 
   return (
     <footer dir={dir} className="relative bg-[#0f172a] text-white overflow-hidden">
-      {/* Top gradient line */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#2580eb] via-[#14b8a6] to-transparent opacity-50" />
 
-      {/* Ambient blobs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#2580eb]/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#14b8a6]/5 rounded-full blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
-          {/* Col 1: Logo + Description + Social */}
           <div className="space-y-5">
             <Logo size="md" showText white />
             <p className="text-slate-400 text-sm leading-relaxed">
@@ -133,7 +149,7 @@ export function Footer() {
                 : 'AL-MUNJIZ leading platform for electronic services in Saudi Arabia. Fast and reliable solutions for your needs.'}
             </p>
             <div className="flex items-center gap-3">
-              {socialIcons.map((social) => (
+              {socialEntries.map((social) => (
                 <motion.a
                   key={social.label}
                   href={social.href}
@@ -148,13 +164,12 @@ export function Footer() {
                   )}
                   title={social.label}
                 >
-                  <social.Icon size={16} className="text-slate-400 group-hover:text-white" />
+                  <social.Icon />
                 </motion.a>
               ))}
             </div>
           </div>
 
-          {/* Col 2: Quick Links */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-5">
               {language === 'ar' ? 'روابط سريعة' : 'Quick Links'}
@@ -180,7 +195,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Col 3: Services */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-5">
               {language === 'ar' ? 'خدماتنا' : 'Our Services'}
@@ -206,7 +220,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Col 4: Contact + Newsletter */}
           <div className="space-y-5">
             <h4 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-5">
               {language === 'ar' ? 'تواصل معنا' : 'Contact Us'}
@@ -242,44 +255,9 @@ export function Footer() {
                 color="text-green-400"
               />
             </div>
-
-            <div className="pt-3">
-              <h5 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-                {language === 'ar' ? 'النشرة البريدية' : 'Newsletter'}
-              </h5>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder={language === 'ar' ? 'بريدك الإلكتروني' : 'Your email'}
-                  className={cn(
-                    'flex-1 px-3 py-2.5 text-sm rounded-xl',
-                    'bg-white/5 border border-white/10 focus:border-[#2580eb]/50',
-                    'text-white placeholder:text-slate-500',
-                    'focus:outline-none focus:ring-2 focus:ring-[#2580eb]/30',
-                    'transition-all duration-200'
-                  )}
-                />
-                <motion.button
-                  onClick={handleNewsletter}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={cn(
-                    'px-3 py-2.5 rounded-xl',
-                    subscribed ? 'bg-green-500' : 'bg-gradient-to-r from-[#2580eb] to-[#14b8a6]',
-                    'text-white text-sm font-semibold',
-                    'shadow-lg shadow-[#2580eb]/25',
-                    'hover:shadow-xl hover:shadow-[#2580eb]/30',
-                    'transition-all duration-200'
-                  )}
-                >
-                  {subscribed ? <CheckCircle size={16} /> : <Send size={16} />}
-                </motion.button>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-slate-500 text-sm text-center md:text-start">
             © {new Date().getFullYear()} {APP_NAME} AL-MUNJIZ.{' '}

@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = (session.user as Record<string, unknown>)?.id as string;
+    const role = (session.user as Record<string, unknown>)?.role as string;
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "50");
     const status = searchParams.get("status");
-    const userId = searchParams.get("userId");
+    const paramUserId = searchParams.get("userId");
     const all = searchParams.get("all") === "true";
 
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
-    if (userId && !all) where.userId = userId;
+    if (role !== "SUPER_ADMIN" && role !== "ADMIN" && role !== "MANAGER") {
+      where.userId = userId;
+    } else if (paramUserId && !all) {
+      where.userId = paramUserId;
+    }
 
     const [invoices, total] = await Promise.all([
       prisma.invoice.findMany({

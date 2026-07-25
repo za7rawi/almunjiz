@@ -355,10 +355,73 @@ export default function AdminReportsPage() {
 
   const handleExport = () => {
     setExporting(true);
+
     setTimeout(() => {
-      alert('جاري التصدير...');
+      const escapeCsv = (val: string) => `"${val.replace(/"/g, '""')}"`;
+
+      const rows: string[] = [];
+
+      rows.push('التقرير العام');
+      rows.push('');
+      rows.push('المقياس,القيمة');
+      statsCards.forEach((s) => {
+        rows.push(`${escapeCsv(s.label)},${escapeCsv(`${s.numericValue.toLocaleString()}${s.suffix}`)}`);
+      });
+
+      rows.push('');
+      rows.push('إيرادات المبيعات الشهرية');
+      rows.push('الشهر,الإيرادات (ر.س)');
+      revenueByMonth.forEach((m) => {
+        rows.push(`${escapeCsv(m.label)},${m.value}`);
+      });
+
+      rows.push('');
+      rows.push('أعلى الخدمات إيراداً');
+      rows.push('الخدمة,الإيرادات (ر.س),عدد الطلبات');
+      topServices.forEach((s) => {
+        rows.push(`${escapeCsv(s.name)},${s.revenue},${s.count}`);
+      });
+
+      rows.push('');
+      rows.push('توزيع الطلبات حسب الحالة');
+      rows.push('الحالة,العدد,النسبة المئوية');
+      Object.entries(ordersByStatus)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([status, count]) => {
+          const cfg = statusConfig[status] || { label: status };
+          const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : '0';
+          rows.push(`${escapeCsv(cfg.label)},${count},${pct}%`);
+        });
+
+      rows.push('');
+      rows.push('تفاصيل الطلبات');
+      rows.push('رقم الطلب,الحالة,المبلغ,حالة الدفع,تاريخ الإنشاء,الخدمة,اسم العميل,البريد الإلكتروني');
+      filteredOrders.forEach((o) => {
+        const cfg = statusConfig[o.status] || { label: o.status };
+        rows.push([
+          escapeCsv(o.orderNumber),
+          escapeCsv(cfg.label),
+          Number(o.total) || 0,
+          o.paymentStatus === 'PAID' ? 'مدفوع' : 'غير مدفوع',
+          o.createdAt,
+          escapeCsv(o.service?.name || 'غير محدد'),
+          escapeCsv(o.customerName || ''),
+          escapeCsv(o.customerEmail || ''),
+        ].join(','));
+      });
+
+      const csvContent = '\uFEFF' + rows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `تقرير-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       setExporting(false);
-    }, 1000);
+    }, 500);
   };
 
   return (
