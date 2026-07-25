@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendOrderCreatedEmail, sendInvoiceEmail } from '@/lib/email/service';
 
 function generateOrderNumber(): string {
   const ts = Date.now().toString(36).toUpperCase();
@@ -149,6 +150,24 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
       },
     });
+
+    sendOrderCreatedEmail({
+      email: customerEmail,
+      name: customerName,
+      orderNumber,
+      serviceName: service.name,
+      amount: String(Number(total || amount)),
+      currency,
+    }).catch((err) => console.error("[Orders] Failed to send order email:", err));
+
+    sendInvoiceEmail({
+      email: customerEmail,
+      name: customerName,
+      invoiceNumber,
+      amount: String(Number(total || amount)),
+      currency,
+      orderNumber,
+    }).catch((err) => console.error("[Orders] Failed to send invoice email:", err));
 
     return NextResponse.json({
       success: true,

@@ -1,0 +1,7 @@
+export { otpTemplate } from "./otp";
+export { welcomeTemplate } from "./welcome";
+export { orderCreatedTemplate } from "./order-created";
+export { paymentSuccessTemplate } from "./payment-success";
+export { invoiceTemplate } from "./invoice";
+export { orderStatusTemplate } from "./order-status";
+export { orderCompletedTemplate } from "./order-completed";

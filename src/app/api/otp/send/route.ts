@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOTP, storeOTP } from "@/lib/otp";
-import { sendEmailOTP } from "@/lib/otp/email";
+import { sendOtpEmail } from "@/lib/email/service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     const code = generateOTP();
     await storeOTP(email, code);
 
-    const result = await sendEmailOTP(email, code);
+    const nameFromEmail = email.split("@")[0];
+    const result = await sendOtpEmail(email, nameFromEmail, code);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error || "فشل إرسال رمز التحقق" }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPaymentProvider } from '@/lib/payment-providers';
 import { writeAuditLog } from '@/lib/audit-log';
+import { sendPaymentSuccessEmail } from '@/lib/email/service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,6 +85,19 @@ export async function POST(request: NextRequest) {
             resourceId: orderId,
             metadata: { transactionId, gateway: gateway.slug, amount: order.total },
           });
+
+          const customerUser = order.userId ? await prisma.user.findUnique({ where: { id: order.userId } }) : null;
+          if (customerUser) {
+            sendPaymentSuccessEmail({
+              email: customerUser.email,
+              name: customerUser.name,
+              transactionId,
+              amount: String(order.total),
+              currency: order.currency,
+              orderNumber: order.orderNumber,
+              paymentMethod: gateway.slug,
+            }).catch((err) => console.error("[Payment] Failed to send payment email:", err));
+          }
         } else {
           await writeAuditLog({
             action: 'payment.failed',

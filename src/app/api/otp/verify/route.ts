@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { verifyStoredOTP } from "@/lib/otp";
 import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api/response";
+import { sendWelcomeEmail } from "@/lib/email/service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     let user = await prisma.user.findUnique({ where: { email } });
+    let isNewUser = false;
 
     if (!user) {
       const bcrypt = await import("bcryptjs");
@@ -36,6 +38,7 @@ export async function POST(request: NextRequest) {
           emailVerified: true,
         },
       });
+      isNewUser = true;
     } else {
       await prisma.user.update({
         where: { id: user.id },
@@ -47,6 +50,12 @@ export async function POST(request: NextRequest) {
     }
 
     const token = `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+    if (isNewUser) {
+      sendWelcomeEmail(email, user.name).catch((err) =>
+        console.error("[OTP Verify] Failed to send welcome email:", err)
+      );
+    }
 
     return success(
       {

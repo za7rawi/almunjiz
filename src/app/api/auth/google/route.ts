@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendWelcomeEmail } from "@/lib/email/service";
 
 async function verifyGoogleToken(
   idToken: string
@@ -95,6 +96,10 @@ export async function POST(request: Request) {
           emailVerified: true,
         },
       });
+
+      sendWelcomeEmail(userData.email, userData.name).catch((err) =>
+        console.error("[Google Auth] Failed to send welcome email:", err)
+      );
     } else {
       await prisma.user.update({
         where: { id: user.id },

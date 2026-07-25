@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { success, error, conflict } from "@/lib/api/response";
+import { sendWelcomeEmail } from "@/lib/email/service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +41,10 @@ export async function POST(request: NextRequest) {
     });
 
     const token = `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+    sendWelcomeEmail(email, name.trim()).catch((err) =>
+      console.error("[Register] Failed to send welcome email:", err)
+    );
 
     return success(
       {

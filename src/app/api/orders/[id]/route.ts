@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { OrderService } from "@/services/order.service";
+import { sendOrderStatusEmail, sendOrderCompletedEmail } from "@/lib/email/service";
 
 export async function GET(
   request: NextRequest,
@@ -124,6 +125,30 @@ export async function PUT(
     }
 
     const updatedOrder = await OrderService.findById(id);
+
+    if (status && existing.customerEmail) {
+      const emailData = {
+        email: existing.customerEmail,
+        name: existing.customerName,
+        orderNumber: existing.orderNumber,
+        status,
+        serviceName: existing.service?.name,
+        note: notes || undefined,
+      };
+
+      if (status === "COMPLETED" || status === "DELIVERED") {
+        sendOrderCompletedEmail({
+          email: emailData.email,
+          name: emailData.name,
+          orderNumber: emailData.orderNumber,
+          serviceName: emailData.serviceName || "",
+        }).catch((err) => console.error("[Order] Failed to send completion email:", err));
+      } else {
+        sendOrderStatusEmail(emailData).catch((err) =>
+          console.error("[Order] Failed to send status email:", err)
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,
