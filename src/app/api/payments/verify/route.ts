@@ -96,6 +96,14 @@ export async function POST(request: NextRequest) {
             metadata: { transactionId, gateway: gateway.slug, amount: order.total },
           });
 
+          await writeAuditLog({
+            action: 'payment.verified',
+            resource: 'payment',
+            resourceId: orderId,
+            userId: order.userId,
+            metadata: { transactionId, amount: Number(order.total), orderNumber: order.orderNumber },
+          });
+
           const customerUser = order.userId ? await prisma.user.findUnique({ where: { id: order.userId } }) : null;
           if (customerUser) {
             sendPaymentSuccessEmail({

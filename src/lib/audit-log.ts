@@ -18,7 +18,15 @@ export type AuditAction =
   | 'gateway.deactivated'
   | 'idempotency.duplicate_blocked'
   | 'invoice.created'
-  | 'invoice.paid';
+  | 'invoice.paid'
+  | 'order.created'
+  | 'order.updated'
+  | 'order.status_changed'
+  | 'order.note_added'
+  | 'order.file_uploaded'
+  | 'order.email_sent'
+  | 'user.registered'
+  | 'user.login';
 
 interface AuditParams {
   action: AuditAction;

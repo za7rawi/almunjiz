@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { requireAdmin } from "@/lib/admin-auth";
 import { OrderService } from "@/services/order.service";
 import { sendOrderStatusEmail, sendOrderCompletedEmail } from "@/lib/email/service";
+import { writeAuditLog } from "@/lib/audit-log";
 
 export async function GET(
   request: NextRequest,
@@ -139,6 +140,14 @@ export async function PUT(
 
     if (status) {
       await OrderService.updateStatus(id, status);
+
+      await writeAuditLog({
+        action: 'order.status_changed',
+        resource: 'order',
+        resourceId: id,
+        userId: auth.session.userId,
+        metadata: { orderNumber: existing.orderNumber, oldStatus: existing.status, newStatus: status },
+      });
     }
 
     const { prisma } = await import("@/lib/prisma");
@@ -151,6 +160,16 @@ export async function PUT(
           ...(internalNotes !== undefined && { internalNotes }),
           ...(estimatedDelivery && { estimatedDelivery: new Date(estimatedDelivery) }),
         },
+      });
+    }
+
+    if (internalNotes !== undefined) {
+      await writeAuditLog({
+        action: 'order.note_added',
+        resource: 'order',
+        resourceId: id,
+        userId: auth.session.userId,
+        metadata: { orderNumber: existing.orderNumber, hasInternalNotes: !!internalNotes },
       });
     }
 

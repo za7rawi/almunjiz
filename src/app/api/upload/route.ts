@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit-log";
 import { UPLOAD_LIMITS } from "@/config";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -98,6 +99,14 @@ export async function POST(request: NextRequest) {
         url: fileUrl,
         size: file.size,
         type: file.type,
+      });
+
+      await writeAuditLog({
+        action: 'order.file_uploaded',
+        resource: 'file',
+        resourceId: record.id,
+        userId,
+        metadata: { fileName: file.name, fileSize: file.size, fileType: file.type, orderId: orderId || null },
       });
     }
 

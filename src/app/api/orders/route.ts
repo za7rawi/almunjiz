@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sendOrderCreatedEmail, sendInvoiceEmail } from '@/lib/email/service';
 import { generateOrderNumber, generateInvoiceNumber } from '@/lib/utils';
+import { writeAuditLog } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
   try {
@@ -168,6 +169,14 @@ export async function POST(request: NextRequest) {
         timeline: true,
         fileAttachments: true,
       },
+    });
+
+    await writeAuditLog({
+      action: 'order.created',
+      resource: 'order',
+      resourceId: createdOrder.id,
+      userId,
+      metadata: { orderNumber: createdOrder.orderNumber, serviceName: service.name, total: Number(createdOrder.total) },
     });
 
     sendOrderCreatedEmail({
