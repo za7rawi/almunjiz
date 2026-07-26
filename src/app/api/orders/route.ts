@@ -9,8 +9,11 @@ import { writeAuditLog } from '@/lib/audit-log';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as Record<string, unknown>)?.id as string | undefined;
-    const role = (session?.user as Record<string, unknown>)?.role as string | undefined;
+    if (!session?.user) {
+      return NextResponse.json({ success: false, data: [], error: 'غير مصرح' }, { status: 401 });
+    }
+    const userId = (session.user as Record<string, unknown>)?.id as string | undefined;
+    const role = (session.user as Record<string, unknown>)?.role as string | undefined;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') ?? '1');
@@ -67,6 +70,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, data: null, message: 'يجب تسجيل الدخول', error: null }, { status: 401 });
+    }
+    const userId = (session.user as Record<string, unknown>).id as string;
+
     const body = await request.json();
     const {
       serviceId,
@@ -100,24 +109,6 @@ export async function POST(request: NextRequest) {
 
     const orderNumber = generateOrderNumber();
     const invoiceNumber = generateInvoiceNumber();
-
-    let userId = '';
-    const existingUser = await prisma.user.findUnique({ where: { email: customerEmail } });
-    if (existingUser) {
-      userId = existingUser.id;
-    } else {
-      const newUser = await prisma.user.create({
-        data: {
-          name: customerName,
-          email: customerEmail,
-          phone: customerPhone || '',
-          password: 'social-auth',
-          role: 'CUSTOMER',
-          emailVerified: true,
-        },
-      });
-      userId = newUser.id;
-    }
 
     const createdOrder = await prisma.order.create({
       data: {

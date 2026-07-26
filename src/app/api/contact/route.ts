@@ -48,6 +48,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const { getServerSession } = await import('next-auth');
+    const { authOptions } = await import('@/app/api/auth/[...nextauth]/route');
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, data: [] }, { status: 401 });
+    }
+    const role = (session.user as Record<string, unknown>).role as string;
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(role)) {
+      return NextResponse.json({ success: false, data: [] }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "20");

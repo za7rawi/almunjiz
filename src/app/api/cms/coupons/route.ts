@@ -4,6 +4,9 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET() {
   try {
+    const auth = await requireAdmin();
+    if ('error' in auth) return auth.error;
+
     const coupons = await prisma.coupon.findMany({
       orderBy: { createdAt: 'desc' },
     });

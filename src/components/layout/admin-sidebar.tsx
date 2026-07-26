@@ -28,6 +28,7 @@ import {
   X,
   Layers,
   Wallet,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
@@ -62,6 +63,7 @@ const adminSidebarItems: AdminSidebarItem[] = [
   { label: 'الكوبونات', labelEn: 'Coupons', icon: <Percent size={20} />, href: '/admin/coupons' },
   { label: 'الصلاحيات', labelEn: 'Permissions', icon: <Shield size={20} />, href: '/admin/permissions' },
   { label: 'التقارير', labelEn: 'Reports', icon: <BarChart3 size={20} />, href: '/admin/reports' },
+  { label: 'سجل النشاطات', labelEn: 'Audit Logs', icon: <Activity size={20} />, href: '/admin/audit-logs' },
   { label: 'الإعدادات', labelEn: 'Settings', icon: <Settings size={20} />, href: '/admin/settings' },
 ];
 

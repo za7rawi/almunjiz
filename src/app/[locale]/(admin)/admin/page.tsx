@@ -65,7 +65,7 @@ const quickActions = [
   { label: 'إضافة خدمة', href: '/admin/services', icon: Wrench, color: '#2580eb' },
   { label: 'إدارة الطلبات', href: '/admin/orders', icon: Package, color: '#14b8a6' },
   { label: 'المدفوعات', href: '/admin/payments', icon: DollarSign, color: '#7c3aed' },
-  { label: 'العملاء', href: '/admin/users', icon: Users, color: '#f59e0b' },
+  { label: 'العملاء', href: '/admin/customers', icon: Users, color: '#f59e0b' },
   { label: 'السجلات', href: '/admin/audit-logs', icon: FileText, color: '#ef4444' },
 ];
 

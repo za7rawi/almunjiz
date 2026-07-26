@@ -9,6 +9,10 @@ export async function GET() {
     if (!session?.user) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+    const role = (session.user as Record<string, unknown>).role as string;
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(role)) {
+      return NextResponse.json({ success: false, data: [], error: 'غير مصرح' }, { status: 403 });
+    }
     const allUsers = await prisma.user.findMany({
       select: {
         id: true,
