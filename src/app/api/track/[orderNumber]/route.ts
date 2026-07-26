@@ -17,9 +17,10 @@ export async function GET(
     }
 
     const { orderNumber } = await params;
+    const trimmed = decodeURIComponent(orderNumber).trim();
 
-    const order = await prisma.order.findUnique({
-      where: { orderNumber },
+    let order = await prisma.order.findUnique({
+      where: { orderNumber: trimmed },
       include: {
         service: { select: { id: true, name: true, nameEn: true, slug: true } },
         invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
@@ -27,6 +28,19 @@ export async function GET(
         fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
       },
     });
+
+    if (!order) {
+      order = await prisma.order.findFirst({
+        where: { orderNumber: { contains: trimmed, mode: "insensitive" } },
+        include: {
+          service: { select: { id: true, name: true, nameEn: true, slug: true } },
+          invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
+          timeline: { orderBy: { createdAt: "asc" } },
+          fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
 
     if (!order) {
       return NextResponse.json(

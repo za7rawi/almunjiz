@@ -118,12 +118,11 @@ export default function RegisterPage() {
       window.google.accounts.id.prompt((n) => {
         if (n.isNotDisplayed() || n.isSkippedMoment()) {
           setGoogleLoading(false);
-          setErrors({ general: 'يرجى السماح لنافذة التسجيل أو تجربة طريقة أخرى' });
+          window.location.href = '/api/auth/google/redirect?redirect=/';
         }
       });
     } else {
-      setGoogleLoading(false);
-      setErrors({ general: 'جاري تحميل خدمات Google...' });
+      window.location.href = '/api/auth/google/redirect?redirect=/';
     }
   };
 

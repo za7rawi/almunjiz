@@ -36,23 +36,9 @@ function mapRole(raw: string): User['role'] {
   return 'customer';
 }
 
-function clearUserProgressData(currentUserId?: string) {
+function clearUserProgressData(_currentUserId?: string) {
   try {
-    const raw = localStorage.getItem('almunjiz-request-progress');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const state = parsed?.state?.progress;
-      if (state) {
-        const keys = Object.keys(state);
-        const hasOtherUser = keys.some((k: string) => {
-          const rec = state[k];
-          return rec?.userId && rec.userId !== currentUserId;
-        });
-        if (hasOtherUser || !currentUserId) {
-          localStorage.removeItem('almunjiz-request-progress');
-        }
-      }
-    }
+    localStorage.removeItem('almunjiz-request-progress');
   } catch {}
 }
 
@@ -63,8 +49,7 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
 
       login: (user) => {
-        const prevUser = get().user;
-        if (prevUser && prevUser.id !== user.id) clearUserProgressData(user.id);
+        clearUserProgressData(user.id);
         set({ user, isAuthenticated: true });
       },
 
@@ -91,8 +76,7 @@ export const useAuthStore = create<AuthStore>()(
               provider: 'email',
               createdAt: u.createdAt ?? new Date().toISOString(),
             };
-            const prevUser = get().user;
-            if (prevUser && prevUser.id !== user.id) clearUserProgressData(user.id);
+            clearUserProgressData(user.id);
             set({ user, isAuthenticated: true });
             const isAdmin = user.role === 'admin' || user.role === 'manager';
             return {
@@ -152,8 +136,7 @@ export const useAuthStore = create<AuthStore>()(
               provider: 'google',
               createdAt: u.createdAt ?? new Date().toISOString(),
             };
-            const prevUser = get().user;
-            if (prevUser && prevUser.id !== user.id) clearUserProgressData(user.id);
+            clearUserProgressData(user.id);
             set({ user, isAuthenticated: true });
             const isAdmin = user.role === 'admin' || user.role === 'manager';
             return { success: true, message: json.message || 'تم تسجيل الدخول بنجاح', redirect: isAdmin ? '/admin' : '/dashboard', email: u.email, token: json.token };

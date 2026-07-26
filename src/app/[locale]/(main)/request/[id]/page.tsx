@@ -141,7 +141,13 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
     } else {
       setRedirecting(false);
       if (user) {
-        const saved = getProgress(id, user?.id);
+        setFormData((prev) => ({
+          ...prev,
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+        }));
+        const saved = getProgress(id, user.id);
         if (saved) {
           setFormData((prev) => ({
             ...prev,
@@ -165,17 +171,10 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
           if (saved.selectedGatewayId) {
             setSelectedGatewayId(saved.selectedGatewayId);
           }
-        } else {
-          setFormData((prev) => ({
-            ...prev,
-            name: user.name || '',
-            email: user.email || '',
-            phone: user.phone || '',
-          }));
         }
       }
     }
-  }, [isAuthenticated, user, router, id, user?.id]);
+  }, [isAuthenticated, user, router, id]);
 
   useEffect(() => {
     if (!service || !isAuthenticated || redirecting) return;

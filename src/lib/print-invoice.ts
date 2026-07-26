@@ -684,5 +684,9 @@ export async function printInvoice(data: PrintInvoiceData) {
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();
+  } else {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   }
 }

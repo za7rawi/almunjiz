@@ -51,7 +51,9 @@ export const useRequestProgressStore = create<RequestProgressState>()(
       getProgress: (serviceId, userId) => {
         const record = get().progress[serviceId];
         if (!record) return undefined;
-        if (userId && record.userId && record.userId !== userId) return undefined;
+        if (!userId) return undefined;
+        if (!record.userId) return undefined;
+        if (record.userId !== userId) return undefined;
         return record;
       },
 

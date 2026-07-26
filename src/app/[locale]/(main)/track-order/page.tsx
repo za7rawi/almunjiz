@@ -100,7 +100,7 @@ export default function TrackOrderPage() {
       if (data.success && data.data) {
         setFoundOrder(data.data);
       } else {
-        setError('لم يتم العثور على الطلب');
+        setError(data.message || 'لم يتم العثور على الطلب');
       }
     } catch {
       setError('حدث خطأ أثناء البحث');

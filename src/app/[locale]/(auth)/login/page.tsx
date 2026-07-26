@@ -119,6 +119,45 @@ export default function LoginPage() {
   );
 
   useEffect(() => {
+    const googleEmail = searchParams.get('googleEmail');
+    const googleToken = searchParams.get('googleToken');
+    if (googleEmail && googleToken) {
+      setGoogleLoading(true);
+      (async () => {
+        try {
+          const signInResult = await signIn('credentials', {
+            email: googleEmail,
+            password: googleToken,
+            redirect: false,
+          });
+          if (signInResult?.error) {
+            setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول بـ Google' });
+            return;
+          }
+          const redir = searchParams.get('redirect') || '/dashboard';
+          router.push(redir);
+        } catch {
+          setErrors({ general: 'حدث خطأ أثناء تسجيل الدخول بـ Google' });
+        } finally {
+          setGoogleLoading(false);
+        }
+      })();
+    }
+
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      const errorMessages: Record<string, string> = {
+        google_denied: 'تم إلغاء تسجيل الدخول بـ Google',
+        google_token: 'فشل التحقق من Google. يرجى المحاولة مرة أخرى',
+        google_profile: 'لم يتم استلام بيانات الملف الشخصي من Google',
+        google_config: 'تسجيل الدخول بـ Google غير مُعد حالياً',
+        google_error: 'حدث خطأ أثناء تسجيل الدخول بـ Google',
+      };
+      setErrors({ general: errorMessages[errorParam] || 'حدث خطأ غير متوقع' });
+    }
+  }, [searchParams, router]);
+
+  useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -144,12 +183,11 @@ export default function LoginPage() {
       window.google.accounts.id.prompt((n) => {
         if (n.isNotDisplayed() || n.isSkippedMoment()) {
           setGoogleLoading(false);
-          setErrors({ general: 'يرجى السماح لنافذة تسجيل الدخول أو تجربة طريقة أخرى' });
+          window.location.href = `/api/auth/google/redirect?redirect=${encodeURIComponent(redirectTo)}`;
         }
       });
     } else {
-      setGoogleLoading(false);
-      setErrors({ general: 'جاري تحميل خدمات Google...' });
+      window.location.href = `/api/auth/google/redirect?redirect=${encodeURIComponent(redirectTo)}`;
     }
   };
 
