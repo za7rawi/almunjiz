@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return error("البريد الإلكتروني غير مسجل", 404);
+      return error("البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
     }
 
     const bcrypt = await import("bcryptjs");
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return error("كلمة المرور غير صحيحة", 401);
+      return error("البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
     }
 
     const isFirstLogin = !user.lastLoginAt;

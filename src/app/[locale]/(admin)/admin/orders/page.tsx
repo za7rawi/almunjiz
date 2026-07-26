@@ -129,6 +129,7 @@ export default function OrdersPage() {
       service: order.service?.name || '',
       amount: Number(order.total || 0) - Number(order.tax || 0),
       tax: Number(order.tax || 0),
+      discount: Number(order.discount || 0),
       total: Number(order.total || 0),
       date: invDate,
       dueDate: invDate,

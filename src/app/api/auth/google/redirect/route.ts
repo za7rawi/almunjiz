@@ -9,10 +9,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const redirect = searchParams.get("redirect") || "/dashboard";
 
+  const safeRedirect = redirect.startsWith('/') && !redirect.includes('://') ? redirect : '/dashboard';
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
   const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
-  const state = encodeURIComponent(redirect);
+  const state = encodeURIComponent(safeRedirect);
 
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   googleAuthUrl.searchParams.set("client_id", clientId);

@@ -192,6 +192,7 @@ export default function PaymentSuccessPage() {
       service: order?.service?.name || '',
       amount,
       tax,
+      discount: Number(order?.discount ?? 0),
       total,
       dueDate:
         date ||

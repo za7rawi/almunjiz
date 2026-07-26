@@ -7,6 +7,7 @@ export interface PrintInvoiceData {
   service: string;
   amount: number;
   tax: number;
+  discount?: number;
   total: number;
   notes?: string;
   dueDate: string;
@@ -619,6 +620,13 @@ export async function printInvoice(data: PrintInvoiceData) {
           <div class="totals-row">
             <span class="label">الضريبة (15%)</span>
             <span class="value">${data.tax.toFixed(2)} ر.س</span>
+          </div>
+          <div class="totals-divider"></div>
+          ` : ''}
+          ${(data.discount && data.discount > 0) ? `
+          <div class="totals-row">
+            <span class="label">الخصم</span>
+            <span class="value" style="color: #10b981;">-${data.discount.toFixed(2)} ر.س</span>
           </div>
           <div class="totals-divider"></div>
           ` : ''}

@@ -2,23 +2,34 @@ import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthService } from "@/services/auth.service";
 
-// Server-side verification tokens (in-memory, single-server only)
-const verificationTokens = new Map<string, { email: string; type: 'otp' | 'google'; expiresAt: number }>();
+function hmacSign(data: string, secret: string): string {
+  const crypto = require('crypto');
+  return crypto.createHmac('sha256', secret).update(data).digest('hex');
+}
 
 export function createVerificationToken(email: string, type: 'otp' | 'google'): string {
-  const token = `vt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  verificationTokens.set(token, { email, type, expiresAt: Date.now() + 5 * 60 * 1000 });
-  return token;
+  const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret';
+  const expiresAt = Date.now() + 5 * 60 * 1000;
+  const payload = `${email}|${type}|${expiresAt}`;
+  const signature = hmacSign(payload, secret);
+  return `vt_${Buffer.from(payload).toString('base64url')}.${signature}`;
 }
 
 export function consumeVerificationToken(token: string): { email: string; type: 'otp' | 'google' } | null {
-  const data = verificationTokens.get(token);
-  if (!data || data.expiresAt < Date.now()) {
-    verificationTokens.delete(token);
+  try {
+    const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret';
+    const [encodedPayload, signature] = token.slice(3).split('.');
+    if (!encodedPayload || !signature) return null;
+    const payload = Buffer.from(encodedPayload, 'base64url').toString();
+    const expectedSig = hmacSign(payload, secret);
+    if (signature !== expectedSig) return null;
+    const [email, type, expiresAtStr] = payload.split('|');
+    if (Date.now() > Number(expiresAtStr)) return null;
+    if (type !== 'otp' && type !== 'google') return null;
+    return { email, type };
+  } catch {
     return null;
   }
-  verificationTokens.delete(token);
-  return { email: data.email, type: data.type };
 }
 
 export const authOptions: NextAuthOptions = {
@@ -56,7 +67,7 @@ export const authOptions: NextAuthOptions = {
         const user = await AuthService.findByEmail(credentials.email);
 
         if (!user) {
-          throw new Error("المستخدم غير موجود");
+          throw new Error("Invalid credentials");
         }
 
         let isVerified = false;
@@ -70,7 +81,7 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isValid) {
-            throw new Error("كلمة المرور غير صحيحة");
+            throw new Error("Invalid credentials");
           }
           isVerified = true;
         }

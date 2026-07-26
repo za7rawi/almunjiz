@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true, orderNumber: true } });
     if (!order || order.userId !== auth.session.userId) {
       return NextResponse.json(
         { success: false, error: 'غير مصرح / Unauthorized' },
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     const paymentParams: CreatePaymentParams = {
       orderId,
-      orderNumber: `ORD-${orderId.slice(0, 8).toUpperCase()}`,
+      orderNumber: order.orderNumber,
       amount: Number(amount),
       currency,
       description: description || `Payment for order`,

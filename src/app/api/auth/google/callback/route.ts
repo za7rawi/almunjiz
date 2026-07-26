@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error");
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
-  const locale = "ar";
+  const acceptLanguage = request.headers.get("accept-language") || "";
+  const locale = acceptLanguage.startsWith("en") ? "en" : "ar";
 
   if (error || !code) {
     return NextResponse.redirect(
@@ -49,7 +50,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const redirectPath = state ? decodeURIComponent(state) : "/dashboard";
+  const rawState = state ? decodeURIComponent(state) : "/dashboard";
+  const redirectPath = rawState.startsWith('/') && !rawState.includes('://') ? rawState : '/dashboard';
 
   try {
     const redirectUri = `${baseUrl}/api/auth/google/callback`;

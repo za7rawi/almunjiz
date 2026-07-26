@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           where: { id: orderId },
           data: {
             paymentStatus: newPaymentStatus,
-            status: result.status === 'COMPLETED' ? 'PENDING' : order.status,
+            status: result.status === 'COMPLETED' ? 'UNDER_REVIEW' : order.status,
             paidAt: result.status === 'COMPLETED' ? new Date() : null,
           },
         });

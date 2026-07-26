@@ -120,45 +120,49 @@ export async function POST(request: NextRequest) {
     const orderNumber = generateOrderNumber();
     const invoiceNumber = generateInvoiceNumber();
 
-    const createdOrder = await prisma.order.create({
-      data: {
-        orderNumber,
-        userId,
-        serviceId,
-        amount: Number(amount),
-        discount: Number(discount),
-        tax: 0,
-        total: Number(total || amount),
-        currency,
-        paymentStatus: 'PENDING',
-        customerName,
-        customerEmail,
-        customerPhone: customerPhone || '',
-        notes: notes || '',
-        attachments: attachments || [],
-        status: 'PENDING',
-      },
-    });
+    const { createdOrder, invoice } = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          userId,
+          serviceId,
+          amount: Number(amount),
+          discount: Number(discount),
+          tax: 0,
+          total: Number(total || amount),
+          currency,
+          paymentStatus: 'PENDING',
+          customerName,
+          customerEmail,
+          customerPhone: customerPhone || '',
+          notes: notes || '',
+          attachments: attachments || [],
+          status: 'PENDING',
+        },
+      });
 
-    await prisma.orderTimeline.create({
-      data: {
-        orderId: createdOrder.id,
-        status: 'PENDING',
-        description: 'تم استلام الطلب بنجاح',
-      },
-    });
+      await tx.orderTimeline.create({
+        data: {
+          orderId: createdOrder.id,
+          status: 'PENDING',
+          description: 'تم استلام الطلب بنجاح',
+        },
+      });
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        orderId: createdOrder.id,
-        userId,
-        subtotal: Number(amount),
-        tax: 0,
-        discount: Number(discount),
-        total: Number(total || amount),
-        status: 'PENDING',
-      },
+      const invoice = await tx.invoice.create({
+        data: {
+          invoiceNumber,
+          orderId: createdOrder.id,
+          userId,
+          subtotal: Number(amount),
+          tax: 0,
+          discount: Number(discount),
+          total: Number(total || amount),
+          status: 'PENDING',
+        },
+      });
+
+      return { createdOrder, invoice };
     });
 
     const order = await prisma.order.findUnique({

@@ -87,6 +87,7 @@ export default function InvoicesPage() {
       service: inv.order?.service?.name || inv.order?.serviceName || 'خدمة',
       amount: Number(inv.subtotal || inv.total - (inv.tax || 0)),
       tax: Number(inv.tax || 0),
+      discount: Number(inv.discount || 0),
       total: Number(inv.total),
       dueDate: date,
       date,
