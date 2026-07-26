@@ -49,13 +49,19 @@ export default function EmployeesPage() {
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formRole, setFormRole] = useState<string>('employee');
 
-  useEffect(() => {
-    fetch('/api/users')
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setUsers(data.data); })
-      .catch(() => {});
-  }, []);
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      if (data.success && data.data) setUsers(data.data);
+    } catch {}
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
 
   const employeesList = useMemo(() => {
     return users
@@ -95,8 +101,14 @@ export default function EmployeesPage() {
     });
   }, [activeRole, searchQuery, employeesList]);
 
-  const removeEmployee = (id: string) => {
-    setRemovedIds((prev) => new Set(prev).add(id));
+  const removeEmployee = async (id: string) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+      }
+    } catch {}
   };
 
   return (
@@ -109,7 +121,7 @@ export default function EmployeesPage() {
           { label: language === 'ar' ? 'الموظفين' : 'Employees' },
         ]}
         actions={
-          <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={() => setShowAddModal(true)}>
+          <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={() => { setFormName(''); setFormEmail(''); setFormRole('employee'); setShowAddModal(true); }}>
             {language === 'ar' ? 'إضافة موظف' : 'Add Employee'}
           </Button>
         }
@@ -178,7 +190,7 @@ export default function EmployeesPage() {
                     <td className="py-3 px-4 text-center"><Badge variant={roleConfig[emp.role]?.variant || 'secondary'} size="sm">{language === 'ar' ? roleConfig[emp.role]?.label : roleConfig[emp.role]?.labelEn}</Badge></td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-1">
-                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setEditEmployee(emp)} className="p-2 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors"><Edit size={16} /></motion.button>
+                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => { setEditEmployee(emp); setFormName(emp.name); setFormEmail(emp.email); setFormRole(emp.role); }} className="p-2 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors"><Edit size={16} /></motion.button>
                         <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => removeEmployee(emp.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"><Trash2 size={16} /></motion.button>
                       </div>
                     </td>
@@ -206,15 +218,15 @@ export default function EmployeesPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{language === 'ar' ? 'الاسم' : 'Name'}</label>
-              <input type="text" defaultValue={editEmployee?.name || ''} placeholder={language === 'ar' ? 'أدخل اسم الموظف' : 'Enter employee name'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
+              <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={language === 'ar' ? 'أدخل اسم الموظف' : 'Enter employee name'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
-              <input type="email" defaultValue={editEmployee?.email || ''} placeholder={language === 'ar' ? 'أدخل البريد الإلكتروني' : 'Enter email address'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
+              <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder={language === 'ar' ? 'أدخل البريد الإلكتروني' : 'Enter email address'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{language === 'ar' ? 'الدور' : 'Role'}</label>
-              <select defaultValue={editEmployee?.role || 'employee'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')}>
+              <select value={formRole} onChange={(e) => setFormRole(e.target.value)} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')}>
                 {Object.entries(roleConfig).map(([key, config]) => (
                   <option key={key} value={key}>{language === 'ar' ? config.label : config.labelEn}</option>
                 ))}
@@ -224,7 +236,33 @@ export default function EmployeesPage() {
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => { setShowAddModal(false); setEditEmployee(null); }}>{language === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
-          <Button onClick={() => { setShowAddModal(false); setEditEmployee(null); }}>{editEmployee ? (language === 'ar' ? 'حفظ التعديلات' : 'Save Changes') : (language === 'ar' ? 'إضافة' : 'Add')}</Button>
+          <Button onClick={async () => {
+            try {
+              if (editEmployee) {
+                const res = await fetch(`/api/users/${editEmployee.id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: formName, email: formEmail, role: formRole }),
+                });
+                const data = await res.json();
+                if (data.success && data.data) {
+                  setUsers((prev) => prev.map((u) => u.id === editEmployee.id ? { ...u, ...data.data } : u));
+                }
+              } else {
+                const res = await fetch('/api/users', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: formName, email: formEmail, role: formRole }),
+                });
+                const data = await res.json();
+                if (data.success && data.data) {
+                  setUsers((prev) => [data.data, ...prev]);
+                }
+              }
+            } catch {}
+            setShowAddModal(false);
+            setEditEmployee(null);
+          }}>{editEmployee ? (language === 'ar' ? 'حفظ التعديلات' : 'Save Changes') : (language === 'ar' ? 'إضافة' : 'Add')}</Button>
         </ModalFooter>
       </Modal>
     </div>

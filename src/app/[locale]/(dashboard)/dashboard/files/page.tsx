@@ -97,6 +97,7 @@ export default function FilesPage() {
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuthStore()
@@ -147,36 +148,13 @@ export default function FilesPage() {
         return
       }
 
-      setUploadProgress(60)
-
-      const filesPayload = uploadData.data.map(
-        (f: { name: string; url: string; size: number; type: string }) => ({
-          fileName: f.name,
-          fileUrl: f.url,
-          fileType: f.type,
-          fileSize: f.size,
-        })
-      )
-
-      const saveRes = await fetch('/api/files', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: filesPayload }),
-        cache: 'no-store',
-      })
-      const saveData = await saveRes.json()
-
-      if (saveData.success) {
-        setUploadProgress(100)
-        setUploadSuccess(true)
-        await fetchFiles()
-        setTimeout(() => {
-          setUploading(false)
-          setUploadSuccess(false)
-        }, 2000)
-      } else {
+      setUploadProgress(100)
+      setUploadSuccess(true)
+      await fetchFiles()
+      setTimeout(() => {
         setUploading(false)
-      }
+        setUploadSuccess(false)
+      }, 2000)
     } catch {
       setUploading(false)
     }
@@ -198,6 +176,11 @@ export default function FilesPage() {
   }
 
   const deleteFile = async (id: string) => {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id)
+      return
+    }
+    setConfirmDeleteId(null)
     setDeletingId(id)
     try {
       const res = await fetch(`/api/files?id=${id}`, { method: 'DELETE', cache: 'no-store' })
@@ -391,10 +374,8 @@ export default function FilesPage() {
                     </div>
                     <div className="flex border-t border-slate-100">
                       <a
-                        href={file.fileUrl}
+                        href={`/api/files/${file.id}`}
                         download={file.fileName}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#2580eb] hover:bg-[#2580eb]/5 transition-colors"
                       >
                         <Download size={14} />
@@ -404,14 +385,14 @@ export default function FilesPage() {
                       <button
                         onClick={() => deleteFile(file.id)}
                         disabled={deletingId === file.id}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors disabled:opacity-50 ${confirmDeleteId === file.id ? 'bg-red-50 text-red-600 font-bold' : 'text-red-500 hover:bg-red-50'}`}
                       >
                         {deletingId === file.id ? (
                           <Loader2 size={14} className="animate-spin" />
                         ) : (
                           <Trash2 size={14} />
                         )}
-                        حذف
+                        {confirmDeleteId === file.id ? 'هل أنت متأكد؟' : 'حذف'}
                       </button>
                     </div>
                   </Card>
@@ -470,10 +451,8 @@ export default function FilesPage() {
                           <motion.a
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            href={file.fileUrl}
+                            href={`/api/files/${file.id}`}
                             download={file.fileName}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="p-1.5 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors"
                           >
                             <Download size={15} />
@@ -483,7 +462,8 @@ export default function FilesPage() {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => deleteFile(file.id)}
                             disabled={deletingId === file.id}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors disabled:opacity-50"
+                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${confirmDeleteId === file.id ? 'bg-red-100 text-red-600' : 'hover:bg-red-50 text-red-500'}`}
+                            title={confirmDeleteId === file.id ? 'هل أنت متأكد؟' : 'حذف'}
                           >
                             {deletingId === file.id ? (
                               <Loader2 size={15} className="animate-spin" />

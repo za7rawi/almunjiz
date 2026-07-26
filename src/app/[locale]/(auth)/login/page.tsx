@@ -73,7 +73,7 @@ const itemVariants = {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
   const { loginEmail, loginWithGoogle } = useAuthStore();
 
   const [mode, setMode] = useState<'otp' | 'password'>('otp');
@@ -96,11 +96,16 @@ export default function LoginPage() {
           email: '',
         });
         if (result.success) {
-          await signIn('credentials', {
+          const signInResult = await signIn('credentials', {
             email: result.email,
-            password: '__google_verified__',
+            password: result.token,
             redirect: false,
           });
+          if (signInResult?.error) {
+            setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' });
+            useAuthStore.setState({ user: null, isAuthenticated: false });
+            return;
+          }
           router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
         } else {
           setErrors({ general: result.message || 'فشل تسجيل الدخول بـ Google' });
@@ -200,11 +205,17 @@ export default function LoginPage() {
     setLoading(true);
     const result = await loginEmail(email, password);
     if (result.success) {
-      await signIn('credentials', {
+      const signInResult = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
+      if (signInResult?.error) {
+        setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' });
+        useAuthStore.setState({ user: null, isAuthenticated: false });
+        setLoading(false);
+        return;
+      }
       router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
     } else {
       setErrors({ general: result.message });

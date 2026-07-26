@@ -2,6 +2,25 @@ import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthService } from "@/services/auth.service";
 
+// Server-side verification tokens (in-memory, single-server only)
+const verificationTokens = new Map<string, { email: string; type: 'otp' | 'google'; expiresAt: number }>();
+
+export function createVerificationToken(email: string, type: 'otp' | 'google'): string {
+  const token = `vt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  verificationTokens.set(token, { email, type, expiresAt: Date.now() + 5 * 60 * 1000 });
+  return token;
+}
+
+export function consumeVerificationToken(token: string): { email: string; type: 'otp' | 'google' } | null {
+  const data = verificationTokens.get(token);
+  if (!data || data.expiresAt < Date.now()) {
+    verificationTokens.delete(token);
+    return null;
+  }
+  verificationTokens.delete(token);
+  return { email: data.email, type: data.type };
+}
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
@@ -40,10 +59,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("المستخدم غير موجود");
         }
 
-        const isOtpVerified = credentials.password === "__otp_verified__";
-        const isGoogleVerified = credentials.password === "__google_verified__";
-
-        if (!isOtpVerified && !isGoogleVerified) {
+        let isVerified = false;
+        if (credentials.password?.startsWith('vt_')) {
+          const verification = consumeVerificationToken(credentials.password);
+          isVerified = verification !== null && verification.email === credentials.email;
+        } else {
           const isValid = await AuthService.verifyPassword(
             credentials.password,
             user.password
@@ -52,6 +72,11 @@ export const authOptions: NextAuthOptions = {
           if (!isValid) {
             throw new Error("كلمة المرور غير صحيحة");
           }
+          isVerified = true;
+        }
+
+        if (!isVerified) {
+          throw new Error("رمز التحقق غير صالح أو منتهي الصلاحية");
         }
 
         await AuthService.updateLastLogin(user.id);

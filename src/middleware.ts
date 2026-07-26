@@ -77,6 +77,7 @@ export function middleware(request: NextRequest) {
     if (!sessionToken) {
       const locale = pathname.split('/')[1] || 'ar';
       const loginUrl = new URL(`/${locale}/admin/login`, request.url);
+      loginUrl.searchParams.set('redirect', pathname.replace(`/${locale}`, ''));
       return NextResponse.redirect(loginUrl);
     }
   }
@@ -88,6 +89,21 @@ export function middleware(request: NextRequest) {
     if (!sessionToken) {
       const locale = pathname.split('/')[1] || 'ar';
       const loginUrl = new URL(`/${locale}/login`, request.url);
+      loginUrl.searchParams.set('redirect', pathname.replace(`/${locale}`, ''));
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // Protect customer request routes
+  if (pathname.includes('/request/')) {
+    const sessionToken = request.cookies.get('next-auth.session-token')?.value
+      || request.cookies.get('__Secure-next-auth.session-token')?.value;
+    const authState = request.cookies.get('almunjiz-auth')?.value;
+    
+    if (!sessionToken && !authState) {
+      const locale = pathname.split('/')[1] || 'ar';
+      const loginUrl = new URL(`/${locale}/login`, request.url);
+      loginUrl.searchParams.set('redirect', pathname.replace(`/${locale}`, ''));
       return NextResponse.redirect(loginUrl);
     }
   }

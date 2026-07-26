@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -58,6 +58,8 @@ function GoogleIcon() {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
   const { register, loginWithGoogle } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -83,11 +85,16 @@ export default function RegisterPage() {
           email: '',
         });
         if (result.success) {
-          await signIn('credentials', {
+          const signInResult = await signIn('credentials', {
             email: result.email,
-            password: '__google_verified__',
+            password: result.token,
             redirect: false,
           });
+          if (signInResult?.error) {
+            setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' });
+            useAuthStore.setState({ user: null, isAuthenticated: false });
+            return;
+          }
           router.push(result.redirect === '/admin' ? '/admin' : '/');
         } else {
           setErrors({ general: result.message || 'فشل التسجيل بـ Google' });
@@ -195,7 +202,7 @@ export default function RegisterPage() {
       password: formData.password,
     });
     if (result.success) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent(redirectTo)}`);
     } else {
       setErrors({ general: result.message });
     }

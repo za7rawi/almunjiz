@@ -20,7 +20,7 @@ interface AuthStore {
   login: (user: User) => void;
   loginEmail: (email: string, password: string) => Promise<{ success: boolean; message: string; redirect?: string }>;
   register: (data: { name: string; email: string; password: string }) => Promise<{ success: boolean; message: string }>;
-  loginWithGoogle: (data: { idToken: string; name: string; email: string; avatar?: string }) => Promise<{ success: boolean; message: string; redirect: string; email: string }>;
+  loginWithGoogle: (data: { idToken: string; name: string; email: string; avatar?: string }) => Promise<{ success: boolean; message: string; redirect: string; email: string; token: string }>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
   isAdmin: () => boolean;
@@ -155,12 +155,13 @@ export const useAuthStore = create<AuthStore>()(
             const prevUser = get().user;
             if (prevUser && prevUser.id !== user.id) clearUserProgressData(user.id);
             set({ user, isAuthenticated: true });
-            return { success: true, message: json.message || 'تم تسجيل الدخول بنجاح', redirect: '/dashboard', email: u.email };
+            const isAdmin = user.role === 'admin' || user.role === 'manager';
+            return { success: true, message: json.message || 'تم تسجيل الدخول بنجاح', redirect: isAdmin ? '/admin' : '/dashboard', email: u.email, token: json.token };
           }
 
-          return { success: false, message: json.message || 'فشل تسجيل الدخول بـ Google', redirect: '', email: '' };
+          return { success: false, message: json.message || 'فشل تسجيل الدخول بـ Google', redirect: '', email: '', token: '' };
         } catch {
-          return { success: false, message: 'حدث خطأ أثناء التواصل مع Google', redirect: '', email: '' };
+          return { success: false, message: 'حدث خطأ أثناء التواصل مع Google', redirect: '', email: '', token: '' };
         }
       },
 

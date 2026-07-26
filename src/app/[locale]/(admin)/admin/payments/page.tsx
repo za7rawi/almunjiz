@@ -124,10 +124,18 @@ export default function PaymentsPage() {
     completed: payments.filter((p) => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0),
   }), [payments]);
 
-  const handleRefund = (id: string) => {
-    setPayments((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'refunded' as PaymentStatus } : p)),
-    );
+  const handleRefund = async (id: string) => {
+    try {
+      const res = await fetch('/api/payments/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchPayments();
+      }
+    } catch {}
   };
 
   const statCards = [

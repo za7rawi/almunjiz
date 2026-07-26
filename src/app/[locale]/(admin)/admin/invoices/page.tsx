@@ -173,37 +173,42 @@ export default function InvoicesPage() {
     setShowFormModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const amount = parseFloat(form.amount) || 0;
-    const total = amount;
-    const today = new Date().toISOString().split('T')[0];
 
-    if (editInvoice) {
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv.id === editInvoice.id
-            ? { ...inv, customer: form.customer, email: form.email, service: form.service, amount, tax: 0, total, notes: form.notes, dueDate: form.dueDate, status: form.status }
-            : inv,
-        ),
-      );
-    } else {
-      setInvoices((prev) => [
-        ...prev,
-        {
-          id: `local-${Date.now()}`,
-          invoiceNumber: `INV-LOCAL-${String(prev.length + 1).padStart(3, '0')}`,
-          customer: form.customer,
-          email: form.email,
-          service: form.service,
-          amount,
-          tax: 0,
-          total,
-          notes: form.notes,
-          dueDate: form.dueDate,
-          date: today,
-          status: form.status,
-        },
-      ]);
+    try {
+      if (editInvoice) {
+        const res = await fetch(`/api/invoices/${editInvoice.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: form.status.toUpperCase(),
+            dueDate: form.dueDate || null,
+            amount,
+            tax: 0,
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to update');
+      } else {
+        const res = await fetch('/api/invoices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer: form.customer,
+            email: form.email,
+            service: form.service,
+            amount,
+            tax: 0,
+            notes: form.notes,
+            dueDate: form.dueDate || null,
+            status: form.status.toUpperCase(),
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to create');
+      }
+      await fetchInvoices();
+    } catch {
+      // error handled silently
     }
     setShowFormModal(false);
     setEditInvoice(null);
@@ -215,9 +220,14 @@ export default function InvoicesPage() {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteTarget) {
-      setInvoices((prev) => prev.filter((inv) => inv.id !== deleteTarget.id));
+      try {
+        await fetch(`/api/invoices/${deleteTarget.id}`, { method: 'DELETE' });
+        await fetchInvoices();
+      } catch {
+        // error handled silently
+      }
     }
     setShowDeleteModal(false);
     setDeleteTarget(null);

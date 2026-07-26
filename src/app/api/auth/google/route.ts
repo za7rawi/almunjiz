@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmail } from "@/lib/email/service";
+import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
 
 async function verifyGoogleToken(
   idToken: string
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
 
     if (!user) {
       const bcrypt = await import("bcryptjs");
-      const defaultPassword = await bcrypt.hash("google_" + Date.now(), 10);
+      const defaultPassword = await bcrypt.hash(crypto.randomUUID(), 12);
 
       user = await prisma.user.create({
         data: {
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
           avatar: userData.avatar,
           role: "CUSTOMER",
           emailVerified: true,
+          lastLoginAt: new Date(),
         },
       });
 
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const token = crypto.randomUUID();
+    const token = createVerificationToken(userData.email, 'google');
 
     return NextResponse.json({
       success: true,

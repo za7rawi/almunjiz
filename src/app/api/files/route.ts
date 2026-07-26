@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { unlink } from "fs/promises";
+import { join } from "path";
 
 export async function GET(request: NextRequest) {
   try {
@@ -146,6 +148,15 @@ export async function DELETE(request: NextRequest) {
         { success: false, message: "الملف غير موجود" },
         { status: 404 }
       );
+    }
+
+    if (file.storedName) {
+      unlink(join(process.cwd(), "public", "uploads", file.storedName)).catch(() => {});
+    } else if (file.fileUrl) {
+      const urlPath = file.fileUrl.startsWith("/") ? file.fileUrl.slice(1) : file.fileUrl;
+      if (urlPath.startsWith("uploads/")) {
+        unlink(join(process.cwd(), "public", urlPath)).catch(() => {});
+      }
     }
 
     await prisma.fileAttachment.delete({ where: { id } });

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api/response";
 import { sendWelcomeEmail } from "@/lib/email/service";
 import { otpLimiter } from "@/lib/rate-limit";
+import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const token = crypto.randomUUID();
+    const token = createVerificationToken(email, 'otp');
 
     if (isNewUser) {
       sendWelcomeEmail(email, user.name).catch((err) =>

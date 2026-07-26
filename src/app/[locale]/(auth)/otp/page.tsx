@@ -125,11 +125,18 @@ export default function OtpPage() {
       if (data.success) {
         setVerified(true);
         login(data.data.user);
-        await signIn('credentials', {
+        const signInResult = await signIn('credentials', {
           email: identifier,
-          password: '__otp_verified__',
+          password: data.data.token,
           redirect: false,
         });
+        if (signInResult?.error) {
+          setError(true);
+          setErrorMsg('فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى');
+          useAuthStore.setState({ user: null, isAuthenticated: false });
+          setLoading(false);
+          return;
+        }
         sessionStorage.removeItem('otp_identifier');
         sessionStorage.removeItem('otp_type');
         sessionStorage.removeItem('otp_dev_code');

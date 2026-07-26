@@ -32,7 +32,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (mounted && !isAuthenticated) {
-      router.replace('/login')
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
     }
   }, [mounted, isAuthenticated, router])
 

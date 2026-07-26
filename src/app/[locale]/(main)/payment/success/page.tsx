@@ -14,7 +14,6 @@ import {
   CreditCard,
   Calendar,
   Hash,
-  Download,
   Receipt,
   Truck,
   CircleDollarSign,
@@ -213,7 +212,7 @@ export default function PaymentSuccessPage() {
     });
   };
 
-  const trackOrderNumber = order?.orderNumber || orderNumberParam || orderId;
+  const trackOrderNumber = order?.orderNumber || orderNumberParam || '';
 
   if (loading) {
     return (
@@ -562,9 +561,10 @@ export default function PaymentSuccessPage() {
           >
             <div className="flex w-full flex-col gap-3 sm:flex-row">
               <Button variant="secondary" className="flex-1" onClick={handleDownloadInvoice}>
-                <Download className={`h-4 w-4 ${isAr ? 'ml-2' : 'mr-2'}`} />
-                {isAr ? 'تحميل الفاتورة' : 'Download Invoice'}
+                <FileText className={`h-4 w-4 ${isAr ? 'ml-2' : 'mr-2'}`} />
+                {isAr ? 'عرض الفاتورة' : 'View Invoice'}
               </Button>
+              {trackOrderNumber && (
               <Link
                 href={`/track-order?order=${trackOrderNumber}`}
                 className="flex-1"
@@ -574,6 +574,7 @@ export default function PaymentSuccessPage() {
                   <ArrowRight className={`h-4 w-4 ${isAr ? 'mr-2 rotate-180' : 'ml-2'}`} />
                 </Button>
               </Link>
+              )}
             </div>
             <Link href="/dashboard" className="w-full">
               <Button variant="secondary" className="w-full">
