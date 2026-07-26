@@ -3,7 +3,8 @@ import { prisma } from '../src/lib/prisma';
 
 async function seedAdmin() {
   const adminEmail = 'admin@gmail.com';
-  const adminPassword = 'admin123';
+  // TODO: Change this password after first login
+  const adminPassword = 'Admin@Munjiz2026!';
 
   const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
 
