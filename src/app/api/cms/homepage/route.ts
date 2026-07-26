@@ -59,7 +59,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: DEFAULT_HOMEPAGE, error: error instanceof Error ? error.message : 'Failed to fetch homepage content' },
+      { success: false, data: DEFAULT_HOMEPAGE, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch homepage content' },
       { status: 500 }
     );
   }
@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, data: content.data });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: {}, error: error instanceof Error ? error.message : 'Failed to update homepage content' },
+      { success: false, data: {}, error: error instanceof Error ? 'An error occurred' : 'Failed to update homepage content' },
       { status: 500 }
     );
   }

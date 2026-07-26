@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json({ success: true, data: faq });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to fetch FAQ' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch FAQ' },
       { status: 500 }
     );
   }
@@ -61,7 +61,7 @@ export async function PUT(
     return NextResponse.json({ success: true, data: faq });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to update FAQ' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to update FAQ' },
       { status: 500 }
     );
   }
@@ -89,7 +89,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, data: existing });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to delete FAQ' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to delete FAQ' },
       { status: 500 }
     );
   }

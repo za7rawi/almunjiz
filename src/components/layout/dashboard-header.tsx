@@ -77,7 +77,7 @@ export function DashboardHeader({
                 'bg-slate-100 dark:bg-slate-800 border border-transparent',
                 'focus:bg-white dark:focus:bg-slate-800',
                 'focus:border-[#2580eb]/30 focus:ring-2 focus:ring-[#2580eb]/20',
-                'text-slate-900 dark:text-white placeholder:text-slate-400',
+                'text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500',
                 'transition-all duration-200 outline-none',
                 isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4',
               )}

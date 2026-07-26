@@ -106,7 +106,7 @@ export default function FilesPage() {
       const params = new URLSearchParams()
       if (activeTab !== 'all') params.set('type', activeTab)
       if (search) params.set('search', search)
-      const res = await fetch(`/api/files?${params.toString()}`)
+      const res = await fetch(`/api/files?${params.toString()}`, { cache: 'no-store' })
       const data = await res.json()
       if (data.success && Array.isArray(data.data)) {
         setFiles(data.data)
@@ -138,6 +138,7 @@ export default function FilesPage() {
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        cache: 'no-store',
       })
       const uploadData = await uploadRes.json()
 
@@ -161,6 +162,7 @@ export default function FilesPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ files: filesPayload }),
+        cache: 'no-store',
       })
       const saveData = await saveRes.json()
 
@@ -198,7 +200,7 @@ export default function FilesPage() {
   const deleteFile = async (id: string) => {
     setDeletingId(id)
     try {
-      const res = await fetch(`/api/files?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/files?id=${id}`, { method: 'DELETE', cache: 'no-store' })
       const data = await res.json()
       if (data.success) {
         setFiles((prev) => prev.filter((f) => f.id !== id))

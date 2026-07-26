@@ -1,9 +1,19 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api/response";
+import { authLimiter } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const result = authLimiter(ip);
+    if (!result.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً / Rate limit exceeded' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(result.resetMs / 1000)) } }
+      );
+    }
+
     const { currentPassword, newPassword } = await request.json();
 
     if (!currentPassword || !newPassword) {

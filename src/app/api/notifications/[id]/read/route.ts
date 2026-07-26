@@ -24,11 +24,26 @@ export async function PUT(
 
     const { id } = await params;
 
-    const notification = await NotificationService.markAsRead(id);
+    const sessionUserId = (session.user as Record<string, unknown>)?.id as string | undefined;
+    const sessionRole = (session.user as Record<string, unknown>)?.role as string | undefined;
+    const isAdmin = ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(sessionRole || "");
+
+    if (!isAdmin) {
+      const { prisma } = await import("@/lib/prisma");
+      const notification = await prisma.notification.findUnique({ where: { id }, select: { userId: true } });
+      if (!notification || notification.userId !== sessionUserId) {
+        return NextResponse.json(
+          { success: false, data: null, message: "غير مصرح / Unauthorized", error: null },
+          { status: 403 }
+        );
+      }
+    }
+
+    const updated = await NotificationService.markAsRead(id);
 
     return NextResponse.json({
       success: true,
-      data: notification,
+      data: updated,
       message: "تم تمييز الإشعار كمقروء / Notification marked as read",
       error: null,
     });
@@ -39,7 +54,7 @@ export async function PUT(
         success: false,
         data: null,
         message: "حدث خطأ في تحديث الإشعار / Error updating notification",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );

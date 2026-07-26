@@ -36,6 +36,15 @@ export default function DashboardLayout({
     }
   }, [mounted, isAuthenticated, router])
 
+  const prevUserIdRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (mounted && user?.id && prevUserIdRef.current && prevUserIdRef.current !== user.id) {
+      window.location.reload()
+      return
+    }
+    prevUserIdRef.current = user?.id
+  }, [mounted, user?.id])
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">

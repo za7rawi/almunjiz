@@ -19,6 +19,11 @@ import {
   Truck,
   CircleDollarSign,
   ShieldCheck,
+  User,
+  Phone,
+  Mail,
+  Percent,
+  LayoutDashboard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -393,6 +398,36 @@ export default function PaymentSuccessPage() {
                     </div>
                   )}
 
+                  {order.customerName && (
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
+                      <div className="flex items-center gap-2.5 text-slate-500 text-sm">
+                        <User className="h-4 w-4 shrink-0" />
+                        <span>{isAr ? 'اسم العميل' : 'Customer Name'}</span>
+                      </div>
+                      <span className="font-medium text-slate-900 text-sm">{order.customerName}</span>
+                    </div>
+                  )}
+
+                  {order.customerPhone && (
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
+                      <div className="flex items-center gap-2.5 text-slate-500 text-sm">
+                        <Phone className="h-4 w-4 shrink-0" />
+                        <span>{isAr ? 'رقم الهاتف' : 'Phone'}</span>
+                      </div>
+                      <span className="font-medium text-slate-900 text-sm" dir="ltr">{order.customerPhone}</span>
+                    </div>
+                  )}
+
+                  {order.customerEmail && (
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
+                      <div className="flex items-center gap-2.5 text-slate-500 text-sm">
+                        <Mail className="h-4 w-4 shrink-0" />
+                        <span>{isAr ? 'البريد الإلكتروني' : 'Email'}</span>
+                      </div>
+                      <span className="font-medium text-slate-900 text-sm" dir="ltr">{order.customerEmail}</span>
+                    </div>
+                  )}
+
                   {order.service?.name && (
                     <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
                       <div className="flex items-center gap-2.5 text-slate-500 text-sm">
@@ -428,6 +463,18 @@ export default function PaymentSuccessPage() {
                       )}
                     </div>
                   </div>
+
+                  {Number(order.discount ?? 0) > 0 && (
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
+                      <div className="flex items-center gap-2.5 text-slate-500 text-sm">
+                        <Percent className="h-4 w-4 shrink-0" />
+                        <span>{isAr ? 'الخصم' : 'Discount'}</span>
+                      </div>
+                      <span className="font-medium text-emerald-600 text-sm">
+                        -{formatPrice(Number(order.discount), currency)}
+                      </span>
+                    </div>
+                  )}
 
                   {order.paymentStatus && (
                     <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
@@ -511,19 +558,27 @@ export default function PaymentSuccessPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="flex w-full flex-col gap-3 sm:flex-row"
+            className="flex w-full flex-col gap-3"
           >
-            <Button variant="secondary" className="flex-1" onClick={handleDownloadInvoice}>
-              <Download className={`h-4 w-4 ${isAr ? 'ml-2' : 'mr-2'}`} />
-              {isAr ? 'تحميل الفاتورة' : 'Download Invoice'}
-            </Button>
-            <Link
-              href={`/track-order?order=${trackOrderNumber}`}
-              className="flex-1"
-            >
-              <Button variant="primary" className="w-full">
-                {isAr ? 'متابعة الطلب' : 'Track Order'}
-                <ArrowRight className={`h-4 w-4 ${isAr ? 'mr-2 rotate-180' : 'ml-2'}`} />
+            <div className="flex w-full flex-col gap-3 sm:flex-row">
+              <Button variant="secondary" className="flex-1" onClick={handleDownloadInvoice}>
+                <Download className={`h-4 w-4 ${isAr ? 'ml-2' : 'mr-2'}`} />
+                {isAr ? 'تحميل الفاتورة' : 'Download Invoice'}
+              </Button>
+              <Link
+                href={`/track-order?order=${trackOrderNumber}`}
+                className="flex-1"
+              >
+                <Button variant="primary" className="w-full">
+                  {isAr ? 'متابعة الطلب' : 'Track Order'}
+                  <ArrowRight className={`h-4 w-4 ${isAr ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                </Button>
+              </Link>
+            </div>
+            <Link href="/dashboard" className="w-full">
+              <Button variant="secondary" className="w-full">
+                <LayoutDashboard className={`h-4 w-4 ${isAr ? 'ml-2' : 'mr-2'}`} />
+                {isAr ? 'لوحة التحكم' : 'Dashboard'}
               </Button>
             </Link>
           </motion.div>

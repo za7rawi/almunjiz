@@ -88,7 +88,7 @@ export function CountrySelect({ value, onChange, className }: CountrySelectProps
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="بحث..."
-                  className="w-full pr-8 pl-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-[#2580eb]/50 transition-colors"
+                  className="w-full pr-8 pl-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-sm placeholder:text-white/50 focus:outline-none focus:border-[#2580eb]/50 transition-colors"
                 />
               </div>
             </div>

@@ -37,6 +37,17 @@ export async function GET(
       );
     }
 
+    const sessionUserId = (session.user as Record<string, unknown>)?.id as string | undefined;
+    const sessionRole = (session.user as Record<string, unknown>)?.role as string | undefined;
+    const isAdmin = ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(sessionRole || "");
+
+    if (!isAdmin && payment.userId !== sessionUserId) {
+      return NextResponse.json(
+        { success: false, data: null, message: "غير مصرح / Unauthorized", error: null },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       data: payment,
@@ -50,7 +61,7 @@ export async function GET(
         success: false,
         data: null,
         message: "حدث خطأ في جلب الدفعة / Error fetching payment",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );

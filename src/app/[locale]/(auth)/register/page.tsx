@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -82,6 +83,11 @@ export default function RegisterPage() {
           email: '',
         });
         if (result.success) {
+          await signIn('credentials', {
+            email: result.email,
+            password: '__google_verified__',
+            redirect: false,
+          });
           router.push(result.redirect === '/admin' ? '/admin' : '/');
         } else {
           setErrors({ general: result.message || 'فشل التسجيل بـ Google' });
@@ -234,7 +240,7 @@ export default function RegisterPage() {
               onChange={(e) => updateField('name', e.target.value)}
               onBlur={() => handleBlur('name')}
               placeholder="محمد أحمد"
-              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('name')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                   : formData.name && !getFieldError('name')
@@ -267,7 +273,7 @@ export default function RegisterPage() {
               onBlur={() => handleBlur('email')}
               placeholder="example@email.com"
               dir="ltr"
-              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('email')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                   : formData.email && !getFieldError('email')
@@ -299,7 +305,7 @@ export default function RegisterPage() {
               onChange={(e) => updateField('password', e.target.value)}
               onBlur={() => handleBlur('password')}
               placeholder="••••••••"
-              className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('password')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                   : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
@@ -339,7 +345,7 @@ export default function RegisterPage() {
               onChange={(e) => updateField('confirmPassword', e.target.value)}
               onBlur={() => handleBlur('confirmPassword')}
               placeholder="••••••••"
-              className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('confirmPassword')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                   : formData.confirmPassword && !getFieldError('confirmPassword')

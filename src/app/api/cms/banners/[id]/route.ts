@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json({ success: true, data: banner });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to fetch banner' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch banner' },
       { status: 500 }
     );
   }
@@ -62,7 +62,7 @@ export async function PUT(
     return NextResponse.json({ success: true, data: banner });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to update banner' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to update banner' },
       { status: 500 }
     );
   }
@@ -90,7 +90,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, data: existing });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to delete banner' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to delete banner' },
       { status: 500 }
     );
   }

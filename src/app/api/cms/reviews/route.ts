@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: reviews });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: [], error: error instanceof Error ? error.message : 'Failed to fetch reviews' },
+      { success: false, data: [], error: error instanceof Error ? 'An error occurred' : 'Failed to fetch reviews' },
       { status: 500 }
     );
   }
@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, data: review });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to update review' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to update review' },
       { status: 500 }
     );
   }

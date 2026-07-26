@@ -22,7 +22,7 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: DEFAULT_SOCIAL, error: error instanceof Error ? error.message : 'Failed to fetch social links' },
+      { success: false, data: DEFAULT_SOCIAL, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch social links' },
       { status: 500 }
     );
   }
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, data: setting.value });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to update social links' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to update social links' },
       { status: 500 }
     );
   }

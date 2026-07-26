@@ -1,11 +1,21 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { verifyStoredOTP } from "@/lib/otp";
 import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api/response";
 import { sendWelcomeEmail } from "@/lib/email/service";
+import { otpLimiter } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const limiterResult = otpLimiter(ip);
+    if (!limiterResult.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً / Rate limit exceeded' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(limiterResult.resetMs / 1000)) } }
+      );
+    }
+
     const { email, code } = await request.json();
 
     if (!email || !code) {
@@ -49,7 +59,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const token = `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    const token = crypto.randomUUID();
 
     if (isNewUser) {
       sendWelcomeEmail(email, user.name).catch((err) =>

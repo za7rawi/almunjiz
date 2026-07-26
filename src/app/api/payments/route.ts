@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         success: false,
         data: null,
         message: "حدث خطأ في جلب المدفوعات / Error fetching payments",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
         success: false,
         data: null,
         message: "حدث خطأ في إنشاء الدفعة / Error creating payment",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );

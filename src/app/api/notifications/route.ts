@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         success: false,
         data: null,
         message: "حدث خطأ في جلب الإشعارات / Error fetching notifications",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );

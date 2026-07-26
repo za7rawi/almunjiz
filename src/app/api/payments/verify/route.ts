@@ -21,6 +21,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (orderId) {
+      const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+      if (!order || order.userId !== auth.session.userId) {
+        return NextResponse.json(
+          { success: false, error: 'غير مصرح / Unauthorized' },
+          { status: 403 }
+        );
+      }
+    }
+
     const gateway = await prisma.paymentGateway.findUnique({ where: { id: gatewayId } });
     if (!gateway) {
       return NextResponse.json(

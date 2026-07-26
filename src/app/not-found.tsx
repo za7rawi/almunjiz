@@ -28,7 +28,7 @@ export default function NotFound() {
           <span className="text-5xl font-bold gradient-text">404</span>
         </div>
 
-        <h1 className="text-3xl font-bold text-slate-900 mb-3">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">
           الصفحة غير موجودة
         </h1>
         <p className="text-slate-500 mb-8 leading-relaxed">

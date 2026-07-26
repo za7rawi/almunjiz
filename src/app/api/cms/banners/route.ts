@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: banners });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: [], error: error instanceof Error ? error.message : 'Failed to fetch banners' },
+      { success: false, data: [], error: error instanceof Error ? 'An error occurred' : 'Failed to fetch banners' },
       { status: 500 }
     );
   }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: banner });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to create banner' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to create banner' },
       { status: 500 }
     );
   }

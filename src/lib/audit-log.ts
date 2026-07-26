@@ -26,7 +26,11 @@ export type AuditAction =
   | 'order.file_uploaded'
   | 'order.email_sent'
   | 'user.registered'
-  | 'user.login';
+  | 'user.login'
+  | 'settings.backup_created'
+  | 'settings.test_email'
+  | 'settings.password_changed'
+  | 'settings.updated';
 
 interface AuditParams {
   action: AuditAction;

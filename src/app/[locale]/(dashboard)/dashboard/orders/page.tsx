@@ -51,7 +51,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetch('/api/orders?limit=200')
+    fetch('/api/orders?limit=200', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && data.data) setOrders(data.data); })
       .catch(() => {})

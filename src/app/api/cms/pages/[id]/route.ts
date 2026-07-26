@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json({ success: true, data: page });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to fetch page' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch page' },
       { status: 500 }
     );
   }
@@ -72,7 +72,7 @@ export async function PUT(
     return NextResponse.json({ success: true, data: page });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to update page' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to update page' },
       { status: 500 }
     );
   }
@@ -100,7 +100,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, data: existing });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to delete page' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to delete page' },
       { status: 500 }
     );
   }

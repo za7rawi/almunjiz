@@ -58,6 +58,22 @@ export async function GET(
       );
     }
 
+    const sessionUserId = (session.user as Record<string, unknown>)?.id as string | undefined;
+    const sessionRole = (session.user as Record<string, unknown>)?.role as string | undefined;
+    const isAdmin = ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(sessionRole || "");
+
+    if (!isAdmin && sessionUserId && order.userId !== sessionUserId) {
+      return NextResponse.json(
+        {
+          success: false,
+          data: null,
+          message: "غير مصرح / Unauthorized",
+          error: null,
+        },
+        { status: 403 }
+      );
+    }
+
     const serialized = {
       ...order,
       amount: order.amount?.toString() ?? null,
@@ -102,7 +118,7 @@ export async function GET(
         success: false,
         data: null,
         message: "حدث خطأ في جلب الطلب / Error fetching order",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );
@@ -286,7 +302,7 @@ export async function PUT(
         success: false,
         data: null,
         message: "حدث خطأ في تحديث الطلب / Error updating order",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );

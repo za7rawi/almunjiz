@@ -16,6 +16,7 @@ import {
   Loader2,
   KeyRound,
 } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -95,6 +96,11 @@ export default function LoginPage() {
           email: '',
         });
         if (result.success) {
+          await signIn('credentials', {
+            email: result.email,
+            password: '__google_verified__',
+            redirect: false,
+          });
           router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
         } else {
           setErrors({ general: result.message || 'فشل تسجيل الدخول بـ Google' });
@@ -194,6 +200,11 @@ export default function LoginPage() {
     setLoading(true);
     const result = await loginEmail(email, password);
     if (result.success) {
+      await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
       router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
     } else {
       setErrors({ general: result.message });
@@ -245,7 +256,7 @@ export default function LoginPage() {
               }}
               placeholder="example@email.com"
               dir="ltr"
-              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+              className={`w-full pr-10 pl-10 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
                 getFieldError('email')
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                   : email && !getFieldError('email')
@@ -295,7 +306,7 @@ export default function LoginPage() {
                   setErrors((prev) => ({ ...prev, password: validatePassword(password) }));
                 }}
                 placeholder="••••••••"
-                className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/25 text-sm focus:outline-none transition-all duration-300 ${
+                className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
                   getFieldError('password')
                     ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                     : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'

@@ -364,7 +364,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50/50 pt-20">
         <Card className="max-w-md w-full mx-4 p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><X size={32} className="text-red-500" /></div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">خدمة غير موجودة</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">خدمة غير موجودة</h2>
           <p className="text-slate-500 mb-6">الخدمة المحددة غير موجودة</p>
           <Link href="/services"><Button variant="primary">العودة للخدمات</Button></Link>
         </Card>
@@ -383,9 +383,9 @@ export default function CheckoutPage() {
             <ChevronDown size={14} className="rotate-[-90deg]" />
             <Link href={`/services/${service.id}`} className="hover:text-[#2580eb] transition-colors">{service.name}</Link>
             <ChevronDown size={14} className="rotate-[-90deg]" />
-            <span className="text-slate-900 font-medium">إتمام الطلب</span>
+            <span className="text-slate-900 dark:text-white font-medium">إتمام الطلب</span>
           </nav>
-          <h1 className="text-3xl font-bold text-slate-900">إتمام الطلب</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">إتمام الطلب</h1>
           <p className="text-slate-500 mt-1">أكمل بياناتك واختر طريقة الدفع</p>
         </motion.div>
 
@@ -396,13 +396,13 @@ export default function CheckoutPage() {
               <Card className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white"><Star size={20} /></div>
-                  <h2 className="text-lg font-bold text-slate-900">تفاصيل الخدمة</h2>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">تفاصيل الخدمة</h2>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-[#2580eb]/10 to-[#14b8a6]/10 flex items-center justify-center shrink-0"><Star size={24} className="text-[#2580eb]" /></div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-900 text-lg mb-1">{service.name}</h3>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-1">{service.name}</h3>
                       <p className="text-sm text-slate-500 mb-3 leading-relaxed">{service.description}</p>
                       <div className="flex flex-wrap gap-2">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#2580eb]/10 text-[#2580eb] text-xs font-medium">
@@ -425,40 +425,40 @@ export default function CheckoutPage() {
               <Card className="p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-[#2580eb]/10 flex items-center justify-center text-[#2580eb]"><User size={20} /></div>
-                  <h2 className="text-lg font-bold text-slate-900">بيانات العميل</h2>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">بيانات العميل</h2>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">الاسم الكامل *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الاسم الكامل *</label>
                     <div className="relative">
                       <User size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input type="text" value={formData.name} onChange={(e) => setField('name', e.target.value)} placeholder="محمد أحمد"
                         disabled={step !== 'info'}
                         className={cn("w-full pr-10 pl-4 py-3 rounded-xl border text-sm focus:outline-none transition-all",
                           step !== 'info' ? 'bg-slate-50 opacity-70 cursor-not-allowed' : '',
-                          formErrors.name ? 'border-red-400 bg-red-50/50' : 'border-slate-200 bg-white focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
+                          formErrors.name ? 'border-red-400 bg-red-50/50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
                     </div>
                     {formErrors.name && <p className="text-xs text-red-500 mt-1">{formErrors.name}</p>}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">البريد الإلكتروني *</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">البريد الإلكتروني *</label>
                       <div className="relative">
                         <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input type="email" dir="ltr" value={formData.email} onChange={(e) => setField('email', e.target.value)} placeholder="email@example.com"
                           disabled={step !== 'info'}
                           className={cn("w-full pr-10 pl-4 py-3 rounded-xl border text-sm focus:outline-none transition-all text-left",
                             step !== 'info' ? 'bg-slate-50 opacity-70 cursor-not-allowed' : '',
-                            formErrors.email ? 'border-red-400 bg-red-50/50' : 'border-slate-200 bg-white focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
+                            formErrors.email ? 'border-red-400 bg-red-50/50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
                       </div>
                       {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">رقم الجوال *</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">رقم الجوال *</label>
                       <div className="flex gap-2">
                         <select value={formData.phoneCode} onChange={(e) => setField('phoneCode', e.target.value)}
                           disabled={step !== 'info'}
-                          className={cn("w-28 px-2 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] transition-all",
+                          className={cn("w-28 px-2 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] transition-all",
                             step !== 'info' ? 'opacity-70 cursor-not-allowed' : '')}>
                           {phoneCodes.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
                         </select>
@@ -468,7 +468,7 @@ export default function CheckoutPage() {
                             disabled={step !== 'info'}
                             className={cn("w-full pr-10 pl-4 py-3 rounded-xl border text-sm focus:outline-none transition-all text-left font-mono",
                               step !== 'info' ? 'bg-slate-50 opacity-70 cursor-not-allowed' : '',
-                              formErrors.phone ? 'border-red-400 bg-red-50/50' : 'border-slate-200 bg-white focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
+                              formErrors.phone ? 'border-red-400 bg-red-50/50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20')} />
                         </div>
                       </div>
                       {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
@@ -484,7 +484,7 @@ export default function CheckoutPage() {
                 <Card className="p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500"><Upload size={20} /></div>
-                    <h2 className="text-lg font-bold text-slate-900">رفع المستندات</h2>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">رفع المستندات</h2>
                   </div>
                   <p className="text-sm text-slate-500 mb-4">ارفع الملفات المطلوبة (اختياري) — PDF, DOC, XLS, JPG, PNG, ZIP — حد أقصى 10 ميجا، 5 ملفات</p>
                   <div
@@ -499,7 +499,7 @@ export default function CheckoutPage() {
                   >
                     <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" onChange={handleFileUpload} className="hidden" />
                     <div className="w-14 h-14 rounded-2xl bg-[#2580eb]/10 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform"><Upload size={24} className="text-[#2580eb]" /></div>
-                    <p className="text-slate-700 font-medium mb-1">اسحب الملفات هنا أو اضغط للاختيار</p>
+                    <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">اسحب الملفات هنا أو اضغط للاختيار</p>
                     <p className="text-slate-400 text-xs">{uploadedFiles.length}/5 ملفات</p>
                   </div>
                   <AnimatePresence>
@@ -507,14 +507,14 @@ export default function CheckoutPage() {
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 space-y-2">
                         {uploadedFiles.map((f) => (
                           <motion.div key={f.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                            className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                            className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 dark:border-slate-700">
                             {f.preview
                               // eslint-disable-next-line @next/next/no-img-element
                               ? <img src={f.preview} alt={f.name} className="w-10 h-10 rounded-lg object-cover" />
-                              : <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center">{getFileIcon(f.type)}</div>
+                              : <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">{getFileIcon(f.type)}</div>
                             }
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-700 truncate">{f.name}</p>
+                              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{f.name}</p>
                               <p className="text-xs text-slate-400">{formatFileSize(f.size)}</p>
                               {f.progress < 100 && (
                                 <div className="w-full h-1 bg-slate-200 rounded-full mt-1">
@@ -538,11 +538,11 @@ export default function CheckoutPage() {
                 <Card className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500"><Tag size={20} /></div>
-                    <h2 className="text-lg font-bold text-slate-900">كود الخصم</h2>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">كود الخصم</h2>
                   </div>
                   <div className="flex gap-2">
                     <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoResult(null); }} placeholder="أدخل كود الخصم"
-                      className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all text-left font-mono uppercase" dir="ltr" />
+                      className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all text-left font-mono uppercase" dir="ltr" />
                     <Button onClick={handleApplyPromo} variant="primary" className="px-6">تطبيق</Button>
                   </div>
                   {promoResult && (
@@ -562,17 +562,17 @@ export default function CheckoutPage() {
                 <Card className="p-6 border-2 border-[#14b8a6]/30 bg-gradient-to-br from-[#14b8a6]/5 to-white">
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-10 h-10 rounded-xl bg-[#14b8a6]/10 flex items-center justify-center text-[#14b8a6]"><CheckCircle2 size={20} /></div>
-                    <h2 className="text-lg font-bold text-slate-900">تم إنشاء الطلب بنجاح</h2>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">تم إنشاء الطلب بنجاح</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-white border border-slate-200">
+                    <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                       <div className="flex items-center gap-2 mb-2">
                         <ClipboardList size={16} className="text-[#2580eb]" />
                         <span className="text-xs font-medium text-slate-500">رقم الطلب</span>
                       </div>
                       <p className="text-lg font-bold text-[#2580eb] font-mono" dir="ltr">{orderData.orderNumber}</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-white border border-slate-200">
+                    <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                       <div className="flex items-center gap-2 mb-2">
                         <Receipt size={16} className="text-[#7c3aed]" />
                         <span className="text-xs font-medium text-slate-500">رقم الفاتورة</span>
@@ -591,7 +591,7 @@ export default function CheckoutPage() {
                 <Card className="p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 rounded-xl bg-[#2580eb]/10 flex items-center justify-center text-[#2580eb]"><CreditCard size={20} /></div>
-                    <h2 className="text-lg font-bold text-slate-900">طريقة الدفع</h2>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">طريقة الدفع</h2>
                   </div>
                   {displayMethods.length === 0 ? (
                     <div className="text-center py-8">
@@ -606,7 +606,7 @@ export default function CheckoutPage() {
                           className={cn("w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-right",
                             selectedGatewayId === method.id
                               ? "border-[#2580eb] bg-[#2580eb]/5 shadow-lg shadow-[#2580eb]/10"
-                              : "border-slate-200 bg-white hover:border-slate-300"
+                              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300"
                           )}>
                           <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm",
                             selectedGatewayId === method.id ? "bg-[#2580eb]/10 text-[#2580eb]" : "bg-slate-100 text-slate-500"
@@ -614,7 +614,7 @@ export default function CheckoutPage() {
                             <Wallet size={24} />
                           </div>
                           <div className="flex-1">
-                            <p className="font-bold text-slate-900">{method.name}</p>
+                            <p className="font-bold text-slate-900 dark:text-white">{method.name}</p>
                             <p className="text-sm text-slate-500">{method.supportedMethods.join(' · ')}</p>
                           </div>
                           {method.isDefault && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-md font-medium">افتراضي</span>}
@@ -637,19 +637,19 @@ export default function CheckoutPage() {
             <div className="sticky top-24">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                 <Card className="p-6">
-                  <h3 className="text-lg font-bold text-slate-900 mb-4">ملخص الطلب</h3>
-                  <div className="space-y-3 pb-4 border-b border-slate-200">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">ملخص الطلب</h3>
+                  <div className="space-y-3 pb-4 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">اسم الخدمة</span>
-                      <span className="font-medium text-slate-700 text-left max-w-[60%]">{service.name}</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300 text-left max-w-[60%]">{service.name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">المدة</span>
-                      <span className="font-medium text-slate-700">{service.duration}</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{service.duration}</span>
                     </div>
                   </div>
                   {orderData && (
-                    <div className="space-y-3 py-4 border-b border-slate-200">
+                    <div className="space-y-3 py-4 border-b border-slate-200 dark:border-slate-700">
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-500">رقم الطلب</span>
                         <span className="font-medium text-[#2580eb] font-mono text-xs" dir="ltr">{orderData.orderNumber}</span>
@@ -660,10 +660,10 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   )}
-                  <div className="space-y-3 py-4 border-b border-slate-200">
+                  <div className="space-y-3 py-4 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">السعر الأساسي</span>
-                      <span className="font-medium text-slate-900">{formatPrice(basePrice, currencyCode)}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{formatPrice(basePrice, currencyCode)}</span>
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-sm text-emerald-600">
@@ -674,7 +674,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="pt-4 mb-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-slate-900">المبلغ النهائي</span>
+                      <span className="text-lg font-bold text-slate-900 dark:text-white">المبلغ النهائي</span>
                       <span className="text-2xl font-bold text-[#2580eb]">{formatPrice(finalAmount, currencyCode)}</span>
                     </div>
                   </div>
@@ -707,7 +707,7 @@ export default function CheckoutPage() {
                   {step === 'processing' && (
                     <div className="flex items-center justify-center gap-3 py-4">
                       <Loader2 size={24} className="animate-spin text-[#2580eb]" />
-                      <span className="text-slate-600 font-medium">جار معالجة الدفع...</span>
+                      <span className="text-slate-600 dark:text-slate-300 font-medium">جار معالجة الدفع...</span>
                     </div>
                   )}
 

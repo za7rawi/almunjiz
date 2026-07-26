@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { trackLimiter } from "@/lib/rate-limit";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ orderNumber: string }> }
 ) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const result = trackLimiter(ip);
+    if (!result.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً / Rate limit exceeded' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(result.resetMs / 1000)) } }
+      );
+    }
+
     const { orderNumber } = await params;
 
     const order = await prisma.order.findUnique({
@@ -13,7 +23,6 @@ export async function GET(
       include: {
         service: { select: { id: true, name: true, nameEn: true, slug: true } },
         invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
-        payments: { select: { id: true, method: true, status: true, amount: true, transactionId: true, gatewayData: true, createdAt: true } },
         timeline: { orderBy: { createdAt: "asc" } },
         fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
       },
@@ -31,8 +40,6 @@ export async function GET(
       );
     }
 
-    const lastPayment = order.payments[order.payments.length - 1];
-
     return NextResponse.json({
       success: true,
       data: {
@@ -40,15 +47,12 @@ export async function GET(
         status: order.status,
         paymentStatus: order.paymentStatus,
         customerName: order.customerName,
-        customerEmail: order.customerEmail,
-        customerPhone: order.customerPhone,
         service: order.service,
         baseAmount: Number(order.amount),
         discount: Number(order.discount),
         tax: Number(order.tax),
         total: Number(order.total),
         paymentMethod: order.paymentMethod,
-        transactionId: lastPayment?.transactionId ?? order.transactionId,
         invoice: order.invoice,
         timeline: order.timeline.map((t) => ({
           id: t.id,
@@ -71,7 +75,7 @@ export async function GET(
         success: false,
         data: null,
         message: "حدث خطأ في تتبع الطلب / Error tracking order",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );

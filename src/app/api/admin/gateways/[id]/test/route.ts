@@ -70,7 +70,7 @@ async function testGateway(gateway: {
   } catch (error) {
     result.connection = {
       success: false,
-      message: error instanceof Error ? error.message : 'Connection test failed',
+      message: error instanceof Error ? 'An error occurred' : 'Connection test failed',
       durationMs: Date.now() - connStart,
     };
   }
@@ -128,7 +128,7 @@ async function testGateway(gateway: {
       result.verification = {
         success: false,
         durationMs: Date.now() - verifyStart,
-        error: error instanceof Error ? error.message : 'Verification failed',
+        error: error instanceof Error ? 'An error occurred' : 'Verification failed',
       };
       result.overall = 'partial';
     }
@@ -136,7 +136,7 @@ async function testGateway(gateway: {
     result.payment = {
       success: false,
       durationMs: Date.now() - payStart,
-      error: error instanceof Error ? error.message : 'Payment creation failed',
+      error: error instanceof Error ? 'An error occurred' : 'Payment creation failed',
     };
     result.overall = 'fail';
   }

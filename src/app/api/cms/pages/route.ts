@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: pages });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: [], error: error instanceof Error ? error.message : 'Failed to fetch pages' },
+      { success: false, data: [], error: error instanceof Error ? 'An error occurred' : 'Failed to fetch pages' },
       { status: 500 }
     );
   }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: page });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to create page' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to create page' },
       { status: 500 }
     );
   }

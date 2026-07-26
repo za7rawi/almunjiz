@@ -69,7 +69,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return }
-    fetch('/api/notifications?limit=100')
+    fetch('/api/notifications?limit=100', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && Array.isArray(data.data)) setNotifications(data.data) })
       .catch(() => {})
@@ -85,12 +85,12 @@ export default function NotificationsPage() {
 
   const markAsRead = async (id: string) => {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
-    try { await fetch(`/api/notifications/${id}/read`, { method: 'POST' }) } catch {}
+    try { await fetch(`/api/notifications/${id}/read`, { method: 'POST', cache: 'no-store' }) } catch {}
   }
 
   const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-    try { await fetch('/api/notifications?markAllRead=true', { method: 'POST' }) } catch {}
+    try { await fetch('/api/notifications?markAllRead=true', { method: 'POST', cache: 'no-store' }) } catch {}
   }
 
   return (

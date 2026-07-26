@@ -37,44 +37,11 @@ export async function POST(request: Request) {
       );
     }
 
-    let userData: { name: string; email: string; avatar: string | null };
-
-    const verified = await verifyGoogleToken(idToken);
-    if (verified) {
-      userData = verified;
-    } else {
-      try {
-        const parts = idToken.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(
-            Buffer.from(parts[1], "base64url").toString()
-          );
-          userData = {
-            name: payload.name || payload.given_name || "مستخدم Google",
-            email: payload.email || "",
-            avatar: payload.picture || null,
-          };
-        } else {
-          return NextResponse.json(
-            { success: false, message: "رمز Google غير صالح" },
-            { status: 401 }
-          );
-        }
-      } catch {
-        return NextResponse.json(
-          { success: false, message: "رمز Google غير صالح" },
-          { status: 401 }
-        );
-      }
-    }
-
-    if (!userData.email) {
+    const userData = await verifyGoogleToken(idToken);
+    if (!userData) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "لم يتم الحصول على البريد الإلكتروني من Google",
-        },
-        { status: 401 }
+        { success: false, message: "رمز Google غير صالح" },
+        { status: 400 }
       );
     }
 
@@ -111,7 +78,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const token = `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    const token = crypto.randomUUID();
 
     return NextResponse.json({
       success: true,

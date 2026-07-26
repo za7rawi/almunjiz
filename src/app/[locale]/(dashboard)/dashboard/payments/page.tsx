@@ -49,7 +49,7 @@ export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   useEffect(() => {
-    fetch('/api/payments?limit=200')
+    fetch('/api/payments?limit=200', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && data.data) setPayments(data.data); })
       .catch(() => {})

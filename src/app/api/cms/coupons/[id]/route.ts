@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json({ success: true, data: coupon });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to fetch coupon' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch coupon' },
       { status: 500 }
     );
   }
@@ -72,7 +72,7 @@ export async function PUT(
     return NextResponse.json({ success: true, data: coupon });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to update coupon' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to update coupon' },
       { status: 500 }
     );
   }
@@ -100,7 +100,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, data: existing });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to delete coupon' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to delete coupon' },
       { status: 500 }
     );
   }

@@ -20,8 +20,8 @@ interface AuthStore {
   login: (user: User) => void;
   loginEmail: (email: string, password: string) => Promise<{ success: boolean; message: string; redirect?: string }>;
   register: (data: { name: string; email: string; password: string }) => Promise<{ success: boolean; message: string }>;
-  loginWithGoogle: (data: { idToken: string; name: string; email: string; avatar?: string }) => Promise<{ success: boolean; message: string; redirect: string }>;
-  logout: () => void;
+  loginWithGoogle: (data: { idToken: string; name: string; email: string; avatar?: string }) => Promise<{ success: boolean; message: string; redirect: string; email: string }>;
+  logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
   isAdmin: () => boolean;
 }
@@ -36,13 +36,37 @@ function mapRole(raw: string): User['role'] {
   return 'customer';
 }
 
+function clearUserProgressData(currentUserId?: string) {
+  try {
+    const raw = localStorage.getItem('almunjiz-request-progress');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const state = parsed?.state?.progress;
+      if (state) {
+        const keys = Object.keys(state);
+        const hasOtherUser = keys.some((k: string) => {
+          const rec = state[k];
+          return rec?.userId && rec.userId !== currentUserId;
+        });
+        if (hasOtherUser || !currentUserId) {
+          localStorage.removeItem('almunjiz-request-progress');
+        }
+      }
+    }
+  } catch {}
+}
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
 
-      login: (user) => set({ user, isAuthenticated: true }),
+      login: (user) => {
+        const prevUser = get().user;
+        if (prevUser && prevUser.id !== user.id) clearUserProgressData(user.id);
+        set({ user, isAuthenticated: true });
+      },
 
       loginEmail: async (email, password) => {
         const lowerEmail = email.toLowerCase().trim();
@@ -67,6 +91,8 @@ export const useAuthStore = create<AuthStore>()(
               provider: 'email',
               createdAt: u.createdAt ?? new Date().toISOString(),
             };
+            const prevUser = get().user;
+            if (prevUser && prevUser.id !== user.id) clearUserProgressData(user.id);
             set({ user, isAuthenticated: true });
             const isAdmin = user.role === 'admin' || user.role === 'manager';
             return {
@@ -126,17 +152,25 @@ export const useAuthStore = create<AuthStore>()(
               provider: 'google',
               createdAt: u.createdAt ?? new Date().toISOString(),
             };
+            const prevUser = get().user;
+            if (prevUser && prevUser.id !== user.id) clearUserProgressData(user.id);
             set({ user, isAuthenticated: true });
-            return { success: true, message: json.message || 'تم تسجيل الدخول بنجاح', redirect: '/dashboard' };
+            return { success: true, message: json.message || 'تم تسجيل الدخول بنجاح', redirect: '/dashboard', email: u.email };
           }
 
-          return { success: false, message: json.message || 'فشل تسجيل الدخول بـ Google', redirect: '' };
+          return { success: false, message: json.message || 'فشل تسجيل الدخول بـ Google', redirect: '', email: '' };
         } catch {
-          return { success: false, message: 'حدث خطأ أثناء التواصل مع Google', redirect: '' };
+          return { success: false, message: 'حدث خطأ أثناء التواصل مع Google', redirect: '', email: '' };
         }
       },
 
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: async () => {
+        set({ user: null, isAuthenticated: false });
+        try { localStorage.removeItem('almunjiz-request-progress'); } catch {}
+        const { signOut } = await import('next-auth/react');
+        await signOut({ redirect: false });
+        window.location.href = '/login';
+      },
 
       updateUser: (data) =>
         set((state) => ({
@@ -145,7 +179,7 @@ export const useAuthStore = create<AuthStore>()(
 
       isAdmin: () => {
         const { user } = get();
-        return user?.role === 'admin';
+        return user?.role === 'admin' || user?.role === 'manager';
       },
     }),
     {

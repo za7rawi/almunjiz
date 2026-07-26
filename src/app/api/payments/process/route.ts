@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+    if (!order || order.userId !== auth.session.userId) {
+      return NextResponse.json(
+        { success: false, error: 'غير مصرح / Unauthorized' },
+        { status: 403 }
+      );
+    }
+
     const idemKey = clientKey || generateIdempotencyKey();
 
     const existingPayment = await prisma.payment.findFirst({

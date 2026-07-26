@@ -40,6 +40,10 @@ function isAdminRoute(pathname: string): boolean {
   return adminPatterns.some((p) => pathname.includes(p));
 }
 
+function isDashboardRoute(pathname: string): boolean {
+  return pathname.includes('/dashboard');
+}
+
 function isAdminLogin(pathname: string): boolean {
   return pathname.includes('/admin/login');
 }
@@ -48,7 +52,12 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname) || isStaticAsset(pathname)) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    if (pathname.startsWith("/api/")) {
+      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+      response.headers.set("Pragma", "no-cache");
+    }
+    return response;
   }
 
   const pathnameHasLocale = locales.some(
@@ -68,6 +77,17 @@ export function middleware(request: NextRequest) {
     if (!sessionToken) {
       const locale = pathname.split('/')[1] || 'ar';
       const loginUrl = new URL(`/${locale}/admin/login`, request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  if (isDashboardRoute(pathname)) {
+    const sessionToken = request.cookies.get('next-auth.session-token')?.value
+      || request.cookies.get('__Secure-next-auth.session-token')?.value;
+
+    if (!sessionToken) {
+      const locale = pathname.split('/')[1] || 'ar';
+      const loginUrl = new URL(`/${locale}/login`, request.url);
       return NextResponse.redirect(loginUrl);
     }
   }

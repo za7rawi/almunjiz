@@ -196,14 +196,14 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
           >
             <div className="rounded-2xl bg-[#1e293b] border border-white/10 shadow-2xl shadow-black/40 overflow-hidden">
               <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10">
-                <Search size={20} className="text-white/40 shrink-0" />
+                <Search size={20} className="text-white/50 shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }}
                   placeholder={language === 'ar' ? 'ابحث عن خدمة أو صفحة...' : 'Search for a service or page...'}
-                  className="flex-1 bg-transparent text-white text-base placeholder:text-white/30 focus:outline-none"
+                  className="flex-1 bg-transparent text-white text-base placeholder:text-white/50 focus:outline-none"
                   dir="rtl"
                 />
                 <button
@@ -261,7 +261,7 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
 
                 {!query.trim() && (
                   <div className="py-12 text-center">
-                    <FileText size={32} className="mx-auto mb-3 text-white/10" />
+                    <FileText size={32} className="mx-auto mb-3 text-white/30" />
                     <p className="text-white/30 text-sm">
                       {language === 'ar' ? 'ابدأ الكتابة للبحث...' : 'Start typing to search...'}
                     </p>

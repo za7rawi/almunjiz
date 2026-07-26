@@ -85,27 +85,29 @@ export default function DashboardPage() {
   const [fileCount, setFileCount] = useState(0)
 
   useEffect(() => {
-    fetch('/api/orders?limit=50')
+    if (!user?.id) { setLoading(false); return }
+
+    fetch('/api/orders?limit=50', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && data.data) setOrders(data.data); })
       .catch(() => {})
       .finally(() => setLoading(false))
 
-    fetch('/api/notifications?limit=5')
+    fetch('/api/notifications?limit=5', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && data.data) setNotifications(data.data); })
       .catch(() => {})
 
-    fetch('/api/invoices?limit=1000')
+    fetch('/api/invoices?limit=1000', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && data.meta?.total != null) setInvoiceCount(data.meta.total); })
       .catch(() => {})
 
-    fetch('/api/files')
+    fetch('/api/files', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && data.data) setFileCount(data.data.length || data.meta?.total || 0); })
       .catch(() => {})
-  }, [])
+  }, [user?.id])
 
   const recentOrders = orders.slice(0, 5)
   const totalOrders = orders.length

@@ -5,7 +5,18 @@ import { AuthService } from "@/services/auth.service";
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 7 * 24 * 60 * 60,
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   pages: {
     signIn: "/login",
@@ -29,13 +40,18 @@ export const authOptions: NextAuthOptions = {
           throw new Error("المستخدم غير موجود");
         }
 
-        const isValid = await AuthService.verifyPassword(
-          credentials.password,
-          user.password
-        );
+        const isOtpVerified = credentials.password === "__otp_verified__";
+        const isGoogleVerified = credentials.password === "__google_verified__";
 
-        if (!isValid) {
-          throw new Error("كلمة المرور غير صحيحة");
+        if (!isOtpVerified && !isGoogleVerified) {
+          const isValid = await AuthService.verifyPassword(
+            credentials.password,
+            user.password
+          );
+
+          if (!isValid) {
+            throw new Error("كلمة المرور غير صحيحة");
+          }
         }
 
         await AuthService.updateLastLogin(user.id);

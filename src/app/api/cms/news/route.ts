@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: news });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: [], error: error instanceof Error ? error.message : 'Failed to fetch news' },
+      { success: false, data: [], error: error instanceof Error ? 'An error occurred' : 'Failed to fetch news' },
       { status: 500 }
     );
   }
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: news });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to create news' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to create news' },
       { status: 500 }
     );
   }

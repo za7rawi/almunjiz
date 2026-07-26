@@ -21,7 +21,7 @@ export async function GET(
     return NextResponse.json({ success: true, data: news });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to fetch news' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch news' },
       { status: 500 }
     );
   }
@@ -70,7 +70,7 @@ export async function PUT(
     return NextResponse.json({ success: true, data: news });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to update news' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to update news' },
       { status: 500 }
     );
   }
@@ -98,7 +98,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, data: existing });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to delete news' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to delete news' },
       { status: 500 }
     );
   }

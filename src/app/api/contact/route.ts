@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ContactSchema } from "@/validators";
+import { contactLimiter } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const result = contactLimiter(ip);
+    if (!result.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً / Rate limit exceeded' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(result.resetMs / 1000)) } }
+      );
+    }
+
     const body = await request.json();
     const validated = ContactSchema.safeParse(body);
 
@@ -39,7 +49,7 @@ export async function POST(request: NextRequest) {
         success: false,
         data: null,
         message: "حدث خطأ في إرسال الرسالة / Error sending message",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );
@@ -101,7 +111,7 @@ export async function GET(request: NextRequest) {
         success: false,
         data: null,
         message: "حدث خطأ في جلب الرسائل / Error fetching contacts",
-        error: String(error),
+        error: 'Internal server error',
       },
       { status: 500 }
     );

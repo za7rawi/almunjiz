@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: offers });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: [], error: error instanceof Error ? error.message : 'Failed to fetch offers' },
+      { success: false, data: [], error: error instanceof Error ? 'An error occurred' : 'Failed to fetch offers' },
       { status: 500 }
     );
   }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: offer });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to create offer' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to create offer' },
       { status: 500 }
     );
   }

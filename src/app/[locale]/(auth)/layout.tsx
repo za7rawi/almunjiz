@@ -180,7 +180,7 @@ export default function AuthLayout({
         </motion.div>
 
         <motion.p
-          className="text-center mt-6 text-xs text-white/25"
+          className="text-center mt-6 text-xs text-white/40"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.5 }}

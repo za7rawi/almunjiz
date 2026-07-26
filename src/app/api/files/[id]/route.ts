@@ -5,7 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -19,8 +22,8 @@ export async function GET(request: NextRequest) {
     const role = (session.user as Record<string, unknown>).role as string;
     const isAdmin = ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role);
 
+    const { id: fileId } = await context.params;
     const { searchParams } = new URL(request.url);
-    const fileId = searchParams.get("id");
     const inline = searchParams.get("inline") === "true";
 
     if (!fileId) {

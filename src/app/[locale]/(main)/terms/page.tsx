@@ -10,17 +10,17 @@ export default function TermsPage() {
           gradient
         />
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 space-y-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 space-y-8">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">القبول بالشروط</h2>
-            <p className="text-slate-600 leading-relaxed">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">القبول بالشروط</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
               باستخدامك لمنصة المنجز، فإنك توافق على هذه الشروط والأحكام. إذا كنت لا توافق على أي من هذه الشروط، يرجى عدم استخدام المنصة.
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">استخدام الخدمات</h2>
-            <ul className="list-disc list-inside space-y-2 text-slate-600">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">استخدام الخدمات</h2>
+            <ul className="list-disc list-inside space-y-2 text-slate-600 dark:text-slate-300">
               <li>يجب أن يكون عمرك 18 سنة أو أكثر لإنشاء حساب واستخدام الخدمات</li>
               <li>أنت مسؤول عن الحفاظ على سرية بيانات حسابك</li>
               <li>يجب تقديم معلومات صحيحة ودقيقة عند التسجيل</li>
@@ -29,8 +29,8 @@ export default function TermsPage() {
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">الطلبات والمدفوعات</h2>
-            <ul className="list-disc list-inside space-y-2 text-slate-600">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">الطلبات والمدفوعات</h2>
+            <ul className="list-disc list-inside space-y-2 text-slate-600 dark:text-slate-300">
               <li>جميع الأسعار معروضة بالريال السعودي وتشمل الضريبة</li>
               <li>يتم خصم المبلغ عند تأكيد الطلب</li>
               <li>يحق للمنصة إلغاء الطلب في حالة عدم اكتمال البيانات المطلوبة</li>
@@ -39,11 +39,11 @@ export default function TermsPage() {
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">الإلغاء والاسترداد</h2>
-            <p className="text-slate-600 leading-relaxed mb-3">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">الإلغاء والاسترداد</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
               يمكن إلغاء الطلب واسترداد المبلغ وفقاً للسياسات التالية:
             </p>
-            <ul className="list-disc list-inside space-y-2 text-slate-600">
+            <ul className="list-disc list-inside space-y-2 text-slate-600 dark:text-slate-300">
               <li>إلغاء قبل بدء التنفيذ: استرداد كامل</li>
               <li>إلغاء أثناء التنفيذ: استرداد 50%</li>
               <li>بعد إتمام الخدمة: لا استرداد</li>
@@ -51,29 +51,29 @@ export default function TermsPage() {
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">الملكية الفكرية</h2>
-            <p className="text-slate-600 leading-relaxed">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">الملكية الفكرية</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
               جميع المحتويات والتصاميم والشعارات على المنصة هي ملكية فكرية حصرية لمنصة المنجز ولا يجوز نسخها أو استخدامها دون إذن.
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">المسؤولية</h2>
-            <p className="text-slate-600 leading-relaxed">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">المسؤولية</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
               تبذل المنجز جهوداً معقولة لضمان دقة وموثوقية الخدمات، غير أنها لا تضمن عدم وجود أخطاء. نحن غير مسؤولين عن أي أضرار ناتجة عن استخدام المنصة.
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">تعديل الشروط</h2>
-            <p className="text-slate-600 leading-relaxed">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">تعديل الشروط</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
               نحتفظ بحق تعديل هذه الشروط في أي وقت. سيتم إشعارك بأي تغييرات جوهرية عبر البريد الإلكتروني أو إشعار على المنصة.
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">القانون الحاكم</h2>
-            <p className="text-slate-600 leading-relaxed">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">القانون الحاكم</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
               تخضع هذه الشروط لقوانين المملكة العربية السعودية، وأي نزاعات تحل وفقاً للأنظمة السعودية المعمول بها.
             </p>
           </div>

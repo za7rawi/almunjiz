@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: {}, error: error instanceof Error ? error.message : 'Failed to fetch settings' },
+      { success: false, data: {}, error: error instanceof Error ? 'An error occurred' : 'Failed to fetch settings' },
       { status: 500 }
     );
   }
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: {}, error: error instanceof Error ? error.message : 'Failed to update settings' },
+      { success: false, data: {}, error: error instanceof Error ? 'An error occurred' : 'Failed to update settings' },
       { status: 500 }
     );
   }

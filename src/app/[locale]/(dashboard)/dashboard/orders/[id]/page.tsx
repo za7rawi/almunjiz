@@ -105,7 +105,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch(`/api/orders/${id}`)
+    fetch(`/api/orders/${id}`, { cache: 'no-store' })
       .then((r) => {
         if (!r.ok) throw new Error('API error')
         return r.json()
@@ -129,7 +129,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="text-center py-20">
         <Package size={48} className="mx-auto text-slate-300 mb-3" />
-        <p className="text-slate-500 mb-4">الطلب غير موجود</p>
+        <p className="text-slate-500 dark:text-slate-400 mb-4">الطلب غير موجود</p>
         <Link href="/dashboard/orders">
           <Button variant="secondary" size="sm">
             <ArrowRight size={16} /> العودة للطلبات
@@ -191,15 +191,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900">تسلسل الطلب</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">تسلسل الطلب</h3>
             </CardHeader>
             <CardContent>
               <div className="mb-6">
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-slate-500">التقدم</span>
+                  <span className="text-slate-500 dark:text-slate-400">التقدم</span>
                   <span className="font-bold text-[#2580eb]">{progressPercent}%</span>
                 </div>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
@@ -227,7 +227,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                               ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-md shadow-emerald-500/20'
                               : isCurrent
                                 ? 'bg-[#2580eb]/10 text-[#2580eb] border-2 border-[#2580eb]/30'
-                                : 'bg-slate-100 text-slate-400'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
                           }`}
                         >
                           {isDone ? <CheckCircle size={16} /> : <span className="text-xs font-bold">{i + 1}</span>}
@@ -235,7 +235,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         {i < fullTimelineSteps.length - 1 && (
                           <div
                             className={`w-0.5 h-8 transition-colors duration-300 ${
-                              isDone && i < currentStep ? 'bg-emerald-500' : 'bg-slate-200'
+                              isDone && i < currentStep ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'
                             }`}
                           />
                         )}
@@ -243,7 +243,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       <div className="pb-6">
                         <p
                           className={`text-sm font-medium ${
-                            isDone ? 'text-slate-900' : isCurrent ? 'text-[#2580eb]' : 'text-slate-400'
+                            isDone ? 'text-slate-900 dark:text-white' : isCurrent ? 'text-[#2580eb]' : 'text-slate-400 dark:text-slate-500'
                           }`}
                         >
                           {step.label}
@@ -264,7 +264,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           {timeline.length > 0 && (
             <Card>
               <CardHeader>
-                <h3 className="font-bold text-slate-900">سجل التحديثات</h3>
+                <h3 className="font-bold text-slate-900 dark:text-white">سجل التحديثات</h3>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -276,10 +276,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                        className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700"
                       >
                         <div className="mt-0.5">
-                          <Clock size={14} className="text-slate-400" />
+                          <Clock size={14} className="text-slate-400 dark:text-slate-500" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -288,7 +288,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                             </Badge>
                           </div>
                           <p className="text-sm text-slate-600">{entry.description}</p>
-                          <p className="text-xs text-slate-400 mt-1">
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                             {new Date(entry.createdAt).toLocaleString('ar-SA', {
                               year: 'numeric',
                               month: 'short',
@@ -308,13 +308,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900">المرفقات</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">المرفقات</h3>
             </CardHeader>
             <CardContent>
               {fileAttachments.length === 0 ? (
                 <div className="text-center py-8">
                   <FolderOpen size={40} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm text-slate-400">لا توجد ملفات مرفقة</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">لا توجد ملفات مرفقة</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -326,10 +326,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           key={file.id}
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          className="group relative rounded-xl overflow-hidden border border-slate-200 bg-white hover:shadow-md transition-shadow cursor-pointer"
+                          className="group relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:shadow-md transition-shadow cursor-pointer"
                           onClick={() => setLightboxUrl(`/api/files/${file.id}?inline=true`)}
                         >
-                          <div className="aspect-square bg-slate-100">
+                          <div className="aspect-square bg-slate-100 dark:bg-slate-700">
                             <img
                               src={`/api/files/${file.id}?inline=true`}
                               alt={file.fileName}
@@ -338,11 +338,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                             />
                           </div>
                           <div className="p-2">
-                            <p className="text-xs text-slate-700 truncate font-medium">{file.fileName}</p>
-                            <p className="text-[10px] text-slate-400">{formatFileSize(file.fileSize)}</p>
+                            <p className="text-xs text-slate-700 dark:text-slate-300 truncate font-medium">{file.fileName}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{formatFileSize(file.fileSize)}</p>
                           </div>
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-slate-800/90 rounded-full p-2">
                               <Eye size={18} className="text-[#2580eb]" />
                             </div>
                           </div>
@@ -356,15 +356,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           key={file.id}
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          className="rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md transition-shadow"
+                          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
                               <FileText size={20} className="text-red-500" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-sm text-slate-700 truncate font-medium">{file.fileName}</p>
-                              <p className="text-[11px] text-slate-400">{formatFileSize(file.fileSize)}</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 truncate font-medium">{file.fileName}</p>
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500">{formatFileSize(file.fileSize)}</p>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -395,15 +395,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         key={file.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="rounded-xl border border-slate-200 bg-white p-4 hover:shadow-md transition-shadow"
+                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                            <FileIcon size={20} className="text-slate-400" />
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                            <FileIcon size={20} className="text-slate-400 dark:text-slate-500" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm text-slate-700 truncate font-medium">{file.fileName}</p>
-                            <p className="text-[11px] text-slate-400">{formatFileSize(file.fileSize)}</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 truncate font-medium">{file.fileName}</p>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500">{formatFileSize(file.fileSize)}</p>
                           </div>
                         </div>
                         <a
@@ -424,13 +424,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900">سجل المدفوعات</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">سجل المدفوعات</h3>
             </CardHeader>
             <CardContent>
               {payments.length === 0 ? (
                 <div className="text-center py-8">
                   <CreditCard size={40} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm text-slate-400">لا توجد مدفوعات مسجلة</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">لا توجد مدفوعات مسجلة</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -444,19 +444,19 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         key={payment.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700"
                       >
                         <div className="w-10 h-10 rounded-lg bg-[#2580eb]/10 flex items-center justify-center text-lg shrink-0">
                           {paymentMethodIcons[payment.method] || '💰'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-sm font-medium text-slate-900">{Number(payment.amount).toLocaleString()} ر.س</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">{Number(payment.amount).toLocaleString()} ر.س</p>
                             <Badge variant={pStatusCfg.variant} size="sm">
                               {pStatusCfg.label}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
                             <span>{payment.method}</span>
                             {payment.transactionId && (
                               <>
@@ -466,7 +466,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                             )}
                           </div>
                         </div>
-                        <p className="text-[11px] text-slate-400 whitespace-nowrap">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
                           {new Date(payment.createdAt).toLocaleString('ar-SA', {
                             month: 'short',
                             day: 'numeric',
@@ -493,15 +493,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">رقم الطلب</span>
-                  <span className="font-medium text-slate-900">{order.orderNumber as string}</span>
+                  <span className="text-slate-500 dark:text-slate-400">رقم الطلب</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{order.orderNumber as string}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">الخدمة</span>
-                  <span className="font-medium text-slate-900">{serviceName}</span>
+                  <span className="text-slate-500 dark:text-slate-400">الخدمة</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{serviceName}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">حالة الدفع</span>
+                  <span className="text-slate-500 dark:text-slate-400">حالة الدفع</span>
                   <Badge variant={paymentStatusCfg.variant} size="sm">
                     {paymentStatusCfg.label}
                   </Badge>
@@ -512,30 +512,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900">تفاصيل الفاتورة</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">تفاصيل الفاتورة</h3>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">المبلغ</span>
-                  <span className="text-slate-700">{Number(order.amount as number || 0).toLocaleString()} ر.س</span>
+                  <span className="text-slate-500 dark:text-slate-400">المبلغ</span>
+                  <span className="text-slate-700 dark:text-slate-300">{Number(order.amount as number || 0).toLocaleString()} ر.س</span>
                 </div>
                 {Number(order.discount as number || 0) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">الخصم</span>
+                    <span className="text-slate-500 dark:text-slate-400">الخصم</span>
                     <span className="text-emerald-600">-{Number(order.discount as number || 0).toLocaleString()} ر.س</span>
                   </div>
                 )}
                 {Number(order.tax as number || 0) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">الضريبة</span>
-                    <span className="text-slate-700">{Number(order.tax as number || 0).toLocaleString()} ر.س</span>
+                    <span className="text-slate-500 dark:text-slate-400">الضريبة</span>
+                    <span className="text-slate-700 dark:text-slate-300">{Number(order.tax as number || 0).toLocaleString()} ر.س</span>
                   </div>
                 )}
-                <div className="h-px bg-slate-200 my-2" />
+                <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
                 <div className="flex justify-between text-sm">
-                  <span className="font-bold text-slate-900">الإجمالي</span>
-                  <span className="font-bold text-slate-900">{Number(order.total as number || 0).toLocaleString()} ر.س</span>
+                  <span className="font-bold text-slate-900 dark:text-white">الإجمالي</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{Number(order.total as number || 0).toLocaleString()} ر.س</span>
                 </div>
               </div>
               <div className="mt-4">
@@ -580,7 +580,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             >
               <button
                 onClick={() => setLightboxUrl(null)}
-                className="absolute -top-3 -end-3 z-10 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-slate-100 transition-colors"
+                className="absolute -top-3 -end-3 z-10 w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 <X size={20} className="text-slate-600" />
               </button>
@@ -594,7 +594,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   href={lightboxUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 text-sm font-medium text-slate-700 hover:bg-white transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 dark:bg-slate-800/90 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
                 >
                   <ExternalLink size={14} /> فتح في تبويب جديد
                 </a>

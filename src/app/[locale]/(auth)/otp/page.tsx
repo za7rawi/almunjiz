@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
+import { signIn } from 'next-auth/react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -124,6 +125,11 @@ export default function OtpPage() {
       if (data.success) {
         setVerified(true);
         login(data.data.user);
+        await signIn('credentials', {
+          email: identifier,
+          password: '__otp_verified__',
+          redirect: false,
+        });
         sessionStorage.removeItem('otp_identifier');
         sessionStorage.removeItem('otp_type');
         sessionStorage.removeItem('otp_dev_code');
@@ -295,7 +301,7 @@ export default function OtpPage() {
             </div>
             <div className="text-right">
               <p className="text-sm text-white/40">إعادة الإرسال بعد</p>
-              <p className="text-xs text-white/25">{timer} ثانية</p>
+              <p className="text-xs text-white/40">{timer} ثانية</p>
             </div>
           </div>
         ) : (

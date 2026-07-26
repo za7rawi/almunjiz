@@ -5,6 +5,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sendOrderCreatedEmail, sendInvoiceEmail } from '@/lib/email/service';
 import { generateOrderNumber, generateInvoiceNumber } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/audit-log';
+import { apiLimiter } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,6 +71,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const result = apiLimiter(ip);
+    if (!result.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً / Rate limit exceeded' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(result.resetMs / 1000)) } }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ success: false, data: null, message: 'يجب تسجيل الدخول', error: null }, { status: 401 });

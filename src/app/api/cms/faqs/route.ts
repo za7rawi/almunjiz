@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: faqs });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: [], error: error instanceof Error ? error.message : 'Failed to fetch FAQs' },
+      { success: false, data: [], error: error instanceof Error ? 'An error occurred' : 'Failed to fetch FAQs' },
       { status: 500 }
     );
   }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: faq });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to create FAQ' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to create FAQ' },
       { status: 500 }
     );
   }

@@ -48,7 +48,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             type={isPassword ? (showPassword ? 'text' : 'password') : type}
             className={cn(
               'w-full bg-transparent px-4 py-2.5 text-sm text-slate-900 dark:text-white',
-              'placeholder:text-slate-400 focus:outline-none',
+              'placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none',
               iconLeft && 'ps-10',
               (iconRight || isPassword) && 'pe-10',
             )}

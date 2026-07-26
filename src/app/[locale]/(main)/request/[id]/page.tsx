@@ -76,7 +76,7 @@ function formatFileSize(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-const inputClass = "w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all";
+const inputClass = "w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all";
 const inputLtrClass = cn(inputClass, "text-left font-mono", "direction: ltr");
 
 export default function RequestPage({ params }: { params: Promise<{ id: string }> }) {
@@ -141,7 +141,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
     } else {
       setRedirecting(false);
       if (user) {
-        const saved = getProgress(id);
+        const saved = getProgress(id, user?.id);
         if (saved) {
           setFormData((prev) => ({
             ...prev,
@@ -175,13 +175,14 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         }
       }
     }
-  }, [isAuthenticated, user, router, id]);
+  }, [isAuthenticated, user, router, id, user?.id]);
 
   useEffect(() => {
     if (!service || !isAuthenticated || redirecting) return;
     const timer = setTimeout(() => {
       saveProgress(id, {
         serviceId: id,
+        userId: user?.id || '',
         step,
         formData: {
           name: formData.name,
@@ -309,6 +310,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
       if (!orderData.success) throw new Error(orderData.error || 'Failed to create order');
 
       const orderId = orderData.data.id;
+      const orderNumber = orderData.data.orderNumber || '';
 
       if (selectedGatewayId) {
         const payRes = await fetch('/api/payments/process', {
@@ -338,13 +340,13 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         }
         if (payData.success && payData.data?.clientSecret) {
           clearProgress(id);
-          router.push(`/payment/success?orderId=${orderId}&gatewayId=${selectedGatewayId}&clientSecret=${payData.data.clientSecret}`);
+          router.push(`/payment/success?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}&gatewayId=${selectedGatewayId}&clientSecret=${payData.data.clientSecret}`);
           return;
         }
       }
 
       clearProgress(id);
-      router.push(`/payment/success?orderId=${orderId}`);
+      router.push(`/payment/success?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}`);
     } catch {
       router.push('/payment/failed');
     } finally {
@@ -365,7 +367,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
       <div className="min-h-screen flex items-center justify-center pt-20">
         <Card className="max-w-md w-full mx-4 p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4"><X size={32} className="text-red-500" /></div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">خدمة غير موجودة</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">خدمة غير موجودة</h2>
           <p className="text-slate-500 mb-6">الخدمة المحددة غير موجودة</p>
           <Link href="/services"><Button variant="primary">العودة للخدمات</Button></Link>
         </Card>
@@ -385,9 +387,9 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
             <ChevronDown size={14} className="rotate-[-90deg]" />
             <Link href={`/services/${service.id}`} className="hover:text-[#2580eb] transition-colors">{service.name}</Link>
             <ChevronDown size={14} className="rotate-[-90deg]" />
-            <span className="text-slate-900 font-medium">طلب خدمة</span>
+            <span className="text-slate-900 dark:text-white font-medium">طلب خدمة</span>
           </nav>
-          <h1 className="text-3xl font-bold text-slate-900">طلب خدمة: {service.name}</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">طلب خدمة: {service.name}</h1>
           <p className="text-slate-500 mt-1">{formatPrice(service.price, currency)} — {service.duration}</p>
         </motion.div>
 
@@ -403,7 +405,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                   )}>
                     {i < step ? <CheckCircle2 size={16} /> : i + 1}
                   </div>
-                  <span className={cn("text-[10px] sm:text-xs mt-1.5 sm:mt-2 font-medium hidden sm:block", i <= step ? "text-slate-900" : "text-slate-400")}>{s}</span>
+                  <span className={cn("text-[10px] sm:text-xs mt-1.5 sm:mt-2 font-medium hidden sm:block", i <= step ? "text-slate-900 dark:text-white" : "text-slate-400")}>{s}</span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className={cn("w-16 sm:w-24 h-0.5 mx-2 mb-6", i < step ? "bg-emerald-500" : "bg-slate-200")} />
@@ -422,11 +424,11 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                   <Card className="p-4 sm:p-6">
                     <div className="flex items-center gap-3 mb-4 sm:mb-6">
                       <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#2580eb]/10 flex items-center justify-center text-[#2580eb]"><User size={18} className="sm:w-5 sm:h-5" /></div>
-                      <h2 className="text-base sm:text-lg font-bold text-slate-900">بيانات العميل</h2>
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">بيانات العميل</h2>
                     </div>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">الاسم الكامل *</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الاسم الكامل *</label>
                         <div className="relative">
                           <User size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input type="text" value={formData.name} onChange={(e) => setField('name', e.target.value)} placeholder="محمد أحمد"
@@ -436,7 +438,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">البريد الإلكتروني *</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">البريد الإلكتروني *</label>
                           <div className="relative">
                             <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input type="email" dir="ltr" value={formData.email} onChange={(e) => setField('email', e.target.value)} placeholder="email@example.com"
@@ -445,10 +447,10 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                           {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">رقم الجوال *</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">رقم الجوال *</label>
                           <div className="flex gap-2">
                             <select value={formData.phoneCode} onChange={(e) => setField('phoneCode', e.target.value)}
-                              className="w-28 px-2 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] transition-all">
+                              className="w-28 px-2 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] transition-all">
                               {phoneCodes.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
                             </select>
                             <div className="relative flex-1">
@@ -462,17 +464,17 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">الدولة</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الدولة</label>
                           <div className="relative">
                             <Globe size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <select value={formData.country} onChange={(e) => setField('country', e.target.value)}
-                              className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] transition-all appearance-none">
+                              className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] transition-all appearance-none">
                               {countryList.map((c) => <option key={c} value={c}>{c}</option>)}
                             </select>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">المدينة</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">المدينة</label>
                           <div className="relative">
                             <MapPin size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input type="text" value={formData.city} onChange={(e) => setField('city', e.target.value)} placeholder="الرياض"
@@ -488,21 +490,21 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                     <Card className="p-6 mt-6">
                       <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500"><Hash size={20} /></div>
-                        <h2 className="text-lg font-bold text-slate-900">بيانات إضافية</h2>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">بيانات إضافية</h2>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">رقم الهوية</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">رقم الهوية</label>
                           <input type="text" dir="ltr" value={formData.idNumber} onChange={(e) => setField('idNumber', e.target.value)} placeholder="1XXXXXXXXX"
                             className={inputLtrClass} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">رقم الإقامة</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">رقم الإقامة</label>
                           <input type="text" dir="ltr" value={formData.residenceNumber} onChange={(e) => setField('residenceNumber', e.target.value)} placeholder="اختياري"
                             className={inputLtrClass} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">رقم الجواز</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">رقم الجواز</label>
                           <input type="text" dir="ltr" value={formData.passportNumber} onChange={(e) => setField('passportNumber', e.target.value)} placeholder="A12345678"
                             className={inputLtrClass} />
                         </div>
@@ -514,32 +516,32 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                     <Card className="p-6 mt-6">
                       <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500"><Hash size={20} /></div>
-                        <h2 className="text-lg font-bold text-slate-900">بيانات العقد</h2>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">بيانات العقد</h2>
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">اسم الشركة</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">اسم الشركة</label>
                           <input type="text" value={formData.companyName} onChange={(e) => setField('companyName', e.target.value)} placeholder="اسم الشركة"
                             className={inputClass} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">المهنة</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">المهنة</label>
                           <input type="text" value={formData.profession} onChange={(e) => setField('profession', e.target.value)} placeholder="المهنة المطلوبة"
                             className={inputClass} />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">بيانات العامل</label>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">بيانات العامل</label>
                           <textarea value={formData.workerData} onChange={(e) => setField('workerData', e.target.value)} placeholder="اسم العامل، الجنسية، رقم الجواز..." rows={3}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all resize-none" />
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all resize-none" />
                         </div>
                       </div>
                     </Card>
                   )}
 
                   <div className="mt-6">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">ملاحظات إضافية <span className="text-slate-400">(اختياري)</span></label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">ملاحظات إضافية <span className="text-slate-400">(اختياري)</span></label>
                     <textarea value={formData.notes} onChange={(e) => setField('notes', e.target.value)} placeholder="أي ملاحظات أو تفاصيل إضافية عن طلبك..." rows={3} maxLength={500}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all resize-none" />
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all resize-none" />
                     <p className="text-xs text-slate-400 mt-1 text-left">{formData.notes.length}/500</p>
                   </div>
                 </motion.div>
@@ -551,7 +553,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                   <Card className="p-6">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500"><Upload size={20} /></div>
-                      <h2 className="text-lg font-bold text-slate-900">رفع المستندات</h2>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">رفع المستندات</h2>
                     </div>
                     {service.requiredDocuments && service.requiredDocuments.length > 0 && (
                       <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
@@ -578,7 +580,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                     >
                       <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" onChange={handleFileUpload} className="hidden" />
                       <div className="w-14 h-14 rounded-2xl bg-[#2580eb]/10 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform"><Upload size={24} className="text-[#2580eb]" /></div>
-                      <p className="text-slate-700 font-medium mb-1">اسحب الملفات هنا أو اضغط للاختيار</p>
+                      <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">اسحب الملفات هنا أو اضغط للاختيار</p>
                       <p className="text-slate-400 text-xs">{uploadedFiles.length}/5 ملفات</p>
                     </div>
                     <AnimatePresence>
@@ -586,14 +588,14 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 space-y-2">
                           {uploadedFiles.map((f) => (
                             <motion.div key={f.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                              className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                              className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 dark:border-slate-700">
                               {f.preview
                                 // eslint-disable-next-line @next/next/no-img-element
                                 ? <img src={f.preview} alt={f.name} className="w-10 h-10 rounded-lg object-cover" />
-                                : <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center">{getFileIcon(f.type)}</div>
+                                : <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">{getFileIcon(f.type)}</div>
                               }
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-700 truncate">{f.name}</p>
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{f.name}</p>
                                 <p className="text-xs text-slate-400">{formatFileSize(f.size)}</p>
                                 {f.progress < 100 && (
                                   <div className="w-full h-1 bg-slate-200 rounded-full mt-1">
@@ -617,31 +619,31 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                   <Card className="p-6">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500"><CheckCircle size={20} /></div>
-                      <h2 className="text-lg font-bold text-slate-900">مراجعة الطلب</h2>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">مراجعة الطلب</h2>
                     </div>
 
                     <div className="space-y-4">
                       <div className="p-4 bg-slate-50 rounded-xl">
                         <p className="text-xs text-slate-500 mb-1">الخدمة</p>
-                        <p className="font-bold text-slate-900">{service.name}</p>
+                        <p className="font-bold text-slate-900 dark:text-white">{service.name}</p>
                         <p className="text-sm text-slate-500 mt-1">{service.duration}</p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-slate-50 rounded-xl">
                           <p className="text-xs text-slate-500 mb-1">الاسم</p>
-                          <p className="font-medium text-slate-900">{formData.name}</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{formData.name}</p>
                         </div>
                         <div className="p-4 bg-slate-50 rounded-xl">
                           <p className="text-xs text-slate-500 mb-1">البريد</p>
-                          <p className="font-medium text-slate-900" dir="ltr">{formData.email}</p>
+                          <p className="font-medium text-slate-900 dark:text-white" dir="ltr">{formData.email}</p>
                         </div>
                         <div className="p-4 bg-slate-50 rounded-xl">
                           <p className="text-xs text-slate-500 mb-1">الجوال</p>
-                          <p className="font-medium text-slate-900" dir="ltr">{formData.phoneCode} {formData.phone}</p>
+                          <p className="font-medium text-slate-900 dark:text-white" dir="ltr">{formData.phoneCode} {formData.phone}</p>
                         </div>
                         <div className="p-4 bg-slate-50 rounded-xl">
                           <p className="text-xs text-slate-500 mb-1">المدينة</p>
-                          <p className="font-medium text-slate-900">{formData.city || formData.country}</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{formData.city || formData.country}</p>
                         </div>
                       </div>
                       {uploadedFiles.length > 0 && (
@@ -649,7 +651,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                           <p className="text-xs text-slate-500 mb-2">المستندات المرفوعة ({uploadedFiles.length})</p>
                           <div className="space-y-1">
                             {uploadedFiles.map((f) => (
-                              <p key={f.id} className="text-sm text-slate-700 flex items-center gap-2">
+                              <p key={f.id} className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                 <FileText size={14} className="text-slate-400" /> {f.name}
                               </p>
                             ))}
@@ -659,7 +661,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                       {formData.notes && (
                         <div className="p-4 bg-slate-50 rounded-xl">
                           <p className="text-xs text-slate-500 mb-1">ملاحظات</p>
-                          <p className="text-sm text-slate-700">{formData.notes}</p>
+                          <p className="text-sm text-slate-700 dark:text-slate-300">{formData.notes}</p>
                         </div>
                       )}
                     </div>
@@ -669,11 +671,11 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                   <Card className="p-6 mt-6">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500"><Tag size={20} /></div>
-                      <h2 className="text-lg font-bold text-slate-900">كود الخصم</h2>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">كود الخصم</h2>
                     </div>
                     <div className="flex gap-2">
                       <input type="text" value={promoCode} onChange={(e) => { setPromoCode(e.target.value); setPromoResult(null); }} placeholder="أدخل كود الخصم"
-                        className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all text-left font-mono uppercase" dir="ltr" />
+                        className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all text-left font-mono uppercase" dir="ltr" />
                       <Button onClick={handleApplyPromo} variant="primary" className="px-6">تطبيق</Button>
                     </div>
                     {promoResult && (
@@ -693,7 +695,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                   <Card className="p-6">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-[#2580eb]/10 flex items-center justify-center text-[#2580eb]"><CreditCard size={20} /></div>
-                      <h2 className="text-lg font-bold text-slate-900">طريقة الدفع</h2>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">طريقة الدفع</h2>
                     </div>
                     {displayMethods.length === 0 ? (
                       <div className="text-center py-8">
@@ -708,7 +710,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                             className={cn("w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-right",
                               selectedGatewayId === method.id
                                 ? "border-[#2580eb] bg-[#2580eb]/5 shadow-lg shadow-[#2580eb]/10"
-                                : "border-slate-200 bg-white hover:border-slate-300"
+                                : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300"
                             )}>
                             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm",
                               selectedGatewayId === method.id ? "bg-[#2580eb]/10 text-[#2580eb]" : "bg-slate-100 text-slate-500"
@@ -716,7 +718,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                               <Wallet size={24} />
                             </div>
                             <div className="flex-1">
-                              <p className="font-bold text-slate-900">{method.name}</p>
+                              <p className="font-bold text-slate-900 dark:text-white">{method.name}</p>
                               <p className="text-sm text-slate-500">{method.supportedMethods.join(' · ')}</p>
                             </div>
                             {method.isDefault && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-md font-medium">افتراضي</span>}
@@ -740,22 +742,22 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <Card className="p-6">
-                <h3 className="text-lg font-bold text-slate-900 mb-4">ملخص الطلب</h3>
-                <div className="space-y-3 pb-4 border-b border-slate-200">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">ملخص الطلب</h3>
+                <div className="space-y-3 pb-4 border-b border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 flex items-center justify-center shrink-0">
                       <Star size={20} className="text-[#2580eb]" />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900 text-sm">{service.name}</p>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">{service.name}</p>
                       <p className="text-xs text-slate-500">{service.duration}</p>
                     </div>
                   </div>
                 </div>
-                <div className="space-y-3 py-4 border-b border-slate-200">
+                <div className="space-y-3 py-4 border-b border-slate-200 dark:border-slate-700">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">السعر</span>
-                    <span className="font-medium text-slate-900">{formatPrice(price, currency)}</span>
+                    <span className="font-medium text-slate-900 dark:text-white">{formatPrice(price, currency)}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-sm text-emerald-600">
@@ -766,7 +768,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                 </div>
                 <div className="pt-4 mb-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-slate-900">الإجمالي</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white">الإجمالي</span>
                     <span className="text-2xl font-bold text-[#2580eb]">{formatPrice(total, currency)}</span>
                   </div>
                 </div>

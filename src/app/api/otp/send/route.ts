@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOTP, storeOTP } from "@/lib/otp";
 import { sendOtpEmail } from "@/lib/email/service";
+import { otpLimiter } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const limiterResult = otpLimiter(ip);
+    if (!limiterResult.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً / Rate limit exceeded' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(limiterResult.resetMs / 1000)) } }
+      );
+    }
+
     const body = await req.json();
     const { email } = body;
 

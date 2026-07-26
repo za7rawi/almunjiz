@@ -12,6 +12,17 @@ export const UPLOAD_LIMITS = {
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   ],
+  blockedExtensions: [
+    'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'pif', 'vbs', 'vbe', 'js', 'jse',
+    'wsf', 'wsh', 'ps1', 'psm1', 'psd1', 'psc1', 'psc2', 'reg', 'inf',
+    'php', 'php3', 'php4', 'php5', 'php7', 'phtml', 'phps',
+    'sh', 'bash', 'csh', 'ksh', 'zsh',
+    'py', 'pyc', 'pyo', 'rb', 'pl', 'cgi',
+    'asp', 'aspx', 'jsp', 'jspx', 'cfm', 'cfml', 'cgi', 'pl', 'pm',
+    'html', 'htm', 'xhtml', 'svg', 'xml', 'xht', 'xhtm',
+    'jar', 'class', 'war', 'ear',
+    'hta', 'cpl', 'dll', 'sys', 'drv', 'cof', 'lnk', 'url', 'ini', 'cfg',
+  ],
 };
 
 export const PAGINATION = {

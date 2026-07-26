@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware';
 
 interface RequestProgress {
   serviceId: string;
+  userId: string;
   step: number;
   formData: {
     name: string;
@@ -29,7 +30,7 @@ interface RequestProgress {
 interface RequestProgressState {
   progress: Record<string, RequestProgress>;
   saveProgress: (serviceId: string, data: Omit<RequestProgress, 'lastSaved'>) => void;
-  getProgress: (serviceId: string) => RequestProgress | undefined;
+  getProgress: (serviceId: string, userId?: string) => RequestProgress | undefined;
   clearProgress: (serviceId: string) => void;
   clearAllProgress: () => void;
 }
@@ -47,7 +48,12 @@ export const useRequestProgressStore = create<RequestProgressState>()(
           },
         })),
 
-      getProgress: (serviceId) => get().progress[serviceId],
+      getProgress: (serviceId, userId) => {
+        const record = get().progress[serviceId];
+        if (!record) return undefined;
+        if (userId && record.userId && record.userId !== userId) return undefined;
+        return record;
+      },
 
       clearProgress: (serviceId) =>
         set((state) => {

@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, data: null, error: error instanceof Error ? error.message : 'Failed to validate coupon' },
+      { success: false, data: null, error: error instanceof Error ? 'An error occurred' : 'Failed to validate coupon' },
       { status: 500 }
     );
   }
