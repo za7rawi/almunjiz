@@ -53,7 +53,7 @@ export default function ChatPage() {
               transition={{ delay: 0.35 }}
             >
               <a
-                href="https://wa.me/"
+                href="https://wa.me/962791038472?text=مرحباً، أريد الاستفسار عن خدمات المنجز"
                 target="_blank"
                 rel="noopener noreferrer"
               >
