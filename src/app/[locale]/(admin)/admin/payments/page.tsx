@@ -100,7 +100,7 @@ export default function PaymentsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchPayments(); }, [fetchPayments]);
+  useEffect(() => { fetchPayments(); const interval = setInterval(fetchPayments, 30000); return () => clearInterval(interval); }, [fetchPayments]);
 
   const [activeMethod, setActiveMethod] = useState<MethodFilter>('ALL');
   const [activeStatus, setActiveStatus] = useState<StatusFilter>('ALL');

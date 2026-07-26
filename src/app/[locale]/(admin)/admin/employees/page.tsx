@@ -61,7 +61,7 @@ export default function EmployeesPage() {
     } catch {}
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(); const interval = setInterval(fetchUsers, 30000); return () => clearInterval(interval); }, []);
 
   const employeesList = useMemo(() => {
     return users

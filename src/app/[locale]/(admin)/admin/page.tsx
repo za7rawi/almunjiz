@@ -144,6 +144,8 @@ export default function AdminDashboardPage() {
     };
 
     fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const maxRevenue = Math.max(...weeklyRevenue.map((d) => d.value), 1);

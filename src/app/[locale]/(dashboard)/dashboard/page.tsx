@@ -87,26 +87,32 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user?.id) { setLoading(false); return }
 
-    fetch('/api/orders?limit=50', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setOrders(data.data); })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    const fetchAll = () => {
+      fetch('/api/orders?limit=50', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => { if (data.success && data.data) setOrders(data.data); })
+        .catch(() => {})
+        .finally(() => setLoading(false))
 
-    fetch('/api/notifications?limit=5', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setNotifications(data.data); })
-      .catch(() => {})
+      fetch('/api/notifications?limit=5', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => { if (data.success && data.data) setNotifications(data.data); })
+        .catch(() => {})
 
-    fetch('/api/invoices?limit=1000', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.meta?.total != null) setInvoiceCount(data.meta.total); })
-      .catch(() => {})
+      fetch('/api/invoices?limit=1000', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => { if (data.success && data.meta?.total != null) setInvoiceCount(data.meta.total); })
+        .catch(() => {})
 
-    fetch('/api/files', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setFileCount(data.data.length || data.meta?.total || 0); })
-      .catch(() => {})
+      fetch('/api/files', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => { if (data.success && data.data) setFileCount(data.data.length || data.meta?.total || 0); })
+        .catch(() => {})
+    }
+
+    fetchAll()
+    const interval = setInterval(fetchAll, 30000)
+    return () => clearInterval(interval)
   }, [user?.id])
 
   const recentOrders = orders.slice(0, 5)

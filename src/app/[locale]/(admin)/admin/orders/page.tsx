@@ -59,11 +59,16 @@ export default function OrdersPage() {
   const [lightboxFile, setLightboxFile] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/orders?limit=200')
-      .then((r) => r.json())
-      .then((data) => { if (data.success && data.data) setOrders(data.data); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const fetchData = () => {
+      fetch('/api/orders?limit=200')
+        .then((r) => r.json())
+        .then((data) => { if (data.success && data.data) setOrders(data.data); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const statusTabs = useMemo(() => {

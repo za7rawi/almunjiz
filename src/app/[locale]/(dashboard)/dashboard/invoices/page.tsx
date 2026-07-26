@@ -51,20 +51,25 @@ export default function InvoicesPage() {
   const { user } = useAuthStore()
 
   useEffect(() => {
-    const params = new URLSearchParams({ limit: '200' })
-    if (user?.id) params.set('userId', user.id)
-    fetch(`/api/invoices?${params.toString()}`, { cache: 'no-store' })
-      .then((r) => {
-        if (!r.ok) throw new Error('API error')
-        return r.json()
-      })
-      .then((data) => {
-        if (data.success && Array.isArray(data.data)) {
-          setInvoices(data.data)
-        }
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+    const fetchData = () => {
+      const params = new URLSearchParams({ limit: '200' })
+      if (user?.id) params.set('userId', user.id)
+      fetch(`/api/invoices?${params.toString()}`, { cache: 'no-store' })
+        .then((r) => {
+          if (!r.ok) throw new Error('API error')
+          return r.json()
+        })
+        .then((data) => {
+          if (data.success && Array.isArray(data.data)) {
+            setInvoices(data.data)
+          }
+        })
+        .catch(() => setError(true))
+        .finally(() => setLoading(false))
+    }
+    fetchData()
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
   }, [user?.id])
 
   if (!mounted) return null

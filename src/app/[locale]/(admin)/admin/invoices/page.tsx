@@ -106,7 +106,7 @@ export default function InvoicesPage() {
     }
   }, []);
 
-  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+  useEffect(() => { fetchInvoices(); const interval = setInterval(fetchInvoices, 30000); return () => clearInterval(interval); }, [fetchInvoices]);
 
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('ALL');
   const [searchQuery, setSearchQuery] = useState('');

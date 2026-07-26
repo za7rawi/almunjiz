@@ -124,6 +124,11 @@ export default function FilesPage() {
     fetchFiles()
   }, [fetchFiles])
 
+  useEffect(() => {
+    const interval = setInterval(fetchFiles, 30000)
+    return () => clearInterval(interval)
+  }, [fetchFiles])
+
   const handleUpload = async (selectedFiles: FileList | File[]) => {
     const fileArray = Array.from(selectedFiles)
     if (fileArray.length === 0) return
@@ -346,10 +351,10 @@ export default function FilesPage() {
                       {isImage && (
                         <div
                           className="w-full h-32 rounded-xl mb-3 bg-slate-100 overflow-hidden cursor-pointer relative group/preview"
-                          onClick={() => setPreviewUrl(file.fileUrl)}
+                          onClick={() => setPreviewUrl(`/api/files/${file.id}?inline=true`)}
                         >
                           <img
-                            src={file.fileUrl}
+                            src={`/api/files/${file.id}?inline=true`}
                             alt={file.fileName}
                             className="w-full h-full object-cover"
                           />
