@@ -23,7 +23,6 @@ function isPublicPath(pathname: string): boolean {
     "/api/",
     "/_next/",
     "/favicon.ico",
-    "/uploads/",
     "/robots.txt",
     "/sitemap.xml",
   ];
@@ -48,7 +47,34 @@ function isAdminLogin(pathname: string): boolean {
   return pathname.includes('/admin/login');
 }
 
-export function middleware(request: NextRequest) {
+async function hmacSign(message: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const msgData = encoder.encode(message);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, msgData);
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function verifyRoleCookie(cookie: string, secret: string): Promise<string | null> {
+  const separatorIndex = cookie.lastIndexOf("|");
+  if (separatorIndex === -1) return null;
+  const role = cookie.substring(0, separatorIndex);
+  const signature = cookie.substring(separatorIndex + 1);
+  const expectedSignature = await hmacSign(role, secret);
+  if (signature !== expectedSignature) return null;
+  return role;
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname) || isStaticAsset(pathname)) {
@@ -75,6 +101,24 @@ export function middleware(request: NextRequest) {
       || request.cookies.get('__Secure-next-auth.session-token')?.value;
 
     if (!sessionToken) {
+      const locale = pathname.split('/')[1] || 'ar';
+      const loginUrl = new URL(`/${locale}/admin/login`, request.url);
+      loginUrl.searchParams.set('redirect', pathname.replace(`/${locale}`, ''));
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const roleCookie = request.cookies.get('almunjiz-role')?.value;
+    if (!roleCookie) {
+      const locale = pathname.split('/')[1] || 'ar';
+      const loginUrl = new URL(`/${locale}/admin/login`, request.url);
+      loginUrl.searchParams.set('redirect', pathname.replace(`/${locale}`, ''));
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const secret = process.env.NEXTAUTH_SECRET || '';
+    const role = await verifyRoleCookie(roleCookie, secret);
+    const allowedRoles = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
+    if (!role || !allowedRoles.includes(role)) {
       const locale = pathname.split('/')[1] || 'ar';
       const loginUrl = new URL(`/${locale}/admin/login`, request.url);
       loginUrl.searchParams.set('redirect', pathname.replace(`/${locale}`, ''));
@@ -113,6 +157,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|_next/static|_next/image|favicon.ico|public|uploads).*)",
+    "/((?!_next|_next/static|_next/image|favicon.ico|public).*)",
   ],
 };

@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth-store'
+import { useLanguageStore } from '@/store/language-store'
 
 type FilterType = 'all' | 'unread'
 
@@ -22,11 +23,6 @@ interface Notification {
   createdAt: string
 }
 
-const filterTabs: { id: FilterType; label: string }[] = [
-  { id: 'all', label: 'الكل' },
-  { id: 'unread', label: 'غير مقروءة' },
-]
-
 function getNotificationColor(type: string) {
   const map: Record<string, string> = {
     ORDER: 'bg-[#2580eb]/10 text-[#2580eb]',
@@ -35,7 +31,7 @@ function getNotificationColor(type: string) {
     PROMOTION: 'bg-amber-500/10 text-amber-500',
     SUPPORT: 'bg-red-500/10 text-red-500',
   }
-  return map[type] || 'bg-slate-100 text-slate-500'
+  return map[type] || 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
 }
 
 function getNotificationIcon(type: string) {
@@ -49,16 +45,16 @@ function getNotificationIcon(type: string) {
   }
 }
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string, isAr: boolean) {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'الآن'
-  if (mins < 60) return `منذ ${mins} دقيقة`
+  if (mins < 1) return isAr ? 'الآن' : 'Just now'
+  if (mins < 60) return isAr ? `منذ ${mins} دقيقة` : `${mins} min ago`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `منذ ${hours} ساعة`
+  if (hours < 24) return isAr ? `منذ ${hours} ساعة` : `${hours} hours ago`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `منذ ${days} يوم`
-  return new Date(dateStr).toLocaleDateString('ar-SA')
+  if (days < 30) return isAr ? `منذ ${days} يوم` : `${days} days ago`
+  return new Date(dateStr).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')
 }
 
 export default function NotificationsPage() {
@@ -66,6 +62,13 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
+  const isAr = language === 'ar'
+
+  const filterTabs: { id: FilterType; label: string }[] = [
+    { id: 'all', label: isAr ? 'الكل' : 'All' },
+    { id: 'unread', label: isAr ? 'غير مقروءة' : 'Unread' },
+  ]
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return }
@@ -96,16 +99,16 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="الإشعارات"
-        subtitle={`${unreadCount} غير مقروء`}
-        breadcrumbs={[{ label: 'لوحة التحكم', href: '/dashboard' }, { label: 'الإشعارات' }]}
+        title={isAr ? 'الإشعارات' : 'Notifications'}
+        subtitle={`${unreadCount} ${isAr ? 'غير مقروء' : 'unread'}`}
+        breadcrumbs={[{ label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/dashboard' }, { label: isAr ? 'الإشعارات' : 'Notifications' }]}
         gradient
-        actions={unreadCount > 0 ? <Button variant="secondary" size="sm" onClick={markAllRead}><CheckCheck size={16} className="ms-1.5" /> تحديد الكل كمقروء</Button> : undefined}
+        actions={unreadCount > 0 ? <Button variant="secondary" size="sm" onClick={markAllRead}><CheckCheck size={16} className="ms-1.5" /> {isAr ? 'تحديد الكل كمقروء' : 'Mark all as read'}</Button> : undefined}
       />
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         {filterTabs.map((tab) => (
-          <button key={tab.id} onClick={() => setActiveFilter(tab.id)} className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${activeFilter === tab.id ? 'bg-[#2580eb] text-white shadow-lg shadow-[#2580eb]/25' : 'bg-white border border-slate-200 text-slate-600 hover:border-[#2580eb]/30'}`}>
+          <button key={tab.id} onClick={() => setActiveFilter(tab.id)} className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${activeFilter === tab.id ? 'bg-[#2580eb] text-white shadow-lg shadow-[#2580eb]/25' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-[#2580eb]/30'}`}>
             {tab.label}{tab.id === 'unread' && unreadCount > 0 && <span className="ms-1.5 text-xs opacity-70">({unreadCount})</span>}
           </button>
         ))}
@@ -117,7 +120,7 @@ export default function NotificationsPage() {
         <Card padding="lg">
           <div className="py-16 text-center">
             <Bell size={48} className="mx-auto text-slate-300 mb-3" />
-            <p className="text-sm text-slate-500">لا توجد إشعارات</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'لا توجد إشعارات' : 'No notifications'}</p>
           </div>
         </Card>
       ) : (
@@ -131,10 +134,10 @@ export default function NotificationsPage() {
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => markAsRead(notif.id)}>
                       <div className="flex items-center gap-2 mb-1">
                         {!notif.isRead && <span className="w-2 h-2 rounded-full bg-[#2580eb] shrink-0" />}
-                        <h4 className={`text-sm font-semibold ${!notif.isRead ? 'text-slate-900' : 'text-slate-700'}`}>{notif.title}</h4>
+                        <h4 className={`text-sm font-semibold ${!notif.isRead ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>{notif.title}</h4>
                       </div>
-                      <p className="text-sm text-slate-500 line-clamp-2">{notif.message}</p>
-                      <p className="text-xs text-slate-400 mt-1.5">{timeAgo(notif.createdAt)}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{notif.message}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">{timeAgo(notif.createdAt, isAr)}</p>
                     </div>
                   </div>
                 </Card>

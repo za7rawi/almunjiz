@@ -6,12 +6,15 @@ import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
+import { useLanguageStore } from '@/store/language-store';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
 
   const router = useRouter();
   const pathname = usePathname();
@@ -30,7 +33,7 @@ export default function AdminLoginPage() {
       });
 
       if (result?.error) {
-        setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        setError(isAr ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password');
         setLoading(false);
         return;
       }
@@ -47,15 +50,15 @@ export default function AdminLoginPage() {
         if (role === 'admin' || role === 'super_admin' || role === 'manager') {
           router.push(`/${locale}/admin`);
         } else {
-          setError('غير مصرح - هذا الحساب ليس حساب مدير');
+          setError(isAr ? 'غير مصرح - هذا الحساب ليس حساب مدير' : 'Unauthorized - This account is not an admin account');
           setLoading(false);
         }
       } else {
-        setError(json.error || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        setError(json.error || (isAr ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password'));
         setLoading(false);
       }
     } catch {
-      setError('حدث خطأ أثناء الاتصال بالخادم');
+      setError(isAr ? 'حدث خطأ أثناء الاتصال بالخادم' : 'An error occurred connecting to the server');
       setLoading(false);
     }
   };
@@ -80,10 +83,10 @@ export default function AdminLoginPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-white text-center mb-2">
-            لوحة التحكم
+            {isAr ? 'لوحة التحكم' : 'Admin Panel'}
           </h1>
           <p className="text-slate-400 text-center text-sm mb-8">
-            سجّل الدخول للوصول إلى لوحة الإدارة
+            {isAr ? 'سجّل الدخول للوصول إلى لوحة الإدارة' : 'Sign in to access the admin dashboard'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -99,7 +102,7 @@ export default function AdminLoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                البريد الإلكتروني
+                {isAr ? 'البريد الإلكتروني' : 'Email'}
               </label>
               <div className="relative">
                 <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -116,7 +119,7 @@ export default function AdminLoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                كلمة المرور
+                {isAr ? 'كلمة المرور' : 'Password'}
               </label>
               <div className="relative">
                 <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -143,7 +146,7 @@ export default function AdminLoginPage() {
               ) : (
                 <>
                   <LogIn size={18} />
-                  تسجيل الدخول
+                  {isAr ? 'تسجيل الدخول' : 'Sign In'}
                 </>
               )}
             </motion.button>

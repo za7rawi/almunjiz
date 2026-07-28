@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/language-store';
 
 type ReviewStatus = 'approved' | 'pending' | 'rejected';
 type StatusFilter = 'ALL' | ReviewStatus;
@@ -31,13 +32,6 @@ interface Review {
   status: ReviewStatus;
   date: string;
 }
-
-const statusTabs: { id: StatusFilter; label: string }[] = [
-  { id: 'ALL', label: 'الكل' },
-  { id: 'approved', label: 'موافق عليه' },
-  { id: 'pending', label: 'قيد المراجعة' },
-  { id: 'rejected', label: 'مرفوض' },
-];
 
 const inputClass = 'w-full px-4 py-2.5 text-sm rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30';
 
@@ -60,13 +54,10 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   );
 }
 
-const statusConfig: Record<ReviewStatus, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
-  approved: { label: 'موافق عليه', variant: 'success' },
-  pending: { label: 'قيد المراجعة', variant: 'warning' },
-  rejected: { label: 'مرفوض', variant: 'danger' },
-};
-
 export default function ReviewsPage() {
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState<StatusFilter>('ALL');
@@ -74,6 +65,21 @@ export default function ReviewsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
+
+  const statusTabs: { id: StatusFilter; label: string }[] = [
+    { id: 'ALL', label: isAr ? 'الكل' : 'All' },
+    { id: 'approved', label: isAr ? 'موافق عليه' : 'Approved' },
+    { id: 'pending', label: isAr ? 'قيد المراجعة' : 'Pending' },
+    { id: 'rejected', label: isAr ? 'مرفوض' : 'Rejected' },
+  ];
+
+  const statusConfig: Record<ReviewStatus, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
+    approved: { label: isAr ? 'موافق عليه' : 'Approved', variant: 'success' },
+    pending: { label: isAr ? 'قيد المراجعة' : 'Pending', variant: 'warning' },
+    rejected: { label: isAr ? 'مرفوض' : 'Rejected', variant: 'danger' },
+  };
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -90,17 +96,23 @@ export default function ReviewsPage() {
 
   useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
+  useEffect(() => { setCurrentPage(1); }, [activeStatus, searchQuery]);
+
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
       const matchesStatus = activeStatus === 'ALL' || r.status === activeStatus;
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
         !searchQuery ||
-        r.customerName.includes(searchQuery) ||
-        r.service.includes(searchQuery) ||
-        r.comment.includes(searchQuery);
+        r.customerName.toLowerCase().includes(q) ||
+        r.service.toLowerCase().includes(q) ||
+        r.comment.toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
   }, [activeStatus, searchQuery, reviews]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const stats = useMemo(() => {
     const total = reviews.length;
@@ -143,10 +155,10 @@ export default function ReviewsPage() {
   };
 
   const statCards = [
-    { label: 'إجمالي التقييمات', value: stats.total, icon: MessageSquare, color: '#2580eb' },
-    { label: 'متوسط التقييم', value: stats.avgRating.toFixed(1), icon: Star, color: '#f59e0b' },
-    { label: 'الموافق عليها', value: stats.approved, icon: CheckCircle, color: '#14b8a6' },
-    { label: 'قيد المراجعة', value: stats.pending, icon: Filter, color: '#7c3aed' },
+    { label: isAr ? 'إجمالي التقييمات' : 'Total Reviews', value: stats.total, icon: MessageSquare, color: '#2580eb' },
+    { label: isAr ? 'متوسط التقييم' : 'Average Rating', value: stats.avgRating.toFixed(1), icon: Star, color: '#f59e0b' },
+    { label: isAr ? 'الموافق عليها' : 'Approved', value: stats.approved, icon: CheckCircle, color: '#14b8a6' },
+    { label: isAr ? 'قيد المراجعة' : 'Pending', value: stats.pending, icon: Filter, color: '#7c3aed' },
   ];
 
   if (loading) {
@@ -160,11 +172,11 @@ export default function ReviewsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة التقييمات"
-        subtitle="متابعة وإدارة تقييمات العملاء"
+        title={isAr ? 'إدارة التقييمات' : 'Reviews Management'}
+        subtitle={isAr ? 'متابعة وإدارة تقييمات العملاء' : 'Track and manage customer reviews'}
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'التقييمات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'التقييمات' : 'Reviews' },
         ]}
       />
 
@@ -203,7 +215,7 @@ export default function ReviewsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="بحث بالاسم، الخدمة، أو التعليق..."
+            placeholder={isAr ? 'بحث بالاسم، الخدمة، أو التعليق...' : 'Search by name, service, or comment...'}
             className={cn(inputClass, 'ps-10')}
           />
         </div>
@@ -229,14 +241,17 @@ export default function ReviewsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.map((review, i) => (
+        {paginatedData.map((review, i) => (
           <motion.div
             key={review.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <Card>
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => { setSelectedReview(review); setShowDetailModal(true); }}
+            >
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
@@ -267,9 +282,9 @@ export default function ReviewsPage() {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => updateReviewStatus(review.id, 'approved')}
+                          onClick={(e) => { e.stopPropagation(); updateReviewStatus(review.id, 'approved'); }}
                           className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-500 transition-colors"
-                          title="موافقة"
+                          title={isAr ? 'موافقة' : 'Approve'}
                         >
                           <CheckCircle size={16} />
                         </motion.button>
@@ -278,9 +293,9 @@ export default function ReviewsPage() {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => updateReviewStatus(review.id, 'rejected')}
+                          onClick={(e) => { e.stopPropagation(); updateReviewStatus(review.id, 'rejected'); }}
                           className="p-2 rounded-lg hover:bg-amber-50 text-amber-500 transition-colors"
-                          title="رفض"
+                          title={isAr ? 'رفض' : 'Reject'}
                         >
                           <XCircle size={16} />
                         </motion.button>
@@ -288,9 +303,9 @@ export default function ReviewsPage() {
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => setDeleteConfirm(review.id)}
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm(review.id); }}
                         className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
-                        title="حذف"
+                        title={isAr ? 'حذف' : 'Delete'}
                       >
                         <Trash2 size={16} />
                       </motion.button>
@@ -306,13 +321,37 @@ export default function ReviewsPage() {
       {filtered.length === 0 && (
         <div className="py-12 text-center text-slate-400">
           <MessageSquare size={48} className="mx-auto mb-3 opacity-30" />
-          <p>لا توجد تقييمات</p>
+          <p>{isAr ? 'لا توجد تقييمات' : 'No reviews found'}</p>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            {isAr ? 'السابق' : 'Previous'}
+          </Button>
+          <span className="text-sm text-slate-500 dark:text-slate-400 px-3">
+            {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            {isAr ? 'التالي' : 'Next'}
+          </Button>
         </div>
       )}
 
       <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} size="md">
         <ModalHeader>
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">تفاصيل التقييم</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'تفاصيل التقييم' : 'Review Details'}</h3>
         </ModalHeader>
         <ModalBody>
           {selectedReview && (
@@ -333,19 +372,19 @@ export default function ReviewsPage() {
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
                   <Star size={18} className="text-amber-400 mt-0.5" />
                   <div>
-                    <p className="text-xs text-slate-400">التقييم</p>
+                    <p className="text-xs text-slate-400">{isAr ? 'التقييم' : 'Rating'}</p>
                     <StarRating rating={selectedReview.rating} size={20} />
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
                   <MessageSquare size={18} className="text-[#2580eb] mt-0.5" />
                   <div>
-                    <p className="text-xs text-slate-400">الخدمة</p>
+                    <p className="text-xs text-slate-400">{isAr ? 'الخدمة' : 'Service'}</p>
                     <p className="font-medium text-slate-900 dark:text-white">{selectedReview.service}</p>
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5">
-                  <p className="text-xs text-slate-400 mb-1">التعليق</p>
+                  <p className="text-xs text-slate-400 mb-1">{isAr ? 'التعليق' : 'Comment'}</p>
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{selectedReview.comment}</p>
                 </div>
               </div>
@@ -354,7 +393,7 @@ export default function ReviewsPage() {
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => setShowDetailModal(false)}>
-            إغلاق
+            {isAr ? 'إغلاق' : 'Close'}
           </Button>
         </ModalFooter>
       </Modal>
@@ -366,16 +405,16 @@ export default function ReviewsPage() {
               <Trash2 size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-              حذف التقييم
+              {isAr ? 'حذف التقييم' : 'Delete Review'}
             </h3>
             <p className="text-sm text-slate-500">
-              هل أنت متأكد من حذف هذا التقييم؟ لا يمكن التراجع عن هذا الإجراء.
+              {isAr ? 'هل أنت متأكد من حذف هذا التقييم؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this review? This action cannot be undone.'}
             </p>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="danger"
@@ -384,7 +423,7 @@ export default function ReviewsPage() {
             }}
             iconLeft={<Trash2 size={14} />}
           >
-            حذف
+            {isAr ? 'حذف' : 'Delete'}
           </Button>
         </ModalFooter>
       </Modal>

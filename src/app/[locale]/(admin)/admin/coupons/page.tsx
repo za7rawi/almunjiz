@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
+import { useLanguageStore } from '@/store/language-store';
 
 interface Coupon {
   id: string;
@@ -32,6 +34,8 @@ interface Coupon {
 }
 
 export default function CouponsPage() {
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,6 +44,8 @@ export default function CouponsPage() {
   const [editCoupon, setEditCoupon] = useState<Coupon | null>(null);
   const [newCoupon, setNewCoupon] = useState({ code: '', discount: '', type: 'percentage', maxUses: '', expiry: '' });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const fetchCoupons = useCallback(async () => {
     try {
@@ -49,6 +55,7 @@ export default function CouponsPage() {
       if (data.success) setCoupons(data.data);
     } catch {
       console.error('Failed to load coupons');
+      toast.error(isAr ? 'فشل تحميل الكوبونات' : 'Failed to load coupons');
     } finally {
       setLoading(false);
     }
@@ -61,6 +68,11 @@ export default function CouponsPage() {
       return !searchQuery || c.code.toLowerCase().includes(searchQuery.toLowerCase());
     });
   }, [searchQuery, coupons]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   const handleSaveCoupon = async () => {
     setSaving(true);
@@ -108,6 +120,7 @@ export default function CouponsPage() {
       setEditCoupon(null);
     } catch {
       console.error('Failed to save coupon');
+      toast.error(isAr ? 'فشل حفظ الكوبون' : 'Failed to save coupon');
     } finally {
       setSaving(false);
     }
@@ -134,6 +147,7 @@ export default function CouponsPage() {
       }
     } catch {
       console.error('Failed to delete coupon');
+      toast.error(isAr ? 'فشل حذف الكوبون' : 'Failed to delete coupon');
     }
     setDeleteConfirm(null);
   };
@@ -165,11 +179,11 @@ export default function CouponsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة الكوبونات"
-        subtitle="إنشاء وتعديل كوبونات الخصم"
+        title={isAr ? 'إدارة الكوبونات' : 'Coupon Management'}
+        subtitle={isAr ? 'إنشاء وتعديل كوبونات الخصم' : 'Create and edit discount coupons'}
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'الكوبونات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'الكوبونات' : 'Coupons' },
         ]}
         actions={
           <Button
@@ -178,7 +192,7 @@ export default function CouponsPage() {
             iconLeft={<Plus size={16} />}
             onClick={() => { setEditCoupon(null); setNewCoupon({ code: '', discount: '', type: 'percentage', maxUses: '', expiry: '' }); setShowAddModal(true); }}
           >
-            إضافة كوبون
+            {isAr ? 'إضافة كوبون' : 'Add Coupon'}
           </Button>
         }
       />
@@ -190,7 +204,7 @@ export default function CouponsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="بحث بكود الكوبون..."
+            placeholder={isAr ? 'بحث بكود الكوبون...' : 'Search by coupon code...'}
             className={cn(
               'w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200',
               'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10',
@@ -207,17 +221,17 @@ export default function CouponsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
-                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">الكود</th>
-                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">الخصم</th>
-                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden md:table-cell">النوع</th>
-                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">الاستخدام</th>
-                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden sm:table-cell">الانتهاء</th>
-                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">الحالة</th>
-                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">إجراءات</th>
+                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الكود' : 'Code'}</th>
+                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الخصم' : 'Discount'}</th>
+                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden md:table-cell">{isAr ? 'النوع' : 'Type'}</th>
+                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الاستخدام' : 'Uses'}</th>
+                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden sm:table-cell">{isAr ? 'الانتهاء' : 'Expiry'}</th>
+                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الحالة' : 'Status'}</th>
+                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'إجراءات' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((coupon, i) => (
+                {paginatedData.map((coupon, i) => (
                   <motion.tr
                     key={coupon.id}
                     initial={{ opacity: 0 }}
@@ -237,7 +251,7 @@ export default function CouponsPage() {
                     </td>
                     <td className="py-3 px-4 text-center hidden md:table-cell">
                       <Badge variant={coupon.discountType === 'percentage' ? 'primary' : 'info'} size="sm">
-                        {coupon.discountType === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت'}
+                        {coupon.discountType === 'percentage' ? (isAr ? 'نسبة مئوية' : 'Percentage') : (isAr ? 'مبلغ ثابت' : 'Fixed Amount')}
                       </Badge>
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -254,7 +268,7 @@ export default function CouponsPage() {
                     <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">{coupon.expiresAt}</td>
                     <td className="py-3 px-4 text-center">
                       <Badge variant={coupon.isActive ? 'success' : 'danger'} size="sm" dot>
-                        {coupon.isActive ? 'نشط' : 'غير نشط'}
+                        {coupon.isActive ? (isAr ? 'نشط' : 'Active') : (isAr ? 'غير نشط' : 'Inactive')}
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
@@ -293,7 +307,18 @@ export default function CouponsPage() {
           {filtered.length === 0 && (
             <div className="py-12 text-center text-slate-400">
               <Ticket size={48} className="mx-auto mb-3 opacity-30" />
-              <p>لا توجد كوبونات</p>
+              <p>{isAr ? 'لا توجد كوبونات' : 'No coupons found'}</p>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-white/5">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+              </span>
+              <div className="flex gap-2">
+                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 dark:text-slate-300">{isAr ? 'السابق' : 'Previous'}</button>
+                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 dark:text-slate-300">{isAr ? 'التالي' : 'Next'}</button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -302,20 +327,20 @@ export default function CouponsPage() {
       <Modal open={showAddModal} onClose={() => { setShowAddModal(false); setEditCoupon(null); }} size="md">
         <ModalHeader>
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editCoupon ? 'تعديل الكوبون' : 'إضافة كوبون جديد'}
+            {editCoupon ? (isAr ? 'تعديل الكوبون' : 'Edit Coupon') : (isAr ? 'إضافة كوبون جديد' : 'Add New Coupon')}
           </h3>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                كود الكوبون
+                {isAr ? 'كود الكوبون' : 'Coupon Code'}
               </label>
               <input
                 type="text"
                 value={newCoupon.code}
                 onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
-                placeholder="مثال: WELCOME10"
+                placeholder={isAr ? 'مثال: WELCOME10' : 'e.g. WELCOME10'}
                 className={cn(
                   'w-full px-4 py-2.5 text-sm font-mono rounded-xl transition-all duration-200',
                   'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10',
@@ -327,7 +352,7 @@ export default function CouponsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  قيمة الخصم
+                  {isAr ? 'قيمة الخصم' : 'Discount Value'}
                 </label>
                 <input
                   type="number"
@@ -344,7 +369,7 @@ export default function CouponsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  نوع الخصم
+                  {isAr ? 'نوع الخصم' : 'Discount Type'}
                 </label>
                 <select
                   value={newCoupon.type}
@@ -356,15 +381,15 @@ export default function CouponsPage() {
                     'focus:outline-none focus:border-[#7c3aed] focus:ring-2 focus:ring-[#7c3aed]/30',
                   )}
                 >
-                  <option value="percentage">نسبة مئوية</option>
-                  <option value="fixed">مبلغ ثابت</option>
+                  <option value="percentage">{isAr ? 'نسبة مئوية' : 'Percentage'}</option>
+                  <option value="fixed">{isAr ? 'مبلغ ثابت' : 'Fixed Amount'}</option>
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  حد الاستخدام الأقصى
+                  {isAr ? 'حد الاستخدام الأقصى' : 'Max Uses'}
                 </label>
                 <input
                   type="number"
@@ -381,7 +406,7 @@ export default function CouponsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  تاريخ الانتهاء
+                  {isAr ? 'تاريخ الانتهاء' : 'Expiry Date'}
                 </label>
                 <input
                   type="date"
@@ -400,10 +425,10 @@ export default function CouponsPage() {
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => { setShowAddModal(false); setEditCoupon(null); }}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button onClick={handleSaveCoupon} disabled={saving} iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : undefined}>
-            {editCoupon ? 'حفظ التعديلات' : 'إضافة'}
+            {editCoupon ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة' : 'Add')}
           </Button>
         </ModalFooter>
       </Modal>
@@ -414,13 +439,13 @@ export default function CouponsPage() {
             <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4">
               <Trash2 size={24} className="text-red-500" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">حذف الكوبون</h3>
-            <p className="text-sm text-slate-500">هل أنت متأكد من حذف هذا الكوبون؟ لا يمكن التراجع عن هذا الإجراء.</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'حذف الكوبون' : 'Delete Coupon'}</h3>
+            <p className="text-sm text-slate-500">{isAr ? 'هل أنت متأكد من حذف هذا الكوبون؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this coupon? This action cannot be undone.'}</p>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>إلغاء</Button>
-          <Button variant="danger" onClick={() => deleteConfirm && handleDeleteCoupon(deleteConfirm)} iconLeft={<Trash2 size={14} />}>حذف</Button>
+          <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
+          <Button variant="danger" onClick={() => deleteConfirm && handleDeleteCoupon(deleteConfirm)} iconLeft={<Trash2 size={14} />}>{isAr ? 'حذف' : 'Delete'}</Button>
         </ModalFooter>
       </Modal>
     </div>

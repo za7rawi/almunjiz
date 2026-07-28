@@ -18,6 +18,7 @@ import {
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguageStore } from '@/store/language-store';
 
 interface FormErrors {
   name?: string;
@@ -61,6 +62,8 @@ export default function RegisterPage() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const { register, loginWithGoogle } = useAuthStore();
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -91,20 +94,20 @@ export default function RegisterPage() {
             redirect: false,
           });
           if (signInResult?.error) {
-            setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' });
+            setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Failed to create login session. Please try again' });
             useAuthStore.setState({ user: null, isAuthenticated: false });
             return;
           }
-          router.push(result.redirect === '/admin' ? '/admin' : '/');
+          router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
         } else {
-          setErrors({ general: result.message || 'فشل التسجيل بـ Google' });
+          setErrors({ general: result.message || (isAr ? 'فشل التسجيل بـ Google' : 'Google registration failed') });
         }
       } catch {
-        setErrors({ general: 'حدث خطأ أثناء التواصل مع Google' });
+        setErrors({ general: isAr ? 'حدث خطأ أثناء التواصل مع Google' : 'An error occurred communicating with Google' });
       }
       setGoogleLoading(false);
     },
-    [loginWithGoogle, router]
+    [loginWithGoogle, router, redirectTo, isAr]
   );
 
   const handleGoogleSignup = () => {
@@ -118,31 +121,31 @@ export default function RegisterPage() {
       window.google.accounts.id.prompt((n) => {
         if (n.isNotDisplayed() || n.isSkippedMoment()) {
           setGoogleLoading(false);
-          window.location.href = '/api/auth/google/redirect?redirect=/';
+          window.location.href = `/api/auth/google/redirect?redirect=${encodeURIComponent(redirectTo)}`;
         }
       });
     } else {
-      window.location.href = '/api/auth/google/redirect?redirect=/';
+      window.location.href = `/api/auth/google/redirect?redirect=${encodeURIComponent(redirectTo)}`;
     }
   };
 
   const validate = (field: string, value: string): string => {
     switch (field) {
       case 'name':
-        if (!value) return 'الاسم مطلوب';
-        if (value.trim().length < 3) return 'الاسم يجب أن يكون 3 أحرف على الأقل';
+        if (!value) return isAr ? 'الاسم مطلوب' : 'Name is required';
+        if (value.trim().length < 3) return isAr ? 'الاسم يجب أن يكون 3 أحرف على الأقل' : 'Name must be at least 3 characters';
         return '';
       case 'email':
-        if (!value) return 'البريد الإلكتروني مطلوب';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'البريد الإلكتروني غير صحيح';
+        if (!value) return isAr ? 'البريد الإلكتروني مطلوب' : 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return isAr ? 'البريد الإلكتروني غير صحيح' : 'Invalid email address';
         return '';
       case 'password':
-        if (!value) return 'كلمة المرور مطلوبة';
-        if (value.length < 8) return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+        if (!value) return isAr ? 'كلمة المرور مطلوبة' : 'Password is required';
+        if (value.length < 8) return isAr ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' : 'Password must be at least 8 characters';
         return '';
       case 'confirmPassword':
-        if (!value) return 'تأكيد كلمة المرور مطلوب';
-        if (value !== formData.password) return 'كلمتا المرور غير متطابقتين';
+        if (!value) return isAr ? 'تأكيد كلمة المرور مطلوب' : 'Password confirmation is required';
+        if (value !== formData.password) return isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match';
         return '';
       default:
         return '';
@@ -171,10 +174,10 @@ export default function RegisterPage() {
     if (/[0-9]/.test(pwd)) level++;
     if (/[^A-Za-z0-9]/.test(pwd)) level++;
 
-    if (level <= 1) return { level, label: 'ضعيفة', color: 'bg-red-500' };
-    if (level === 2) return { level, label: 'متوسطة', color: 'bg-yellow-500' };
-    if (level === 3) return { level, label: 'جيدة', color: 'bg-blue-500' };
-    return { level, label: 'قوية', color: 'bg-emerald-500' };
+    if (level <= 1) return { level, label: isAr ? 'ضعيفة' : 'Weak', color: 'bg-red-500' };
+    if (level === 2) return { level, label: isAr ? 'متوسطة' : 'Medium', color: 'bg-yellow-500' };
+    if (level === 3) return { level, label: isAr ? 'جيدة' : 'Good', color: 'bg-blue-500' };
+    return { level, label: isAr ? 'قوية' : 'Strong', color: 'bg-emerald-500' };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -190,7 +193,7 @@ export default function RegisterPage() {
 
     if (Object.values(newErrors).some(Boolean)) return;
     if (!agreeTerms) {
-      setErrors((prev) => ({ ...prev, general: 'يجب الموافقة على الشروط والأحكام' }));
+      setErrors((prev) => ({ ...prev, general: isAr ? 'يجب الموافقة على الشروط والأحكام' : 'You must agree to the Terms and Conditions' }));
       return;
     }
 
@@ -216,8 +219,8 @@ export default function RegisterPage() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="text-center mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">إنشاء حساب جديد</h2>
-        <p className="text-white/50 text-sm">أدخل بياناتك لإنشاء حسابك</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'إنشاء حساب جديد' : 'Create Account'}</h2>
+        <p className="text-white/50 text-sm">{isAr ? 'أدخل بياناتك لإنشاء حسابك' : 'Enter your details to create your account'}</p>
       </motion.div>
 
       <AnimatePresence>
@@ -237,7 +240,7 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Name */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-2">الاسم الكامل</label>
+          <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'الاسم الكامل' : 'Full Name'}</label>
           <div className="relative group">
             <User size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
@@ -269,7 +272,7 @@ export default function RegisterPage() {
 
         {/* Email */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-2">البريد الإلكتروني</label>
+          <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
           <div className="relative group">
             <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
@@ -302,7 +305,7 @@ export default function RegisterPage() {
 
         {/* Password */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-2">كلمة المرور</label>
+          <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'كلمة المرور' : 'Password'}</label>
           <div className="relative group">
             <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
@@ -342,7 +345,7 @@ export default function RegisterPage() {
 
         {/* Confirm Password */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-white/70 mb-2">تأكيد كلمة المرور</label>
+          <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'تأكيد كلمة المرور' : 'Confirm Password'}</label>
           <div className="relative group">
             <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
@@ -380,10 +383,10 @@ export default function RegisterPage() {
             </div>
           </button>
           <p className="text-xs text-white/40 leading-relaxed">
-            أوافق على{' '}
-            <Link href="/terms" className="text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">الشروط والأحكام</Link>
-            {' '}و{' '}
-            <Link href="/privacy" className="text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">سياسة الخصوصية</Link>
+            {isAr ? 'أوافق على' : 'I agree to the'}{' '}
+            <Link href="/terms" className="text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">{isAr ? 'الشروط والأحكام' : 'Terms and Conditions'}</Link>
+            {' '}{isAr ? 'و' : 'and'}{' '}
+            <Link href="/privacy" className="text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</Link>
           </p>
         </motion.div>
 
@@ -398,7 +401,7 @@ export default function RegisterPage() {
             iconLeft={!loading ? <UserPlus size={18} /> : undefined}
             className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 hover:shadow-2xl hover:shadow-[#2580eb]/30 transition-all duration-300"
           >
-            إنشاء الحساب
+            {isAr ? 'إنشاء الحساب' : 'Create Account'}
           </Button>
         </motion.div>
       </form>
@@ -409,7 +412,7 @@ export default function RegisterPage() {
           <div className="w-full border-t border-white/[0.08]" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-transparent px-4 text-xs text-white/30 font-medium">أو</span>
+          <span className="bg-transparent px-4 text-xs text-white/30 font-medium">{isAr ? 'أو' : 'or'}</span>
         </div>
       </motion.div>
 
@@ -424,16 +427,16 @@ export default function RegisterPage() {
           className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm font-medium transition-all duration-200 hover:border-white/[0.15] disabled:opacity-50 shadow-lg shadow-black/10"
         >
           {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
-          التسجيل بـ Google
+          {isAr ? 'التسجيل بـ Google' : 'Sign up with Google'}
         </motion.button>
       </motion.div>
 
       {/* Login link */}
       <motion.div variants={itemVariants} className="mt-6 text-center">
         <p className="text-sm text-white/40">
-          لديك حساب بالفعل؟{' '}
+          {isAr ? 'لديك حساب بالفعل؟' : 'Already have an account?'}{' '}
           <Link href="/login" className="text-[#2580eb] hover:text-[#2580eb]/80 font-semibold transition-colors">
-            سجّل الدخول
+            {isAr ? 'سجّل الدخول' : 'Sign in'}
           </Link>
         </p>
       </motion.div>

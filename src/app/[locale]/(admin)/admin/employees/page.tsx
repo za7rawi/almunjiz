@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
 import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
 type RoleFilter = 'ALL' | 'admin' | 'manager' | 'employee' | 'support' | 'accountant';
@@ -43,6 +44,7 @@ interface ApiUser {
 
 export default function EmployeesPage() {
   const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [activeRole, setActiveRole] = useState<RoleFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,13 +54,18 @@ export default function EmployeesPage() {
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formRole, setFormRole] = useState<string>('employee');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const fetchUsers = async () => {
     try {
       const res = await fetch('/api/users');
       const data = await res.json();
       if (data.success && data.data) setUsers(data.data);
-    } catch {}
+    } catch {
+      toast.error(isAr ? 'فشل تحميل الموظفين' : 'Failed to load employees');
+    }
   };
 
   useEffect(() => { fetchUsers(); const interval = setInterval(fetchUsers, 30000); return () => clearInterval(interval); }, []);
@@ -95,11 +102,16 @@ export default function EmployeesPage() {
       const matchesRole = activeRole === 'ALL' || e.role === activeRole;
       const matchesSearch =
         !searchQuery ||
-        e.name.includes(searchQuery) ||
+        e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.email.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesRole && matchesSearch;
     });
   }, [activeRole, searchQuery, employeesList]);
+
+  useEffect(() => { setCurrentPage(1); }, [activeRole, searchQuery]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const removeEmployee = async (id: string) => {
     try {
@@ -108,21 +120,29 @@ export default function EmployeesPage() {
       if (data.success) {
         setUsers((prev) => prev.filter((u) => u.id !== id));
       }
-    } catch {}
+    } catch {
+      toast.error(isAr ? 'فشل حذف الموظف' : 'Failed to delete employee');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    await removeEmployee(deleteId);
+    setDeleteId(null);
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={language === 'ar' ? 'إدارة الموظفين' : 'Manage Employees'}
-        subtitle={language === 'ar' ? 'إدارة حسابات وصلاحيات الموظفين' : 'Manage employee accounts and permissions'}
+        title={isAr ? 'إدارة الموظفين' : 'Manage Employees'}
+        subtitle={isAr ? 'إدارة حسابات وصلاحيات الموظفين' : 'Manage employee accounts and permissions'}
         breadcrumbs={[
-          { label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
-          { label: language === 'ar' ? 'الموظفين' : 'Employees' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'الموظفين' : 'Employees' },
         ]}
         actions={
           <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={() => { setFormName(''); setFormEmail(''); setFormRole('employee'); setShowAddModal(true); }}>
-            {language === 'ar' ? 'إضافة موظف' : 'Add Employee'}
+            {isAr ? 'إضافة موظف' : 'Add Employee'}
           </Button>
         }
       />
@@ -134,7 +154,7 @@ export default function EmployeesPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={language === 'ar' ? 'بحث بالاسم أو البريد...' : 'Search by name or email...'}
+            placeholder={isAr ? 'بحث بالاسم أو البريد...' : 'Search by name or email...'}
             className={cn(
               'w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200',
               'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10',
@@ -159,7 +179,7 @@ export default function EmployeesPage() {
                 : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10',
             )}
           >
-            {language === 'ar' ? tab.label : tab.labelEn}
+            {isAr ? tab.label : tab.labelEn}
             <span className="text-xs opacity-60">({tab.count})</span>
           </motion.button>
         ))}
@@ -171,14 +191,14 @@ export default function EmployeesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
-                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'الموظف' : 'Employee'}</th>
-                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden md:table-cell">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</th>
-                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'الدور' : 'Role'}</th>
-                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'إجراءات' : 'Actions'}</th>
+                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الموظف' : 'Employee'}</th>
+                  <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden md:table-cell">{isAr ? 'البريد الإلكتروني' : 'Email'}</th>
+                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الدور' : 'Role'}</th>
+                  <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'إجراءات' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((emp, i) => (
+                {paginatedData.map((emp, i) => (
                   <motion.tr key={emp.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }} className="border-b border-slate-50 dark:border-white/5 last:border-0 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
@@ -187,11 +207,11 @@ export default function EmployeesPage() {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-slate-600 dark:text-slate-300 hidden md:table-cell">{emp.email}</td>
-                    <td className="py-3 px-4 text-center"><Badge variant={roleConfig[emp.role]?.variant || 'secondary'} size="sm">{language === 'ar' ? roleConfig[emp.role]?.label : roleConfig[emp.role]?.labelEn}</Badge></td>
+                    <td className="py-3 px-4 text-center"><Badge variant={roleConfig[emp.role]?.variant || 'secondary'} size="sm">{isAr ? roleConfig[emp.role]?.label : roleConfig[emp.role]?.labelEn}</Badge></td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-1">
                         <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => { setEditEmployee(emp); setFormName(emp.name); setFormEmail(emp.email); setFormRole(emp.role); }} className="p-2 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors"><Edit size={16} /></motion.button>
-                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => removeEmployee(emp.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"><Trash2 size={16} /></motion.button>
+                        <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setDeleteId(emp.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"><Trash2 size={16} /></motion.button>
                       </div>
                     </td>
                   </motion.tr>
@@ -202,7 +222,18 @@ export default function EmployeesPage() {
           {filtered.length === 0 && (
             <div className="py-12 text-center text-slate-400">
               <UserCog size={48} className="mx-auto mb-3 opacity-30" />
-              <p>{language === 'ar' ? 'لا يوجد موظفين بعد' : 'No employees yet'}</p>
+              <p>{isAr ? 'لا يوجد موظفين بعد' : 'No employees yet'}</p>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-white/5">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+              </span>
+              <div className="flex gap-2">
+                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 dark:text-slate-300">{isAr ? 'السابق' : 'Previous'}</button>
+                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 dark:text-slate-300">{isAr ? 'التالي' : 'Next'}</button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -211,31 +242,31 @@ export default function EmployeesPage() {
       <Modal open={showAddModal || !!editEmployee} onClose={() => { setShowAddModal(false); setEditEmployee(null); }} size="md">
         <ModalHeader>
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editEmployee ? (language === 'ar' ? 'تعديل موظف' : 'Edit Employee') : (language === 'ar' ? 'إضافة موظف جديد' : 'Add New Employee')}
+            {editEmployee ? (isAr ? 'تعديل موظف' : 'Edit Employee') : (isAr ? 'إضافة موظف جديد' : 'Add New Employee')}
           </h3>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{language === 'ar' ? 'الاسم' : 'Name'}</label>
-              <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={language === 'ar' ? 'أدخل اسم الموظف' : 'Enter employee name'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'الاسم' : 'Name'}</label>
+              <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={isAr ? 'أدخل اسم الموظف' : 'Enter employee name'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
-              <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder={language === 'ar' ? 'أدخل البريد الإلكتروني' : 'Enter email address'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
+              <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder={isAr ? 'أدخل البريد الإلكتروني' : 'Enter email address'} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{language === 'ar' ? 'الدور' : 'Role'}</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'الدور' : 'Role'}</label>
               <select value={formRole} onChange={(e) => setFormRole(e.target.value)} className={cn('w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')}>
                 {Object.entries(roleConfig).map(([key, config]) => (
-                  <option key={key} value={key}>{language === 'ar' ? config.label : config.labelEn}</option>
+                  <option key={key} value={key}>{isAr ? config.label : config.labelEn}</option>
                 ))}
               </select>
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="ghost" onClick={() => { setShowAddModal(false); setEditEmployee(null); }}>{language === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
+          <Button variant="ghost" onClick={() => { setShowAddModal(false); setEditEmployee(null); }}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
           <Button onClick={async () => {
             try {
               if (editEmployee) {
@@ -259,10 +290,25 @@ export default function EmployeesPage() {
                   setUsers((prev) => [data.data, ...prev]);
                 }
               }
-            } catch {}
+            } catch {
+              toast.error(isAr ? 'فشل حفظ الموظف' : 'Failed to save employee');
+            }
             setShowAddModal(false);
             setEditEmployee(null);
-          }}>{editEmployee ? (language === 'ar' ? 'حفظ التعديلات' : 'Save Changes') : (language === 'ar' ? 'إضافة' : 'Add')}</Button>
+          }}>{editEmployee ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة' : 'Add')}</Button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal open={!!deleteId} onClose={() => setDeleteId(null)} size="sm">
+        <ModalHeader>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'تأكيد الحذف' : 'Confirm Delete'}</h3>
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-slate-600 dark:text-slate-300">{isAr ? 'هل أنت متأكد من حذف هذا الموظف؟' : 'Are you sure you want to delete this employee?'}</p>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setDeleteId(null)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
+          <Button variant="danger" onClick={handleDelete}>{isAr ? 'حذف' : 'Delete'}</Button>
         </ModalFooter>
       </Modal>
     </div>

@@ -36,7 +36,7 @@ export default function BlogPage() {
       : blogsData.filter((post) => post.category === activeCategory);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
       {/* Hero */}
       <section className="relative py-20 md:py-28 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
@@ -49,14 +49,14 @@ export default function BlogPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2580eb]/10 border border-[#2580eb]/20 text-[#2580eb] text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2580eb]/10 border border-[#2580eb]/20 text-[#2580eb] text-sm font-medium mb-6 dark:bg-blue-900/20">
               <FileText size={16} />
               {isAr ? 'مدونة المنجز' : 'Al-Munjiz Blog'}
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white mb-4">
               {isAr ? 'المدونة' : 'Blog'}
             </h1>
-            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+            <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl mx-auto">
               {isAr ? 'اقرأ أحدث المقالات والنصائح المتعلقة بالخدمات الإلكترونية والسياحة' : 'Read the latest articles and tips about electronic services and travel'}
             </p>
           </motion.div>
@@ -79,7 +79,7 @@ export default function BlogPage() {
               className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 cursor-pointer ${
                 activeCategory === cat.id
                   ? 'bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white shadow-lg shadow-[#2580eb]/25'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-[#2580eb]/30 hover:text-[#2580eb]'
+                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-[#2580eb]/30 hover:text-[#2580eb] hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -108,7 +108,7 @@ export default function BlogPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 whileHover={{ y: -4, transition: { duration: 0.3 } }}
-                className="group rounded-2xl overflow-hidden bg-white border border-slate-100 hover:shadow-xl hover:shadow-black/5 transition-all duration-500"
+                className="group rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:shadow-black/5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all duration-500"
               >
                 <div className={`h-48 bg-gradient-to-br ${post.gradient} relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-black/10" />
@@ -123,7 +123,7 @@ export default function BlogPage() {
                   </div>
                 </div>
                 <div className="p-6">
-                  <div className="flex items-center gap-3 text-xs text-slate-400 mb-3">
+                  <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 mb-3">
                     <span className="flex items-center gap-1">
                       <Calendar size={12} />
                       {new Date(post.date).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -133,14 +133,14 @@ export default function BlogPage() {
                       {post.readTime}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-[#2580eb] transition-colors">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-[#2580eb] transition-colors">
                     {isAr ? post.title : post.titleEn}
                   </h3>
-                  <p className="text-sm text-slate-500 line-clamp-2 mb-4">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">
                     {isAr ? post.excerpt : post.excerptEn}
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
                       <User size={12} />
                       {isAr ? post.author : post.authorEn}
                     </span>
@@ -160,8 +160,8 @@ export default function BlogPage() {
 
         {filteredPosts.length === 0 && (
           <div className="text-center py-20">
-            <FileText size={48} className="text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 text-lg">{isAr ? 'لا توجد مقالات في هذا التصنيف' : 'No articles in this category'}</p>
+            <FileText size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-500 dark:text-slate-400 text-lg">{isAr ? 'لا توجد مقالات في هذا التصنيف' : 'No articles in this category'}</p>
           </div>
         )}
       </section>

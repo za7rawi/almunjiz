@@ -283,7 +283,7 @@ export default function HomePage() {
       </section>
 
       {/* ─── SECTION 2: SERVICES SEARCH BAR ─── */}
-      <section className="py-12 bg-white border-b border-slate-100">
+      <section className="py-12 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp}>
             <div className="relative">
@@ -293,7 +293,7 @@ export default function HomePage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isAr ? 'ابحث عن الخدمة التي تحتاجها...' : 'Search for the service you need...'}
-                className="w-full ps-13 pe-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 text-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2580eb]/30 focus:border-[#2580eb] focus:bg-white shadow-sm transition-all duration-300"
+                className="w-full ps-13 pe-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-lg placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2580eb]/30 focus:border-[#2580eb] focus:bg-white dark:focus:bg-slate-700 shadow-sm transition-all duration-300"
               />
             </div>
           </motion.div>
@@ -302,20 +302,20 @@ export default function HomePage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden"
+              className="mt-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden"
             >
               {filteredServices.slice(0, 6).map((service) => (
                 <Link
                   key={service.id}
                   href={`/services/${service.id}`}
-                  className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0"
+                  className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0"
                 >
                   <div className="w-10 h-10 rounded-lg bg-[#2580eb]/10 flex items-center justify-center shrink-0">
                     <Globe size={18} className="text-[#2580eb]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 truncate">{isAr ? service.name : service.nameEn}</p>
-                    <p className="text-sm text-slate-500 truncate">{isAr ? service.description : service.descriptionEn}</p>
+                    <p className="font-semibold text-slate-900 dark:text-white truncate">{isAr ? service.name : service.nameEn}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{isAr ? service.description : service.descriptionEn}</p>
                   </div>
                   <ArrowUpRight size={16} className="text-slate-400 shrink-0" />
                 </Link>
@@ -326,14 +326,14 @@ export default function HomePage() {
       </section>
 
       {/* ─── SECTION 3: MOST POPULAR SERVICES ─── */}
-      <section className="py-20 md:py-28 bg-white">
+      <section className="py-20 md:py-28 bg-white dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'الخدمات الأكثر طلباً' : 'Most Popular Services'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
               {isAr ? 'الخدمات الأكثر طلباً من عملائنا الكرام' : 'Our most requested services by our valued clients'}
             </p>
           </motion.div>
@@ -351,20 +351,20 @@ export default function HomePage() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                   whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                  className="group p-4 sm:p-6 rounded-2xl border border-slate-100 hover:border-transparent bg-white hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col"
+                  className="group p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-transparent bg-white dark:bg-slate-800 hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col"
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" style={{ border: `1px solid ${color}20` }} />
                   <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl ${iconBg} flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform duration-300`}>
                     <ServiceIcon size={20} className="sm:w-6 sm:h-6" style={{ color }} />
                   </div>
-                  <h3 className="text-sm sm:text-lg font-bold text-slate-900 mb-1 sm:mb-2 line-clamp-1">
+                  <h3 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white mb-1 sm:mb-2 line-clamp-1">
                     {isAr ? service.name : service.nameEn}
                   </h3>
-                  <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2 flex-1">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2 flex-1">
                     {isAr ? service.description : service.descriptionEn}
                   </p>
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <span className="text-[10px] sm:text-xs font-medium text-slate-400 bg-slate-100 px-2 sm:px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <span className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 sm:px-2.5 py-1 rounded-full flex items-center gap-1">
                       <Clock size={10} className="sm:w-3 sm:h-3" />
                       {isAr ? service.duration : service.durationEn}
                     </span>
@@ -394,14 +394,14 @@ export default function HomePage() {
       </section>
 
       {/* ─── SECTION 4: ALL SERVICES GRID ─── */}
-      <section className="py-20 md:py-28 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03]">
+      <section className="py-20 md:py-28 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'جميع خدماتنا' : 'All Our Services'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
               {isAr ? 'تصفح جميع فئات خدماتنا المتنوعة' : 'Browse all our diverse service categories'}
             </p>
           </motion.div>
@@ -416,13 +416,13 @@ export default function HomePage() {
                 transition={{ duration: 0.5, delay: i * 0.08 }}
                 whileHover={{ y: -4, transition: { duration: 0.3 } }}
               >
-                <Link href="/services" className="flex items-center gap-3 sm:gap-4 p-3 sm:p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-xl hover:shadow-black/5 hover:border-transparent transition-all duration-500 group">
+                <Link href="/services" className="flex items-center gap-3 sm:gap-4 p-3 sm:p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:shadow-black/5 hover:border-transparent transition-all duration-500 group">
                   <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl ${cat.bgColor} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                     <cat.icon size={18} className="sm:w-6 sm:h-6" style={{ color: cat.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm sm:text-lg font-bold text-slate-900 truncate">{isAr ? cat.titleAr : cat.titleEn}</h3>
-                    <p className="text-xs sm:text-sm text-slate-500">{cat.count} {isAr ? 'خدمات' : 'services'}</p>
+                    <h3 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white truncate">{isAr ? cat.titleAr : cat.titleEn}</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">{cat.count} {isAr ? 'خدمات' : 'services'}</p>
                   </div>
                   <Arrow size={16} className="text-slate-300 group-hover:text-[#2580eb] transition-colors shrink-0" />
                 </Link>
@@ -475,14 +475,14 @@ export default function HomePage() {
       </section>
 
       {/* ─── SECTION 6: HOW IT WORKS ─── */}
-      <section className="py-20 md:py-28 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03]">
+      <section className="py-20 md:py-28 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp} className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'كيف يعمل المنجز؟' : 'How Al-Munjiz Works?'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
               {isAr ? 'ثلاث خطوات بسيطة للحصول على خدماتك' : 'Three simple steps to get your services'}
             </p>
           </motion.div>
@@ -501,10 +501,10 @@ export default function HomePage() {
                 <div className="relative z-10 w-16 h-16 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-xl font-extrabold mx-auto mb-6 shadow-lg shadow-[#2580eb]/30">
                   {step.num}
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-3">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
                   {isAr ? step.titleAr : step.titleEn}
                 </h3>
-                <p className="text-slate-500 text-sm leading-relaxed">
+                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                   {isAr ? step.descAr : step.descEn}
                 </p>
               </motion.div>
@@ -594,10 +594,10 @@ export default function HomePage() {
       </section>
 
       {/* ─── SECTION 9: FAQ ─── */}
-      <section className="py-20 md:py-28 bg-white">
+      <section className="py-20 md:py-28 bg-white dark:bg-slate-900">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'الأسئلة الشائعة' : 'Frequently Asked Questions'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
@@ -611,13 +611,13 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: i * 0.08 }}
-                className="rounded-2xl border border-slate-200 overflow-hidden"
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
               >
                 <button
                   onClick={() => toggleFaq(i)}
-                  className="w-full flex items-center justify-between gap-4 p-5 text-start hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-between gap-4 p-5 text-start hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-white">
                     {isAr ? item.questionAr : item.questionEn}
                   </span>
                   <motion.div
@@ -637,7 +637,7 @@ export default function HomePage() {
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
                   className="overflow-hidden"
                 >
-                  <div className="px-5 pb-5 text-slate-500 text-sm leading-relaxed">
+                  <div className="px-5 pb-5 text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                     {isAr ? item.answerAr : item.answerEn}
                   </div>
                 </motion.div>
@@ -648,10 +648,10 @@ export default function HomePage() {
       </section>
 
       {/* ─── SECTION 10: BLOG PREVIEW ─── */}
-      <section className="py-20 md:py-28 bg-white">
+      <section className="py-20 md:py-28 bg-white dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'آخر المقالات' : 'Latest Articles'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
@@ -666,7 +666,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 whileHover={{ y: -4, transition: { duration: 0.3 } }}
-                className="group rounded-2xl overflow-hidden bg-white border border-slate-100 hover:shadow-xl hover:shadow-black/5 transition-all duration-500"
+                className="group rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:shadow-black/5 transition-all duration-500"
               >
                 <div className={`h-48 bg-gradient-to-br ${post.gradient} relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-black/10" />
@@ -675,14 +675,14 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="p-6">
-                  <div className="flex items-center gap-2 text-xs text-slate-400 mb-3">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mb-3">
                     <Calendar size={12} />
                     {new Date(post.date).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2 group-hover:text-[#2580eb] transition-colors">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-[#2580eb] transition-colors">
                     {isAr ? post.title : post.titleEn}
                   </h3>
-                  <p className="text-sm text-slate-500 line-clamp-2 mb-4">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">
                     {isAr ? post.excerpt : post.excerptEn}
                   </p>
                   <Link
@@ -700,14 +700,14 @@ export default function HomePage() {
       </section>
 
       {/* ─── SECTION 11: CONTACT CTA ─── */}
-      <section className="py-20 md:py-28 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03]">
+      <section className="py-20 md:py-28 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'تواصل معنا' : 'Contact Us'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">
               {isAr ? 'نحن هنا لمساعدتك. تواصل معنا بأي طريقة تناسبك.' : 'We are here to help you. Contact us in any way that suits you.'}
             </p>
           </motion.div>
@@ -718,13 +718,13 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0 }}
-              className="flex flex-col items-center p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-lg transition-all duration-500"
+              className="flex flex-col items-center p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-all duration-500"
             >
               <div className="w-14 h-14 rounded-xl bg-[#2580eb]/10 flex items-center justify-center mb-4">
                 <Phone size={24} className="text-[#2580eb]" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-1">{isAr ? 'الهاتف' : 'Phone'}</h3>
-              <p className="text-slate-500 text-sm" dir="ltr">+962791038472</p>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">{isAr ? 'الهاتف' : 'Phone'}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm" dir="ltr">+962791038472</p>
             </motion.div>
 
             <motion.div
@@ -732,13 +732,13 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex flex-col items-center p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-lg transition-all duration-500"
+              className="flex flex-col items-center p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-all duration-500"
             >
               <div className="w-14 h-14 rounded-xl bg-[#14b8a6]/10 flex items-center justify-center mb-4">
                 <Mail size={24} className="text-[#14b8a6]" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-1">{isAr ? 'البريد الإلكتروني' : 'Email'}</h3>
-              <p className="text-slate-500 text-sm" dir="ltr">info@almunjiz.com</p>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">{isAr ? 'البريد الإلكتروني' : 'Email'}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm" dir="ltr">info@almunjiz.com</p>
             </motion.div>
 
             <motion.div
@@ -746,13 +746,13 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex flex-col items-center p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-lg transition-all duration-500"
+              className="flex flex-col items-center p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-all duration-500"
             >
               <div className="w-14 h-14 rounded-xl bg-[#25A65E]/10 flex items-center justify-center mb-4">
                 <MessageCircle size={24} className="text-[#25A65E]" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-1">WhatsApp</h3>
-              <p className="text-slate-500 text-sm" dir="ltr">+962791038472</p>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">WhatsApp</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm" dir="ltr">+962791038472</p>
             </motion.div>
           </div>
 

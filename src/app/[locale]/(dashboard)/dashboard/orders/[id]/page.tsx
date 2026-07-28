@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { printInvoice } from '@/lib/print-invoice'
+import { useLanguageStore } from '@/store/language-store'
 
 function isImageFile(mt: string): boolean {
   return mt?.startsWith('image/') || false
@@ -44,24 +45,28 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-const statusConfig: Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'info' | 'danger' | 'secondary' }> = {
-  PENDING: { label: 'قيد الانتظار', variant: 'warning' },
-  UNDER_REVIEW: { label: 'قيد المراجعة', variant: 'info' },
-  WAITING_CLIENT: { label: 'بانتظار العميل', variant: 'secondary' },
-  IN_PROGRESS: { label: 'جار التنفيذ', variant: 'primary' },
-  COMPLETED: { label: 'مكتمل', variant: 'success' },
-  DELIVERED: { label: 'تم التسليم', variant: 'success' },
-  CANCELLED: { label: 'ملغي', variant: 'danger' },
+function getStatusConfig(isAr: boolean): Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'info' | 'danger' | 'secondary' }> {
+  return {
+    PENDING: { label: isAr ? 'قيد الانتظار' : 'Pending', variant: 'warning' as const },
+    UNDER_REVIEW: { label: isAr ? 'قيد المراجعة' : 'Under Review', variant: 'info' as const },
+    WAITING_CLIENT: { label: isAr ? 'بانتظار العميل' : 'Waiting for Client', variant: 'secondary' as const },
+    IN_PROGRESS: { label: isAr ? 'جار التنفيذ' : 'In Progress', variant: 'primary' as const },
+    COMPLETED: { label: isAr ? 'مكتمل' : 'Completed', variant: 'success' as const },
+    DELIVERED: { label: isAr ? 'تم التسليم' : 'Delivered', variant: 'success' as const },
+    CANCELLED: { label: isAr ? 'ملغي' : 'Cancelled', variant: 'danger' as const },
+  }
 }
 
-const fullTimelineSteps = [
-  { status: 'PENDING', label: 'تم استلام الطلب' },
-  { status: 'UNDER_REVIEW', label: 'قيد المراجعة' },
-  { status: 'WAITING_CLIENT', label: 'بانتظار العميل' },
-  { status: 'IN_PROGRESS', label: 'جار التنفيذ' },
-  { status: 'COMPLETED', label: 'تم الإنجاز' },
-  { status: 'DELIVERED', label: 'تم التسليم' },
-]
+function getFullTimelineSteps(isAr: boolean) {
+  return [
+    { status: 'PENDING', label: isAr ? 'تم استلام الطلب' : 'Order Received' },
+    { status: 'UNDER_REVIEW', label: isAr ? 'قيد المراجعة' : 'Under Review' },
+    { status: 'WAITING_CLIENT', label: isAr ? 'بانتظار العميل' : 'Waiting for Client' },
+    { status: 'IN_PROGRESS', label: isAr ? 'جار التنفيذ' : 'In Progress' },
+    { status: 'COMPLETED', label: isAr ? 'تم الإنجاز' : 'Completed' },
+    { status: 'DELIVERED', label: isAr ? 'تم التسليم' : 'Delivered' },
+  ]
+}
 
 const statusToStep: Record<string, number> = {
   PENDING: 0,
@@ -73,11 +78,13 @@ const statusToStep: Record<string, number> = {
   CANCELLED: -1,
 }
 
-const paymentStatusConfig: Record<string, { label: string; variant: 'warning' | 'success' | 'danger' | 'info' }> = {
-  PAID: { label: 'مدفوع', variant: 'success' },
-  PENDING: { label: 'بانتظار الدفع', variant: 'warning' },
-  FAILED: { label: 'فشل الدفع', variant: 'danger' },
-  PARTIALLY_PAID: { label: 'مدفوع جزئياً', variant: 'info' },
+function getPaymentStatusConfig(isAr: boolean): Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'danger' | 'info' }> {
+  return {
+    PAID: { label: isAr ? 'مدفوع' : 'Paid', variant: 'success' as const },
+    PENDING: { label: isAr ? 'بانتظار الدفع' : 'Pending Payment', variant: 'warning' as const },
+    FAILED: { label: isAr ? 'فشل الدفع' : 'Payment Failed', variant: 'danger' as const },
+    PARTIALLY_PAID: { label: isAr ? 'مدفوع جزئياً' : 'Partially Paid', variant: 'info' as const },
+  }
 }
 
 const paymentMethodIcons: Record<string, string> = {
@@ -90,11 +97,13 @@ const paymentMethodIcons: Record<string, string> = {
   MADA: '💳',
 }
 
-const paymentStatusBadgeConfig: Record<string, { label: string; variant: 'warning' | 'success' | 'danger' | 'info' }> = {
-  COMPLETED: { label: 'مكتمل', variant: 'success' },
-  PENDING: { label: 'بانتظار', variant: 'warning' },
-  FAILED: { label: 'فشل', variant: 'danger' },
-  REFUNDED: { label: 'مسترجع', variant: 'info' },
+function getPaymentStatusBadgeConfig(isAr: boolean): Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'danger' | 'info' }> {
+  return {
+    COMPLETED: { label: isAr ? 'مكتمل' : 'Completed', variant: 'success' as const },
+    PENDING: { label: isAr ? 'بانتظار' : 'Pending', variant: 'warning' as const },
+    FAILED: { label: isAr ? 'فشل' : 'Failed', variant: 'danger' as const },
+    REFUNDED: { label: isAr ? 'مسترجع' : 'Refunded', variant: 'info' as const },
+  }
 }
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
@@ -103,6 +112,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [order, setOrder] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+  const { language } = useLanguageStore()
+  const isAr = language === 'ar'
+
+  const statusConfig = getStatusConfig(isAr)
+  const fullTimelineSteps = getFullTimelineSteps(isAr)
+  const paymentStatusConfig = getPaymentStatusConfig(isAr)
+  const paymentStatusBadgeConfig = getPaymentStatusBadgeConfig(isAr)
 
   useEffect(() => {
     fetch(`/api/orders/${id}`, { cache: 'no-store' })
@@ -129,10 +145,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="text-center py-20">
         <Package size={48} className="mx-auto text-slate-300 mb-3" />
-        <p className="text-slate-500 dark:text-slate-400 mb-4">الطلب غير موجود</p>
+        <p className="text-slate-500 dark:text-slate-400 mb-4">{isAr ? 'الطلب غير موجود' : 'Order not found'}</p>
         <Link href="/dashboard/orders">
           <Button variant="secondary" size="sm">
-            <ArrowRight size={16} /> العودة للطلبات
+            <ArrowRight size={16} /> {isAr ? 'العودة للطلبات' : 'Back to Orders'}
           </Button>
         </Link>
       </div>
@@ -170,11 +186,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`الطلب #${order.orderNumber}`}
+        title={`${isAr ? 'الطلب #' : 'Order #'}${order.orderNumber}`}
         subtitle={serviceName}
         breadcrumbs={[
-          { label: 'الرئيسية', href: '/dashboard' },
-          { label: 'الطلبات', href: '/dashboard/orders' },
+          { label: isAr ? 'الرئيسية' : 'Home', href: '/dashboard' },
+          { label: isAr ? 'الطلبات' : 'Orders', href: '/dashboard/orders' },
           { label: order.orderNumber as string },
         ]}
         actions={
@@ -182,7 +198,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             href="/dashboard/invoices"
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#7c3aed]/10 text-[#7c3aed] text-sm font-medium hover:bg-[#7c3aed]/20 transition-colors"
           >
-            <FileText size={16} /> الفاتورة
+            <FileText size={16} /> {isAr ? 'الفاتورة' : 'Invoice'}
           </Link>
         }
       />
@@ -191,12 +207,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">تسلسل الطلب</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'تسلسل الطلب' : 'Order Timeline'}</h3>
             </CardHeader>
             <CardContent>
               <div className="mb-6">
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-slate-500 dark:text-slate-400">التقدم</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'التقدم' : 'Progress'}</span>
                   <span className="font-bold text-[#2580eb]">{progressPercent}%</span>
                 </div>
                 <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -249,7 +265,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           {step.label}
                           {isCurrent && (
                             <Badge variant="primary" size="sm" className="ms-2">
-                              الحالية
+                              {isAr ? 'الحالية' : 'Current'}
                             </Badge>
                           )}
                         </p>
@@ -264,7 +280,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           {timeline.length > 0 && (
             <Card>
               <CardHeader>
-                <h3 className="font-bold text-slate-900 dark:text-white">سجل التحديثات</h3>
+                <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'سجل التحديثات' : 'Update History'}</h3>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -289,7 +305,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           </div>
                           <p className="text-sm text-slate-600">{entry.description}</p>
                           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                            {new Date(entry.createdAt).toLocaleString('ar-SA', {
+                            {new Date(entry.createdAt).toLocaleString(isAr ? 'ar-SA' : 'en-US', {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',
@@ -308,13 +324,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">المرفقات</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'المرفقات' : 'Attachments'}</h3>
             </CardHeader>
             <CardContent>
               {fileAttachments.length === 0 ? (
                 <div className="text-center py-8">
                   <FolderOpen size={40} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm text-slate-400 dark:text-slate-500">لا توجد ملفات مرفقة</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">{isAr ? 'لا توجد ملفات مرفقة' : 'No attachments'}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -375,7 +391,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                               onClick={(e) => e.stopPropagation()}
                               className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-[#2580eb] bg-[#2580eb]/10 rounded-lg hover:bg-[#2580eb]/20 transition-colors"
                             >
-                              <ExternalLink size={12} /> عرض
+                              <ExternalLink size={12} /> {isAr ? 'عرض' : 'View'}
                             </a>
                             <a
                               href={`/api/files/${file.id}`}
@@ -383,7 +399,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                               onClick={(e) => e.stopPropagation()}
                               className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-[#14b8a6] bg-[#14b8a6]/10 rounded-lg hover:bg-[#14b8a6]/20 transition-colors"
                             >
-                              <Download size={12} /> تحميل
+                              <Download size={12} /> {isAr ? 'تحميل' : 'Download'}
                             </a>
                           </div>
                         </motion.div>
@@ -412,7 +428,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           onClick={(e) => e.stopPropagation()}
                           className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-[#7c3aed] bg-[#7c3aed]/10 rounded-lg hover:bg-[#7c3aed]/20 transition-colors"
                         >
-                          <Download size={12} /> تحميل
+                          <Download size={12} /> {isAr ? 'تحميل' : 'Download'}
                         </a>
                       </motion.div>
                     )
@@ -424,13 +440,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">سجل المدفوعات</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'سجل المدفوعات' : 'Payment History'}</h3>
             </CardHeader>
             <CardContent>
               {payments.length === 0 ? (
                 <div className="text-center py-8">
                   <CreditCard size={40} className="mx-auto text-slate-300 mb-2" />
-                  <p className="text-sm text-slate-400 dark:text-slate-500">لا توجد مدفوعات مسجلة</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">{isAr ? 'لا توجد مدفوعات مسجلة' : 'No payments recorded'}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -451,7 +467,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-sm font-medium text-slate-900 dark:text-white">{Number(payment.amount).toLocaleString()} ر.س</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">{Number(payment.amount).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</p>
                             <Badge variant={pStatusCfg.variant} size="sm">
                               {pStatusCfg.label}
                             </Badge>
@@ -467,7 +483,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           </div>
                         </div>
                         <p className="text-[11px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                          {new Date(payment.createdAt).toLocaleString('ar-SA', {
+                          {new Date(payment.createdAt).toLocaleString(isAr ? 'ar-SA' : 'en-US', {
                             month: 'short',
                             day: 'numeric',
                             hour: '2-digit',
@@ -493,15 +509,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">رقم الطلب</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'رقم الطلب' : 'Order ID'}</span>
                   <span className="font-medium text-slate-900 dark:text-white">{order.orderNumber as string}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">الخدمة</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'الخدمة' : 'Service'}</span>
                   <span className="font-medium text-slate-900 dark:text-white">{serviceName}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">حالة الدفع</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'حالة الدفع' : 'Payment Status'}</span>
                   <Badge variant={paymentStatusCfg.variant} size="sm">
                     {paymentStatusCfg.label}
                   </Badge>
@@ -512,42 +528,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">تفاصيل الفاتورة</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'تفاصيل الفاتورة' : 'Invoice Details'}</h3>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">المبلغ</span>
-                  <span className="text-slate-700 dark:text-slate-300">{Number(order.amount as number || 0).toLocaleString()} ر.س</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'المبلغ' : 'Amount'}</span>
+                  <span className="text-slate-700 dark:text-slate-300">{Number(order.amount as number || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</span>
                 </div>
                 {Number(order.discount as number || 0) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 dark:text-slate-400">الخصم</span>
-                    <span className="text-emerald-600">-{Number(order.discount as number || 0).toLocaleString()} ر.س</span>
+                    <span className="text-slate-500 dark:text-slate-400">{isAr ? 'الخصم' : 'Discount'}</span>
+                    <span className="text-emerald-600">-{Number(order.discount as number || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</span>
                   </div>
                 )}
                 {Number(order.tax as number || 0) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 dark:text-slate-400">الضريبة</span>
-                    <span className="text-slate-700 dark:text-slate-300">{Number(order.tax as number || 0).toLocaleString()} ر.س</span>
+                    <span className="text-slate-500 dark:text-slate-400">{isAr ? 'الضريبة' : 'Tax'}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{Number(order.tax as number || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</span>
                   </div>
                 )}
                 <div className="h-px bg-slate-200 dark:bg-slate-700 my-2" />
                 <div className="flex justify-between text-sm">
-                  <span className="font-bold text-slate-900 dark:text-white">الإجمالي</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{Number(order.total as number || 0).toLocaleString()} ر.س</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{isAr ? 'الإجمالي' : 'Total'}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{Number(order.total as number || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</span>
                 </div>
               </div>
               <div className="mt-4">
                 <Button variant="secondary" fullWidth iconLeft={<FileText size={16} />} onClick={handlePrintInvoice}>
-                  تحميل الفاتورة
+                  {isAr ? 'تحميل الفاتورة' : 'Download Invoice'}
                 </Button>
               </div>
             </CardContent>
           </Card>
 
           <Button variant="secondary" fullWidth iconLeft={<RotateCcw size={16} />} onClick={handleReorder}>
-            إعادة الطلب
+            {isAr ? 'إعادة الطلب' : 'Reorder'}
           </Button>
 
           <a
@@ -556,7 +572,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             rel="noopener noreferrer"
           >
             <Button variant="success" fullWidth iconLeft={<MessageCircle size={18} />}>
-              تواصل مع الدعم
+              {isAr ? 'تواصل مع الدعم' : 'Contact Support'}
             </Button>
           </a>
         </div>
@@ -578,15 +594,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               className="relative max-w-4xl max-h-[90vh] w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                onClick={() => setLightboxUrl(null)}
-                className="absolute -top-3 -end-3 z-10 w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              >
-                <X size={20} className="text-slate-600" />
-              </button>
+              <Button variant="secondary" size="sm" onClick={() => setLightboxUrl(null)} className="absolute -top-3 -end-3 z-10 rounded-full w-10 h-10 p-0">
+                <X size={20} />
+              </Button>
               <img
                 src={lightboxUrl}
-                alt="معاينة"
+                alt={isAr ? 'معاينة' : 'Preview'}
                 className="w-full h-full object-contain rounded-xl"
               />
               <div className="flex justify-center mt-3">
@@ -596,7 +609,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 dark:bg-slate-800/90 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
                 >
-                  <ExternalLink size={14} /> فتح في تبويب جديد
+                  <ExternalLink size={14} /> {isAr ? 'فتح في تبويب جديد' : 'Open in new tab'}
                 </a>
               </div>
             </motion.div>

@@ -22,6 +22,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 
 interface ServiceData {
   id: string;
@@ -55,17 +57,17 @@ interface ServiceData {
 }
 
 const categories = [
-  { value: 'VISAS', label: 'التأشيرات' },
-  { value: 'CONTRACTS', label: 'العقود' },
-  { value: 'VEHICLES', label: 'المركبات' },
-  { value: 'TRAVEL', label: 'السفر' },
-  { value: 'HOTELS', label: 'الفنادق' },
-  { value: 'BUSINESS', label: 'الأعمال' },
-  { value: 'GOVERNMENT', label: 'الحكومية' },
-  { value: 'ELECTRONIC', label: 'الإلكترونية' },
-  { value: 'UNIVERSITIES', label: 'الجامعات' },
-  { value: 'CONSULTATIONS', label: 'الاستشارات' },
-  { value: 'OTHER', label: 'أخرى' },
+  { value: 'VISAS', label: 'التأشيرات', labelEn: 'Visas' },
+  { value: 'CONTRACTS', label: 'العقود', labelEn: 'Contracts' },
+  { value: 'VEHICLES', label: 'المركبات', labelEn: 'Vehicles' },
+  { value: 'TRAVEL', label: 'السفر', labelEn: 'Travel' },
+  { value: 'HOTELS', label: 'الفنادق', labelEn: 'Hotels' },
+  { value: 'BUSINESS', label: 'الأعمال', labelEn: 'Business' },
+  { value: 'GOVERNMENT', label: 'الحكومية', labelEn: 'Government' },
+  { value: 'ELECTRONIC', label: 'الإلكترونية', labelEn: 'Electronic' },
+  { value: 'UNIVERSITIES', label: 'الجامعات', labelEn: 'Universities' },
+  { value: 'CONSULTATIONS', label: 'الاستشارات', labelEn: 'Consultations' },
+  { value: 'OTHER', label: 'أخرى', labelEn: 'Other' },
 ];
 
 const emptyService: ServiceData = {
@@ -161,9 +163,11 @@ function ListItemEditor({
 function StepEditor({
   steps,
   onChange,
+  isAr,
 }: {
   steps: { title: string; description: string; icon: string }[];
   onChange: (steps: { title: string; description: string; icon: string }[]) => void;
+  isAr: boolean;
 }) {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -181,19 +185,19 @@ function StepEditor({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="عنوان الخطوة"
+          placeholder={isAr ? 'عنوان الخطوة' : 'Step title'}
           className={inputClass}
         />
         <input
           type="text"
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
-          placeholder="وصف الخطوة"
+          placeholder={isAr ? 'وصف الخطوة' : 'Step description'}
           className={inputClass}
         />
       </div>
       <Button size="sm" onClick={addStep} type="button" variant="secondary">
-        <Plus size={14} /> إضافة خطوة
+        <Plus size={14} /> {isAr ? 'إضافة خطوة' : 'Add step'}
       </Button>
       <div className="space-y-2">
         {steps.map((step, i) => (
@@ -225,9 +229,11 @@ function StepEditor({
 function FAQEditor({
   faq,
   onChange,
+  isAr,
 }: {
   faq: { question: string; answer: string }[];
   onChange: (faq: { question: string; answer: string }[]) => void;
+  isAr: boolean;
 }) {
   const [q, setQ] = useState('');
   const [a, setA] = useState('');
@@ -245,19 +251,19 @@ function FAQEditor({
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="السؤال"
+          placeholder={isAr ? 'السؤال' : 'Question'}
           className={inputClass}
         />
         <textarea
           value={a}
           onChange={(e) => setA(e.target.value)}
-          placeholder="الإجابة"
+          placeholder={isAr ? 'الإجابة' : 'Answer'}
           rows={2}
           className={cn(inputClass, 'resize-none')}
         />
       </div>
       <Button size="sm" onClick={addFAQ} type="button" variant="secondary">
-        <Plus size={14} /> إضافة سؤال
+        <Plus size={14} /> {isAr ? 'إضافة سؤال' : 'Add question'}
       </Button>
       <div className="space-y-2">
         {faq.map((item, i) => (
@@ -284,6 +290,9 @@ function FAQEditor({
 }
 
 export default function AdminServicesPage() {
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
+
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -293,6 +302,8 @@ export default function AdminServicesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState<ServiceData>({ ...emptyService });
   const [activeTab, setActiveTab] = useState<'basic' | 'details' | 'features' | 'steps' | 'faq'>('basic');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const fetchServices = useCallback(async () => {
     try {
@@ -302,6 +313,7 @@ export default function AdminServicesPage() {
       if (data.success) setServices(data.data);
     } catch {
       console.error('Failed to load services');
+      toast.error(isAr ? 'فشل تحميل الخدمات' : 'Failed to load services');
     } finally {
       setLoading(false);
     }
@@ -314,12 +326,15 @@ export default function AdminServicesPage() {
     const q = searchQuery.toLowerCase();
     return services.filter(
       (s) =>
-        s.name.includes(q) ||
+        s.name.toLowerCase().includes(q) ||
         s.nameEn.toLowerCase().includes(q) ||
-        s.categoryAr.includes(q) ||
-        s.category.includes(q)
+        s.categoryAr.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q)
     );
   }, [services, searchQuery]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const stats = useMemo(() => {
     const active = services.filter((s) => s.isActive).length;
@@ -369,6 +384,7 @@ export default function AdminServicesPage() {
       setShowModal(false);
     } catch {
       console.error('Failed to save service');
+      toast.error(isAr ? 'فشل حفظ الخدمة' : 'Failed to save service');
     } finally {
       setSaving(false);
     }
@@ -383,6 +399,7 @@ export default function AdminServicesPage() {
       }
     } catch {
       console.error('Failed to delete service');
+      toast.error(isAr ? 'فشل حذف الخدمة' : 'Failed to delete service');
     }
     setDeleteConfirm(null);
   };
@@ -404,11 +421,11 @@ export default function AdminServicesPage() {
   };
 
   const tabs = [
-    { key: 'basic' as const, label: 'المعلومات الأساسية' },
-    { key: 'details' as const, label: 'التفاصيل' },
-    { key: 'features' as const, label: 'المميزات والمتطلبات' },
-    { key: 'steps' as const, label: 'الخطوات' },
-    { key: 'faq' as const, label: 'الأسئلة الشائعة' },
+    { key: 'basic' as const, label: isAr ? 'المعلومات الأساسية' : 'Basic Info' },
+    { key: 'details' as const, label: isAr ? 'التفاصيل' : 'Details' },
+    { key: 'features' as const, label: isAr ? 'المميزات والمتطلبات' : 'Features & Requirements' },
+    { key: 'steps' as const, label: isAr ? 'الخطوات' : 'Steps' },
+    { key: 'faq' as const, label: isAr ? 'الأسئلة الشائعة' : 'FAQ' },
   ];
 
   if (loading) {
@@ -422,16 +439,16 @@ export default function AdminServicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة الخدمات"
-        subtitle="إضافة وتعديل وحذف الخدمات"
+        title={isAr ? 'إدارة الخدمات' : 'Service Management'}
+        subtitle={isAr ? 'إضافة وتعديل وحذف الخدمات' : 'Add, edit and delete services'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'الخدمات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'الخدمات' : 'Services' },
         ]}
         actions={
           <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={openAdd}>
-            إضافة خدمة جديدة
+            {isAr ? 'إضافة خدمة جديدة' : 'Add New Service'}
           </Button>
         }
       />
@@ -439,10 +456,10 @@ export default function AdminServicesPage() {
       {/* Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'إجمالي الخدمات', value: stats.total, icon: Layers, color: '#2580eb' },
-          { label: 'الخدمات النشطة', value: stats.active, icon: Check, color: '#14b8a6' },
-          { label: 'الخدمات المعطلة', value: stats.inactive, icon: Power, color: '#ef4444' },
-          { label: 'التصنيفات', value: categories.length, icon: Tag, color: '#7c3aed' },
+          { label: isAr ? 'إجمالي الخدمات' : 'Total Services', value: stats.total, icon: Layers, color: '#2580eb' },
+          { label: isAr ? 'الخدمات النشطة' : 'Active Services', value: stats.active, icon: Check, color: '#14b8a6' },
+          { label: isAr ? 'الخدمات المعطلة' : 'Inactive Services', value: stats.inactive, icon: Power, color: '#ef4444' },
+          { label: isAr ? 'التصنيفات' : 'Categories', value: categories.length, icon: Tag, color: '#7c3aed' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -476,8 +493,8 @@ export default function AdminServicesPage() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="بحث في الخدمات..."
+          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+          placeholder={isAr ? 'بحث في الخدمات...' : 'Search services...'}
           className={cn(inputClass, 'pr-10')}
         />
       </div>
@@ -488,16 +505,16 @@ export default function AdminServicesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100 dark:border-white/5">
-                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase">الخدمة</th>
-                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase hidden md:table-cell">التصنيف</th>
-                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase hidden lg:table-cell">السعر</th>
-                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase hidden lg:table-cell">المدة</th>
-                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase">الحالة</th>
-                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase">إجراءات</th>
+                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase">{isAr ? 'الخدمة' : 'Service'}</th>
+                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase hidden md:table-cell">{isAr ? 'التصنيف' : 'Category'}</th>
+                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase hidden lg:table-cell">{isAr ? 'السعر' : 'Price'}</th>
+                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase hidden lg:table-cell">{isAr ? 'المدة' : 'Duration'}</th>
+                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase">{isAr ? 'الحالة' : 'Status'}</th>
+                <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase">{isAr ? 'إجراءات' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((service, i) => (
+              {paginatedData.map((service, i) => (
                 <motion.tr
                   key={service.id}
                   initial={{ opacity: 0 }}
@@ -516,8 +533,8 @@ export default function AdminServicesPage() {
                         <GripVertical size={16} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{service.name}</p>
-                        <p className="text-xs text-slate-400 truncate">{service.nameEn}</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{isAr ? service.name : service.nameEn}</p>
+                        <p className="text-xs text-slate-400 truncate">{isAr ? service.nameEn : service.name}</p>
                       </div>
                       {service.isPopular && (
                         <Star size={14} className="text-amber-400 fill-amber-400 shrink-0" />
@@ -525,21 +542,21 @@ export default function AdminServicesPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 hidden md:table-cell">
-                    <Badge variant="secondary" size="sm">{service.categoryAr}</Badge>
+                    <Badge variant="secondary" size="sm">{isAr ? service.categoryAr : categories.find(c => c.value === service.category)?.labelEn || service.category}</Badge>
                   </td>
                   <td className="px-6 py-4 hidden lg:table-cell">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">{service.price} ر.س</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{service.price} {isAr ? 'ر.س' : 'SAR'}</span>
                   </td>
                   <td className="px-6 py-4 hidden lg:table-cell">
                     <div className="flex items-center gap-1.5 text-sm text-slate-500">
                       <Clock size={14} />
-                      {service.duration}
+                      {isAr ? service.duration : service.durationEn}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <button onClick={() => toggleServiceActive(service.id)}>
                       <Badge variant={service.isActive ? 'success' : 'danger'} size="sm" dot>
-                        {service.isActive ? 'نشط' : 'معطل'}
+                        {service.isActive ? (isAr ? 'نشط' : 'Active') : (isAr ? 'معطل' : 'Inactive')}
                       </Badge>
                     </button>
                   </td>
@@ -564,7 +581,7 @@ export default function AdminServicesPage() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
-                    لا توجد خدمات
+                    {isAr ? 'لا توجد خدمات' : 'No services found'}
                   </td>
                 </tr>
               )}
@@ -572,6 +589,31 @@ export default function AdminServicesPage() {
           </table>
         </div>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            {isAr ? 'السابق' : 'Previous'}
+          </Button>
+          <span className="text-sm text-slate-500 px-3">
+            {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            {isAr ? 'التالي' : 'Next'}
+          </Button>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       <AnimatePresence>
@@ -592,7 +634,7 @@ export default function AdminServicesPage() {
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {editingService ? 'تعديل الخدمة' : 'إضافة خدمة جديدة'}
+                  {editingService ? (isAr ? 'تعديل الخدمة' : 'Edit Service') : (isAr ? 'إضافة خدمة جديدة' : 'Add New Service')}
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
@@ -627,19 +669,19 @@ export default function AdminServicesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          اسم الخدمة (عربي) *
+                          {isAr ? 'اسم الخدمة (عربي) *' : 'Service Name (Arabic) *'}
                         </label>
                         <input
                           type="text"
                           value={form.name}
                           onChange={(e) => setForm({ ...form, name: e.target.value })}
                           className={inputClass}
-                          placeholder="مثال: تأشيرة سياحية"
+                          placeholder={isAr ? 'مثال: تأشيرة سياحية' : 'e.g. Tourist Visa'}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          اسم الخدمة (إنجليزي) *
+                          {isAr ? 'اسم الخدمة (إنجليزي) *' : 'Service Name (English) *'}
                         </label>
                         <input
                           type="text"
@@ -652,7 +694,7 @@ export default function AdminServicesPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                        وصف مختصر (عربي) *
+                        {isAr ? 'وصف مختصر (عربي) *' : 'Short Description (Arabic) *'}
                       </label>
                       <textarea
                         value={form.description}
@@ -663,7 +705,7 @@ export default function AdminServicesPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                        وصف مختصر (إنجليزي) *
+                        {isAr ? 'وصف مختصر (إنجليزي) *' : 'Short Description (English) *'}
                       </label>
                       <textarea
                         value={form.descriptionEn}
@@ -674,7 +716,7 @@ export default function AdminServicesPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                        وصف كامل (عربي)
+                        {isAr ? 'وصف كامل (عربي)' : 'Full Description (Arabic)'}
                       </label>
                       <textarea
                         value={form.fullDescription}
@@ -685,7 +727,7 @@ export default function AdminServicesPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                        وصف كامل (إنجليزي)
+                        {isAr ? 'وصف كامل (إنجليزي)' : 'Full Description (English)'}
                       </label>
                       <textarea
                         value={form.fullDescriptionEn}
@@ -702,7 +744,7 @@ export default function AdminServicesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          التصنيف *
+                          {isAr ? 'التصنيف *' : 'Category *'}
                         </label>
                         <select
                           value={form.category}
@@ -718,14 +760,14 @@ export default function AdminServicesPage() {
                         >
                           {categories.map((cat) => (
                             <option key={cat.value} value={cat.value}>
-                              {cat.label}
+                              {isAr ? cat.label : cat.labelEn}
                             </option>
                           ))}
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          السعر (ر.س) *
+                          {isAr ? 'السعر (ر.س) *' : 'Price (SAR) *'}
                         </label>
                         <input
                           type="number"
@@ -739,33 +781,33 @@ export default function AdminServicesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          ملاحظة السعر (عربي)
+                          {isAr ? 'ملاحظة السعر (عربي)' : 'Price Note (Arabic)'}
                         </label>
                         <input
                           type="text"
                           value={form.priceNote}
                           onChange={(e) => setForm({ ...form, priceNote: e.target.value })}
                           className={inputClass}
-                          placeholder="يبدأ من"
+                          placeholder={isAr ? 'يبدأ من' : 'Starting from'}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          مدة الإنجاز (عربي) *
+                          {isAr ? 'مدة الإنجاز (عربي) *' : 'Processing Time (Arabic) *'}
                         </label>
                         <input
                           type="text"
                           value={form.duration}
                           onChange={(e) => setForm({ ...form, duration: e.target.value })}
                           className={inputClass}
-                          placeholder="مثال: 3-5 أيام عمل"
+                          placeholder={isAr ? 'مثال: 3-5 أيام عمل' : 'e.g. 3-5 business days'}
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          مدة الإنجاز (إنجليزي) *
+                          {isAr ? 'مدة الإنجاز (إنجليزي) *' : 'Processing Time (English) *'}
                         </label>
                         <input
                           type="text"
@@ -777,7 +819,7 @@ export default function AdminServicesPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                          تدرج الألوان
+                          {isAr ? 'تدرج الألوان' : 'Color Gradient'}
                         </label>
                         <input
                           type="text"
@@ -796,7 +838,7 @@ export default function AdminServicesPage() {
                           onChange={(e) => setForm({ ...form, isPopular: e.target.checked })}
                           className="w-4 h-4 rounded border-slate-300 text-[#2580eb] focus:ring-[#2580eb]"
                         />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">خدمة مميزة</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'خدمة مميزة' : 'Popular Service'}</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -805,7 +847,7 @@ export default function AdminServicesPage() {
                           onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                           className="w-4 h-4 rounded border-slate-300 text-[#2580eb] focus:ring-[#2580eb]"
                         />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">نشطة</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'نشطة' : 'Active'}</span>
                       </label>
                     </div>
                   </>
@@ -815,64 +857,64 @@ export default function AdminServicesPage() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        قائمة المميزات (عربي)
+                        {isAr ? 'قائمة المميزات (عربي)' : 'Features List (Arabic)'}
                       </label>
                       <ListItemEditor
                         items={form.features}
                         onChange={(items) => setForm({ ...form, features: items })}
-                        placeholder="إضافة ميزة..."
+                        placeholder={isAr ? 'إضافة ميزة...' : 'Add feature...'}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        قائمة المميزات (إنجليزي)
+                        {isAr ? 'قائمة المميزات (إنجليزي)' : 'Features List (English)'}
                       </label>
                       <ListItemEditor
                         items={form.featuresEn}
                         onChange={(items) => setForm({ ...form, featuresEn: items })}
-                        placeholder="Add feature..."
+                        placeholder={isAr ? 'إضافة ميزة...' : 'Add feature...'}
                       />
                     </div>
                     <hr className="border-slate-100 dark:border-white/5" />
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        المستندات المطلوبة (عربي)
+                        {isAr ? 'المستندات المطلوبة (عربي)' : 'Required Documents (Arabic)'}
                       </label>
                       <ListItemEditor
                         items={form.requiredDocuments}
                         onChange={(items) => setForm({ ...form, requiredDocuments: items })}
-                        placeholder="إضافة مستند..."
+                        placeholder={isAr ? 'إضافة مستند...' : 'Add document...'}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        المستندات المطلوبة (إنجليزي)
+                        {isAr ? 'المستندات المطلوبة (إنجليزي)' : 'Required Documents (English)'}
                       </label>
                       <ListItemEditor
                         items={form.requiredDocumentsEn}
                         onChange={(items) => setForm({ ...form, requiredDocumentsEn: items })}
-                        placeholder="Add document..."
+                        placeholder={isAr ? 'إضافة مستند...' : 'Add document...'}
                       />
                     </div>
                     <hr className="border-slate-100 dark:border-white/5" />
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        المتطلبات (عربي)
+                        {isAr ? 'المتطلبات (عربي)' : 'Requirements (Arabic)'}
                       </label>
                       <ListItemEditor
                         items={form.requirements}
                         onChange={(items) => setForm({ ...form, requirements: items })}
-                        placeholder="إضافة متطلب..."
+                        placeholder={isAr ? 'إضافة متطلب...' : 'Add requirement...'}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        المتطلبات (إنجليزي)
+                        {isAr ? 'المتطلبات (إنجليزي)' : 'Requirements (English)'}
                       </label>
                       <ListItemEditor
                         items={form.requirementsEn}
                         onChange={(items) => setForm({ ...form, requirementsEn: items })}
-                        placeholder="Add requirement..."
+                        placeholder={isAr ? 'إضافة متطلب...' : 'Add requirement...'}
                       />
                     </div>
                   </>
@@ -882,21 +924,23 @@ export default function AdminServicesPage() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        خطوات التنفيذ (عربي)
+                        {isAr ? 'خطوات التنفيذ (عربي)' : 'Execution Steps (Arabic)'}
                       </label>
                       <StepEditor
                         steps={form.steps}
                         onChange={(steps) => setForm({ ...form, steps })}
+                        isAr={isAr}
                       />
                     </div>
                     <hr className="border-slate-100 dark:border-white/5" />
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        خطوات التنفيذ (إنجليزي)
+                        {isAr ? 'خطوات التنفيذ (إنجليزي)' : 'Execution Steps (English)'}
                       </label>
                       <StepEditor
                         steps={form.stepsEn}
                         onChange={(stepsEn) => setForm({ ...form, stepsEn })}
+                        isAr={isAr}
                       />
                     </div>
                   </>
@@ -906,21 +950,23 @@ export default function AdminServicesPage() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        الأسئلة الشائعة (عربي)
+                        {isAr ? 'الأسئلة الشائعة (عربي)' : 'Frequently Asked Questions (Arabic)'}
                       </label>
                       <FAQEditor
                         faq={form.faq}
                         onChange={(faq) => setForm({ ...form, faq })}
+                        isAr={isAr}
                       />
                     </div>
                     <hr className="border-slate-100 dark:border-white/5" />
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        الأسئلة الشائعة (إنجليزي)
+                        {isAr ? 'الأسئلة الشائعة (إنجليزي)' : 'Frequently Asked Questions (English)'}
                       </label>
                       <FAQEditor
                         faq={form.faqEn}
                         onChange={(faqEn) => setForm({ ...form, faqEn })}
+                        isAr={isAr}
                       />
                     </div>
                   </>
@@ -930,7 +976,7 @@ export default function AdminServicesPage() {
               {/* Modal Footer */}
               <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-100 dark:border-white/5">
                 <Button variant="ghost" onClick={() => setShowModal(false)}>
-                  إلغاء
+                  {isAr ? 'إلغاء' : 'Cancel'}
                 </Button>
                 <Button
                   variant="primary"
@@ -938,7 +984,7 @@ export default function AdminServicesPage() {
                   disabled={!form.name || !form.nameEn || !form.price || saving}
                   iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                 >
-                  {editingService ? 'حفظ التعديلات' : 'إضافة الخدمة'}
+                  {editingService ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة الخدمة' : 'Add Service')}
                 </Button>
               </div>
             </motion.div>
@@ -966,10 +1012,10 @@ export default function AdminServicesPage() {
                 <Trash2 size={24} className="text-red-500" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">
-                حذف الخدمة
+                {isAr ? 'حذف الخدمة' : 'Delete Service'}
               </h3>
               <p className="text-sm text-slate-500 text-center mb-6">
-                هل أنت متأكد من حذف هذه الخدمة؟ لا يمكن التراجع عن هذا الإجراء.
+                {isAr ? 'هل أنت متأكد من حذف هذه الخدمة؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this service? This action cannot be undone.'}
               </p>
               <div className="flex gap-3">
                 <Button
@@ -977,7 +1023,7 @@ export default function AdminServicesPage() {
                   fullWidth
                   onClick={() => setDeleteConfirm(null)}
                 >
-                  إلغاء
+                  {isAr ? 'إلغاء' : 'Cancel'}
                 </Button>
                 <Button
                   variant="danger"
@@ -985,7 +1031,7 @@ export default function AdminServicesPage() {
                   onClick={() => handleDelete(deleteConfirm)}
                   iconLeft={<Trash2 size={14} />}
                 >
-                  حذف
+                  {isAr ? 'حذف' : 'Delete'}
                 </Button>
               </div>
             </motion.div>

@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
 export type PaymentMethod = 'mada' | 'visa' | 'mastercard' | 'apple_pay' | 'bank_transfer';
@@ -71,6 +72,7 @@ const methodTabs: { id: MethodFilter; label: string; labelEn: string }[] = [
 
 export default function PaymentsPage() {
   const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +96,7 @@ export default function PaymentsPage() {
         setPayments(mapped);
       }
     } catch {
-      // API may require auth - show empty state
+      toast.error(isAr ? 'فشل تحميل المدفوعات' : 'Failed to load payments');
     } finally {
       setLoading(false);
     }
@@ -105,6 +107,8 @@ export default function PaymentsPage() {
   const [activeMethod, setActiveMethod] = useState<MethodFilter>('ALL');
   const [activeStatus, setActiveStatus] = useState<StatusFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const filtered = useMemo(() => {
     return payments.filter((p) => {
@@ -112,11 +116,16 @@ export default function PaymentsPage() {
       const matchesStatus = activeStatus === 'ALL' || p.status === activeStatus;
       const matchesSearch =
         !searchQuery ||
-        p.customer.includes(searchQuery) ||
+        p.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.id.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesMethod && matchesStatus && matchesSearch;
     });
   }, [activeMethod, activeStatus, searchQuery, payments]);
+
+  useEffect(() => { setPage(1); }, [activeMethod, activeStatus, searchQuery]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const stats = useMemo(() => ({
     total: payments.reduce((sum, p) => sum + p.amount, 0),
@@ -135,23 +144,25 @@ export default function PaymentsPage() {
       if (data.success) {
         await fetchPayments();
       }
-    } catch {}
+    } catch {
+      toast.error(isAr ? 'فشل استرداد المبلغ' : 'Failed to refund payment');
+    }
   };
 
   const statCards = [
-    { label: 'إجمالي المدفوعات', value: `${stats.total.toLocaleString()} ر.س`, icon: DollarSign, color: '#2580eb' },
-    { label: 'قيد المراجعة', value: `${stats.pending.toLocaleString()} ر.س`, icon: Clock, color: '#f59e0b' },
-    { label: 'المكتملة', value: `${stats.completed.toLocaleString()} ر.س`, icon: CheckCircle2, color: '#14b8a6' },
+    { label: isAr ? 'إجمالي المدفوعات' : 'Total Payments', value: `${stats.total.toLocaleString()} ر.س`, icon: DollarSign, color: '#2580eb' },
+    { label: isAr ? 'قيد المراجعة' : 'Pending', value: `${stats.pending.toLocaleString()} ر.س`, icon: Clock, color: '#f59e0b' },
+    { label: isAr ? 'المكتملة' : 'Completed', value: `${stats.completed.toLocaleString()} ر.س`, icon: CheckCircle2, color: '#14b8a6' },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={language === 'ar' ? 'إدارة المدفوعات' : 'Manage Payments'}
-        subtitle={language === 'ar' ? 'متابعة جميع المعاملات المالية' : 'Track all financial transactions'}
+        title={isAr ? 'إدارة المدفوعات' : 'Manage Payments'}
+        subtitle={isAr ? 'متابعة جميع المعاملات المالية' : 'Track all financial transactions'}
         breadcrumbs={[
-          { label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
-          { label: language === 'ar' ? 'المدفوعات' : 'Payments' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'المدفوعات' : 'Payments' },
         ]}
       />
 
@@ -190,7 +201,7 @@ export default function PaymentsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={language === 'ar' ? 'بحث بالاسم أو رقم الدفع...' : 'Search by name or payment ID...'}
+            placeholder={isAr ? 'بحث بالاسم أو رقم الدفع...' : 'Search by name or payment ID...'}
             className={cn(
               'w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200',
               'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10',
@@ -216,7 +227,7 @@ export default function PaymentsPage() {
                   : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10',
               )}
             >
-              {language === 'ar' ? tab.label : tab.labelEn}
+              {isAr ? tab.label : tab.labelEn}
             </motion.button>
           ))}
         </div>
@@ -234,7 +245,7 @@ export default function PaymentsPage() {
                   : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10',
               )}
             >
-              {status === 'ALL' ? (language === 'ar' ? 'كل الحالات' : 'All Status') : (language === 'ar' ? statusConfig[status]?.label : statusConfig[status]?.labelEn)}
+              {status === 'ALL' ? (isAr ? 'كل الحالات' : 'All Status') : (isAr ? statusConfig[status]?.label : statusConfig[status]?.labelEn)}
             </motion.button>
           ))}
         </div>
@@ -247,30 +258,30 @@ export default function PaymentsPage() {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
                   <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">
-                    {language === 'ar' ? 'رقم الدفع' : 'Payment ID'}
+                    {isAr ? 'رقم الدفع' : 'Payment ID'}
                   </th>
                   <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">
-                    {language === 'ar' ? 'العميل' : 'Customer'}
+                    {isAr ? 'العميل' : 'Customer'}
                   </th>
                   <th className="text-end py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">
-                    {language === 'ar' ? 'المبلغ' : 'Amount'}
+                    {isAr ? 'المبلغ' : 'Amount'}
                   </th>
                   <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden md:table-cell">
-                    {language === 'ar' ? 'الطريقة' : 'Method'}
+                    {isAr ? 'الطريقة' : 'Method'}
                   </th>
                   <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">
-                    {language === 'ar' ? 'الحالة' : 'Status'}
+                    {isAr ? 'الحالة' : 'Status'}
                   </th>
                   <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden sm:table-cell">
-                    {language === 'ar' ? 'التاريخ' : 'Date'}
+                    {isAr ? 'التاريخ' : 'Date'}
                   </th>
                   <th className="text-center py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">
-                    {language === 'ar' ? 'إجراءات' : 'Actions'}
+                    {isAr ? 'إجراءات' : 'Actions'}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((payment, i) => (
+                {paginatedData.map((payment, i) => (
                   <motion.tr
                     key={payment.id}
                     initial={{ opacity: 0 }}
@@ -299,12 +310,12 @@ export default function PaymentsPage() {
                           borderColor: `${methodConfig[payment.method]?.color}30`,
                         }}
                       >
-                        {language === 'ar' ? methodConfig[payment.method]?.label : methodConfig[payment.method]?.labelEn}
+                        {isAr ? methodConfig[payment.method]?.label : methodConfig[payment.method]?.labelEn}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <Badge variant={statusConfig[payment.status]?.variant || 'primary'} size="sm" dot>
-                        {language === 'ar' ? statusConfig[payment.status]?.label : statusConfig[payment.status]?.labelEn}
+                        {isAr ? statusConfig[payment.status]?.label : statusConfig[payment.status]?.labelEn}
                       </Badge>
                     </td>
                     <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">{payment.date}</td>
@@ -315,7 +326,7 @@ export default function PaymentsPage() {
                           whileTap={{ scale: 0.9 }}
                           onClick={() => handleRefund(payment.id)}
                           className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
-                          title={language === 'ar' ? 'استرجاع' : 'Refund'}
+                          title={isAr ? 'استرجاع' : 'Refund'}
                         >
                           <RotateCcw size={16} />
                         </motion.button>
@@ -329,7 +340,32 @@ export default function PaymentsPage() {
           {filtered.length === 0 && (
             <div className="py-12 text-center text-slate-400">
               <CreditCard size={48} className="mx-auto mb-3 opacity-30" />
-              <p>{loading ? (language === 'ar' ? 'جاري التحميل...' : 'Loading...') : (language === 'ar' ? 'لا توجد مدفوعات' : 'No payments found')}</p>
+              <p>{loading ? (isAr ? 'جاري التحميل...' : 'Loading...') : (isAr ? 'لا توجد مدفوعات' : 'No payments found')}</p>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-white/5">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {isAr ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  {isAr ? 'السابق' : 'Previous'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  {isAr ? 'التالي' : 'Next'}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

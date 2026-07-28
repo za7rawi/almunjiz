@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
 
 interface User {
   id: string;
@@ -35,28 +36,28 @@ const roleDefinitions: RoleInfo[] = [
   { key: 'customer', label: 'عميل', labelEn: 'Customer', color: 'from-[#ef4444] to-[#f87171]' },
 ];
 
-const permissionColumns: { key: string; label: string }[] = [
-  { key: 'dashboard', label: 'لوحة التحكم' },
-  { key: 'services', label: 'الخدمات' },
-  { key: 'orders', label: 'الطلبات' },
-  { key: 'customers', label: 'العملاء' },
-  { key: 'employees', label: 'الموظفين' },
-  { key: 'invoices', label: 'الفواتير' },
-  { key: 'payments', label: 'المدفوعات' },
-  { key: 'notifications', label: 'الإشعارات' },
-  { key: 'reviews', label: 'التقييمات' },
-  { key: 'news', label: 'الأخبار' },
-  { key: 'pages', label: 'الصفحات' },
-  { key: 'banners', label: 'البانرات' },
-  { key: 'offers', label: 'العروض' },
-  { key: 'coupons', label: 'الكوبونات' },
-  { key: 'permissions', label: 'الصلاحيات' },
-  { key: 'reports', label: 'التقارير' },
-  { key: 'settings', label: 'الإعدادات' },
-] as const;
+const permissionColumnDefs = [
+  { key: 'dashboard', label: 'لوحة التحكم', labelEn: 'Dashboard' },
+  { key: 'services', label: 'الخدمات', labelEn: 'Services' },
+  { key: 'orders', label: 'الطلبات', labelEn: 'Orders' },
+  { key: 'customers', label: 'العملاء', labelEn: 'Customers' },
+  { key: 'employees', label: 'الموظفين', labelEn: 'Employees' },
+  { key: 'invoices', label: 'الفواتير', labelEn: 'Invoices' },
+  { key: 'payments', label: 'المدفوعات', labelEn: 'Payments' },
+  { key: 'notifications', label: 'الإشعارات', labelEn: 'Notifications' },
+  { key: 'reviews', label: 'التقييمات', labelEn: 'Reviews' },
+  { key: 'news', label: 'الأخبار', labelEn: 'News' },
+  { key: 'pages', label: 'الصفحات', labelEn: 'Pages' },
+  { key: 'banners', label: 'البانرات', labelEn: 'Banners' },
+  { key: 'offers', label: 'العروض', labelEn: 'Offers' },
+  { key: 'coupons', label: 'الكوبونات', labelEn: 'Coupons' },
+  { key: 'permissions', label: 'الصلاحيات', labelEn: 'Permissions' },
+  { key: 'reports', label: 'التقارير', labelEn: 'Reports' },
+  { key: 'settings', label: 'الإعدادات', labelEn: 'Settings' },
+];
 
 const defaultAccess: Record<string, Record<string, boolean>> = {
-  admin: Object.fromEntries(permissionColumns.map(c => [c.key, true])),
+  admin: Object.fromEntries(permissionColumnDefs.map(c => [c.key, true])),
   manager: { dashboard: true, services: true, orders: true, customers: true, employees: false, invoices: true, payments: true, notifications: true, reviews: true, news: true, pages: false, banners: false, offers: true, coupons: true, permissions: false, reports: true, settings: false },
   employee: { dashboard: true, services: true, orders: true, customers: false, employees: false, invoices: false, payments: false, notifications: true, reviews: false, news: false, pages: false, banners: false, offers: false, coupons: false, permissions: false, reports: false, settings: false },
   support: { dashboard: true, services: false, orders: true, customers: true, employees: false, invoices: false, payments: false, notifications: true, reviews: true, news: false, pages: false, banners: false, offers: false, coupons: false, permissions: false, reports: false, settings: false },
@@ -66,6 +67,7 @@ const defaultAccess: Record<string, Record<string, boolean>> = {
 export default function PermissionsPage() {
   const { language } = useLanguageStore();
   const { dir } = useDirection();
+  const isAr = language === 'ar';
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,9 +75,11 @@ export default function PermissionsPage() {
     fetch('/api/users')
       .then(r => r.json())
       .then(data => { if (data.success && data.data) setUsers(data.data); })
-      .catch(() => {})
+      .catch(() => { toast.error(isAr ? 'فشل تحميل المستخدمين' : 'Failed to load users'); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAr]);
+
+  const permissionColumns = permissionColumnDefs.map(c => ({ key: c.key, label: isAr ? c.label : c.labelEn }));
 
   const usersByRole = roleDefinitions.map(role => ({
     ...role,
@@ -85,12 +89,12 @@ export default function PermissionsPage() {
   return (
     <div dir={dir}>
       <PageHeader
-        title="إدارة الصلاحيات"
-        subtitle="تحديد صلاحيات الوصول لكل دور في النظام"
+        title={isAr ? 'إدارة الصلاحيات' : 'Permissions'}
+        subtitle={isAr ? 'تحديد صلاحيات الوصول لكل دور في النظام' : 'Set access permissions for each role'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'الصلاحيات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'الصلاحيات' : 'Permissions' },
         ]}
       />
 
@@ -106,24 +110,24 @@ export default function PermissionsPage() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={cn('w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-sm font-bold shadow-md', role.color)}>
-                    {role.label.charAt(0)}
+                    {isAr ? role.label.charAt(0) : role.labelEn.charAt(0)}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{role.label}</p>
-                    <p className="text-xs text-slate-400">{role.labelEn}</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{isAr ? role.label : role.labelEn}</p>
+                    <p className="text-xs text-slate-400">{isAr ? role.labelEn : role.label}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users size={14} className="text-slate-400" />
                   <p className="text-lg font-bold text-slate-900 dark:text-white">{role.users.length}</p>
-                  <p className="text-xs text-slate-500">{language === 'ar' ? 'مستخدم' : 'users'}</p>
+                  <p className="text-xs text-slate-500">{isAr ? 'مستخدم' : 'users'}</p>
                 </div>
                 {role.users.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {role.users.slice(0, 3).map(u => (
                       <p key={u.id} className="text-xs text-slate-500 truncate">{u.name || u.email}</p>
                     ))}
-                    {role.users.length > 3 && <p className="text-xs text-slate-400">+{role.users.length - 3} {language === 'ar' ? 'آخرين' : 'more'}</p>}
+                    {role.users.length > 3 && <p className="text-xs text-slate-400">+{role.users.length - 3} {isAr ? 'آخرين' : 'more'}</p>}
                   </div>
                 )}
               </CardContent>
@@ -142,7 +146,7 @@ export default function PermissionsPage() {
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-white/10">
                     <th className="text-right py-3 px-3 text-sm font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                      الدور
+                      {isAr ? 'الدور' : 'Role'}
                     </th>
                     {permissionColumns.map((col) => (
                       <th
@@ -169,11 +173,11 @@ export default function PermissionsPage() {
                       <td className="py-4 px-3 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className={cn('w-9 h-9 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-sm font-bold shadow-md', role.color)}>
-                            {role.label.charAt(0)}
+                            {isAr ? role.label.charAt(0) : role.labelEn.charAt(0)}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{role.label}</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500">{role.labelEn}</p>
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{isAr ? role.label : role.labelEn}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">{isAr ? role.labelEn : role.label}</p>
                           </div>
                         </div>
                       </td>
@@ -204,7 +208,7 @@ export default function PermissionsPage() {
           <div className="mt-6 flex items-center gap-2 text-slate-400 dark:text-slate-500">
             <Info size={14} />
             <p className="text-xs">
-              الأخضر تعني مفعّل، والرمادي تعني معطّل. هذه مرجعية بصرية لصلاحيات الأدوار.
+              {isAr ? 'الأخضر تعني مفعّل، والرمادي تعني معطّل. هذه مرجعية بصرية لصلاحيات الأدوار.' : 'Green means enabled, grey means disabled. This is a visual reference for role permissions.'}
             </p>
           </div>
         </CardContent>

@@ -81,8 +81,8 @@ function formatFileSize(bytes: number): string {
 }
 
 const inputBase = "w-full py-3 px-4 rounded-xl border text-sm transition-all duration-200 outline-none";
-const inputNormal = cn(inputBase, "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 hover:border-slate-300");
-const inputError = cn(inputBase, "border-red-300 bg-red-50/50 text-slate-900 placeholder:text-slate-400 focus:border-red-400 focus:ring-4 focus:ring-red-500/10");
+const inputNormal = cn(inputBase, "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 hover:border-slate-300 dark:hover:border-slate-500");
+const inputError = cn(inputBase, "border-red-300 bg-red-50/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-red-400 focus:ring-4 focus:ring-red-500/10");
 const inputLtr = cn(inputNormal, "text-left font-mono", "direction: ltr");
 
 export default function CheckoutPage() {
@@ -91,6 +91,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const { dir } = useDirection();
   const { currency } = useCurrencyStore();
 
@@ -169,9 +170,9 @@ export default function CheckoutPage() {
 
   const validate = useCallback(() => {
     const errors: Record<string, string> = {};
-    if (!formData.name.trim() || formData.name.trim().length < 3) errors.name = 'الاسم مطلوب (3 أحرف على الأقل)';
-    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = 'البريد الإلكتروني غير صحيح';
-    if (!formData.phone || formData.phone.length < 7) errors.phone = 'رقم الجوال غير صحيح';
+    if (!formData.name.trim() || formData.name.trim().length < 3) errors.name = isAr ? 'الاسم مطلوب (3 أحرف على الأقل)' : 'Name is required (min 3 characters)';
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = isAr ? 'البريد الإلكتروني غير صحيح' : 'Invalid email address';
+    if (!formData.phone || formData.phone.length < 7) errors.phone = isAr ? 'رقم الجوال غير صحيح' : 'Invalid phone number';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   }, [formData]);
@@ -188,10 +189,10 @@ export default function CheckoutPage() {
       if (data.success && data.data) {
         setPromoResult(data.data);
       } else {
-        setPromoResult({ valid: false, discount: 0, discountType: 'percentage', message: data.error || 'خطأ في التحقق من الكوبون' });
+        setPromoResult({ valid: false, discount: 0, discountType: 'percentage', message: data.error || (isAr ? 'خطأ في التحقق من الكوبون' : 'Error validating coupon') });
       }
     } catch {
-      setPromoResult({ valid: false, discount: 0, discountType: 'percentage', message: 'خطأ في الاتصال' });
+      setPromoResult({ valid: false, discount: 0, discountType: 'percentage', message: isAr ? 'خطأ في الاتصال' : 'Connection error' });
     }
   };
 
@@ -306,7 +307,7 @@ export default function CheckoutPage() {
         uploadFilesToServer(order.id);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء إنشاء الطلب');
+                      setError(err instanceof Error ? err.message : (isAr ? 'حدث خطأ أثناء إنشاء الطلب' : 'Error creating order'));
     } finally {
       setLoading(false);
     }
@@ -344,9 +345,9 @@ export default function CheckoutPage() {
         router.push(`/payment/success?orderId=${orderData.id}&orderNumber=${encodeURIComponent(orderData.orderNumber)}`);
         return;
       }
-      throw new Error(data.error || 'فشلت معالجة الدفع');
+      throw new Error(data.error || (isAr ? 'فشلت معالجة الدفع' : 'Payment processing failed'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء معالجة الدفع');
+      setError(err instanceof Error ? err.message : (isAr ? 'حدث خطأ أثناء معالجة الدفع' : 'Error processing payment'));
       setStep('order_created');
     } finally {
       setLoading(false);
@@ -355,10 +356,10 @@ export default function CheckoutPage() {
 
   if (serviceLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 pt-20">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-20">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-3 border-[#2580eb] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-500 font-medium">جارٍ تحميل بيانات الخدمة...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'جارٍ تحميل بيانات الخدمة...' : 'Loading service data...'}</p>
         </motion.div>
       </div>
     );
@@ -366,16 +367,16 @@ export default function CheckoutPage() {
 
   if (!service) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 pt-20">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="max-w-md w-full mx-4 p-10 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center mx-auto mb-5">
+          <Card className="max-w-md w-full mx-4 p-10 text-center dark:bg-slate-800">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center mx-auto mb-5">
               <X size={36} className="text-red-400" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">خدمة غير موجودة</h2>
-            <p className="text-slate-500 mb-6 text-sm">الخدمة المحددة غير موجودة أو تم حذفها</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'خدمة غير موجودة' : 'Service not found'}</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">{isAr ? 'الخدمة المحددة غير موجودة أو تم حذفها' : 'The selected service is not available or has been removed'}</p>
             <Link href="/services">
-              <Button variant="primary" className="rounded-xl px-8">العودة للخدمات</Button>
+              <Button variant="primary" className="rounded-xl px-8">{isAr ? 'العودة للخدمات' : 'Back to Services'}</Button>
             </Link>
           </Card>
         </motion.div>
@@ -386,34 +387,34 @@ export default function CheckoutPage() {
   const currencyCode: 'SAR' | 'USD' = currency === 'USD' ? 'USD' : 'SAR';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 pt-24 pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-24 pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
         {/* ── Breadcrumb & Header ── */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
-          <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-5">
-            <Link href="/services" className="hover:text-[#2580eb] transition-colors">الخدمات</Link>
+          <nav className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 mb-5">
+            <Link href="/services" className="hover:text-[#2580eb] transition-colors">{isAr ? 'الخدمات' : 'Services'}</Link>
             <span>/</span>
-            <Link href={`/services/${service.id}`} className="hover:text-[#2580eb] transition-colors">{service.name}</Link>
+            <Link href={`/services/${service.id}`} className="hover:text-[#2580eb] transition-colors">{isAr ? service.name : (service.nameEn || service.name)}</Link>
             <span>/</span>
-            <span className="text-slate-700 font-medium">إتمام الطلب</span>
+            <span className="text-slate-700 dark:text-slate-200 font-medium">{isAr ? 'إتمام الطلب' : 'Checkout'}</span>
           </nav>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">إتمام الطلب</h1>
-              <p className="text-slate-500 mt-1.5 text-sm sm:text-base">أكمل بياناتك واختر طريقة الدفع</p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isAr ? 'إتمام الطلب' : 'Checkout'}</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1.5 text-sm sm:text-base">{isAr ? 'أكمل بياناتك واختر طريقة الدفع' : 'Complete your details and choose a payment method'}</p>
             </div>
           </div>
         </motion.div>
 
         {/* ── Progress Steps ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="mb-8">
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-center justify-between max-w-lg mx-auto">
               {[
-                { label: 'بيانات العميل', icon: User, done: step !== 'info' },
-                { label: 'تأكيد الطلب', icon: CheckCircle2, done: step === 'processing' },
-                { label: 'الدفع', icon: CreditCard, done: false },
+                { label: isAr ? 'بيانات العميل' : 'Customer Info', icon: User, done: step !== 'info' },
+                { label: isAr ? 'تأكيد الطلب' : 'Confirm Order', icon: CheckCircle2, done: step === 'processing' },
+                { label: isAr ? 'الدفع' : 'Payment', icon: CreditCard, done: false },
               ].map((s, i) => {
                 const StepIcon = s.icon;
                 const isCurrent = (i === 0 && step === 'info') || (i === 1 && step === 'order_created') || (i === 2 && step === 'processing');
@@ -424,7 +425,7 @@ export default function CheckoutPage() {
                         "w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
                         s.done && "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-lg shadow-emerald-200",
                         isCurrent && !s.done && "bg-gradient-to-br from-[#2580eb] to-[#1a6dd1] text-white shadow-lg shadow-[#2580eb]/30 ring-4 ring-[#2580eb]/10",
-                        !s.done && !isCurrent && "bg-slate-100 text-slate-400",
+                        !s.done && !isCurrent && "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500",
                       )}>
                         {s.done ? <CheckCircle2 size={20} className="sm:w-5 sm:h-5" /> : <StepIcon size={18} className="sm:w-5 sm:h-5" />}
                       </div>
@@ -432,7 +433,7 @@ export default function CheckoutPage() {
                         "text-[10px] sm:text-xs mt-2 font-semibold transition-colors",
                         s.done && "text-emerald-600",
                         isCurrent && !s.done && "text-[#2580eb]",
-                        !s.done && !isCurrent && "text-slate-400",
+                        !s.done && !isCurrent && "text-slate-400 dark:text-slate-500",
                       )}>
                         <span className="hidden sm:inline">{s.label}</span>
                         <span className="sm:hidden">{i + 1}</span>
@@ -440,7 +441,7 @@ export default function CheckoutPage() {
                     </div>
                     {i < 2 && (
                       <div className="flex-1 mx-2 sm:mx-3 mb-6">
-                        <div className="h-0.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-0.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                           <motion.div
                             initial={{ width: '0%' }}
                             animate={{ width: s.done ? '100%' : '0%' }}
@@ -468,8 +469,8 @@ export default function CheckoutPage() {
                     <Star size={20} className="text-[#2580eb]" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">تفاصيل الخدمة</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">معلومات الخدمة المختارة</p>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'تفاصيل الخدمة' : 'Service Details'}</h2>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'معلومات الخدمة المختارة' : 'Selected service information'}</p>
                   </div>
                 </div>
                 <div className="p-4 bg-gradient-to-r from-[#2580eb]/5 to-[#14b8a6]/5 rounded-xl border border-[#2580eb]/10">
@@ -478,15 +479,15 @@ export default function CheckoutPage() {
                       <Star size={24} className="text-[#2580eb]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-900 text-lg mb-1">{service.name}</h3>
-                      <p className="text-sm text-slate-500 mb-3 leading-relaxed">{service.description}</p>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-1">{isAr ? service.name : (service.nameEn || service.name)}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">{isAr ? service.description : (service.descriptionEn || service.description)}</p>
                       <div className="flex flex-wrap gap-2">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#2580eb]/10 text-[#2580eb] text-xs font-semibold">
                           <Clock size={12} /> {service.duration}
                         </span>
                         {service.requiredDocuments && service.requiredDocuments.length > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-600 text-xs font-semibold">
-                            <FileText size={12} /> {service.requiredDocuments.length} مستندات مطلوبة
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-xs font-semibold">
+                            <FileText size={12} /> {service.requiredDocuments.length} {isAr ? 'مستندات مطلوبة' : 'Required Documents'}
                           </span>
                         )}
                       </div>
@@ -504,23 +505,23 @@ export default function CheckoutPage() {
                     <User size={20} className="text-[#2580eb]" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">بيانات العميل</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">أدخل بياناتك الشخصية</p>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'بيانات العميل' : 'Customer Information'}</h2>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'أدخل بياناتك الشخصية' : 'Enter your personal details'}</p>
                   </div>
                 </div>
                 <div className="space-y-5">
                   {/* Name */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      الاسم الكامل <span className="text-red-400">*</span>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                      {isAr ? 'الاسم الكامل' : 'Full Name'} <span className="text-red-400">*</span>
                     </label>
                     <div className="relative">
-                      <User size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      <User size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setField('name', e.target.value)}
-                        placeholder="أدخل اسمك الكامل"
+                        placeholder={isAr ? 'أدخل اسمك الكامل' : 'Enter your full name'}
                         disabled={step !== 'info'}
                         className={cn(
                           formErrors.name ? inputError : inputNormal,
@@ -539,12 +540,11 @@ export default function CheckoutPage() {
                   {/* Email & Phone */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        البريد الإلكتروني <span className="text-red-400">*</span>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        {isAr ? 'البريد الإلكتروني' : 'Email'} <span className="text-red-400">*</span>
                       </label>
                       <div className="relative">
-                        <Mail size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <input
+                        <Mail size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />                        <input
                           type="email"
                           dir="ltr"
                           value={formData.email}
@@ -565,20 +565,20 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        رقم الجوال <span className="text-red-400">*</span>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        {isAr ? 'رقم الجوال' : 'Phone Number'} <span className="text-red-400">*</span>
                       </label>
                       <div className="flex gap-2">
                         <select
                           value={formData.phoneCode}
                           onChange={(e) => setField('phoneCode', e.target.value)}
                           disabled={step !== 'info'}
-                          className="w-24 px-2 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 transition-all appearance-none text-center"
+                          className="w-24 px-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm dark:text-white focus:outline-none focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 transition-all appearance-none text-center"
                         >
                           {phoneCodes.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
                         </select>
                         <div className="relative flex-1">
-                          <Phone size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          <Phone size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
                           <input
                             type="tel"
                             dir="ltr"
@@ -614,11 +614,11 @@ export default function CheckoutPage() {
                       <Upload size={20} className="text-orange-500" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-slate-900">رفع المستندات</h2>
-                      <p className="text-xs text-slate-400 mt-0.5">ارفع الملفات المطلوبة (اختياري)</p>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'رفع المستندات' : 'Upload Documents'}</h2>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'ارفع الملفات المطلوبة (اختياري)' : 'Upload required files (optional)'}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-3 mb-4">PDF, DOC, XLS, JPG, PNG, ZIP — حد أقصى 10 ميجا — حتى 5 ملفات</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-3 mb-4">PDF, DOC, XLS, JPG, PNG, ZIP — {isAr ? 'حد أقصى 10 ميجا — حتى 5 ملفات' : 'Max 10MB — Up to 5 files'}</p>
 
                   {/* Drop Zone */}
                   <div
@@ -630,7 +630,7 @@ export default function CheckoutPage() {
                       "relative border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all duration-300 cursor-pointer group",
                       isDragOver
                         ? "border-[#2580eb] bg-[#2580eb]/5 scale-[1.02]"
-                        : "border-slate-200 hover:border-[#2580eb]/50 hover:bg-slate-50/80",
+                        : "border-slate-200 dark:border-slate-600 hover:border-[#2580eb]/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/50",
                     )}
                   >
                     <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" onChange={handleFileUpload} className="hidden" />
@@ -640,10 +640,10 @@ export default function CheckoutPage() {
                     >
                       <Upload size={28} className={cn("transition-colors", isDragOver ? "text-[#2580eb]" : "text-slate-400 group-hover:text-[#2580eb]")} />
                     </motion.div>
-                    <p className="font-semibold text-slate-700 mb-1">
-                      {isDragOver ? 'أفلت الملفات هنا' : 'اسحب الملفات هنا أو اضغط للاختيار'}
+                    <p className="font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                      {isDragOver ? (isAr ? 'أفلت الملفات هنا' : 'Drop files here') : (isAr ? 'اسحب الملفات هنا أو اضغط للاختيار' : 'Drag files here or click to select')}
                     </p>
-                    <p className="text-xs text-slate-400">{uploadedFiles.length}/5 ملفات مرفوعة</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{uploadedFiles.length}/5 {isAr ? 'ملفات مرفوعة' : 'files uploaded'}</p>
                   </div>
 
                   {/* Uploaded Files */}
@@ -656,21 +656,21 @@ export default function CheckoutPage() {
                             initial={{ opacity: 0, x: -20, scale: 0.95 }}
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                            className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors group"
+                            className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-colors group"
                           >
                             {f.preview ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={f.preview} alt={f.name} className="w-11 h-11 rounded-xl object-cover border border-slate-200" />
+                              <img src={f.preview} alt={f.name} className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-600" />
                             ) : (
-                              <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
+                              <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-600 flex items-center justify-center">
                                 {getFileIcon(f.type)}
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-800 truncate">{f.name}</p>
+                              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{f.name}</p>
                               <p className="text-[11px] text-slate-400">{formatFileSize(f.size)}</p>
                               {f.progress < 100 && (
-                                <div className="w-full h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                                <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-600 rounded-full mt-1.5 overflow-hidden">
                                   <motion.div
                                     className="h-full bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full"
                                     initial={{ width: 0 }}
@@ -685,7 +685,7 @@ export default function CheckoutPage() {
                             )}
                             <button
                               onClick={() => removeFile(f.id)}
-                              className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -707,8 +707,8 @@ export default function CheckoutPage() {
                       <Sparkles size={20} className="text-amber-500" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">كود الخصم</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">لديك كود خصم؟ أدخله هنا</p>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'كود الخصم' : 'Discount Code'}</h3>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'لديك كود خصم؟ أدخله هنا' : 'Have a discount code? Enter it here'}</p>
                     </div>
                   </div>
                   <div className="flex gap-2.5">
@@ -716,11 +716,11 @@ export default function CheckoutPage() {
                       type="text"
                       value={promoCode}
                       onChange={(e) => { setPromoCode(e.target.value); setPromoResult(null); }}
-                      placeholder="أدخل كود الخصم"
-                      className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 transition-all text-left font-mono uppercase tracking-wider hover:border-slate-300"
+                      placeholder={isAr ? 'أدخل كود الخصم' : 'Enter discount code'}
+                      className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm dark:text-white focus:outline-none focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 transition-all text-left font-mono uppercase tracking-wider hover:border-slate-300 dark:hover:border-slate-500"
                       dir="ltr"
                     />
-                    <Button onClick={handleApplyPromo} variant="primary" className="px-6 rounded-xl font-semibold">تطبيق</Button>
+                    <Button onClick={handleApplyPromo} variant="primary" className="px-6 rounded-xl font-semibold">{isAr ? 'تطبيق' : 'Apply'}</Button>
                   </div>
                   {promoResult && (
                     <motion.div
@@ -728,7 +728,7 @@ export default function CheckoutPage() {
                       animate={{ opacity: 1, y: 0 }}
                       className={cn(
                         "flex items-center gap-2 mt-3 text-sm font-semibold px-3 py-2 rounded-xl",
-                        promoResult.valid ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500',
+                        promoResult.valid ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400',
                       )}
                     >
                       {promoResult.valid ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -743,27 +743,27 @@ export default function CheckoutPage() {
             <AnimatePresence>
               {step === 'order_created' && orderData && (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ type: 'spring', duration: 0.5 }}>
-                  <Card className="p-5 sm:p-7 border-2 border-[#14b8a6]/30 bg-gradient-to-br from-[#14b8a6]/5 to-white">
+                  <Card className="p-5 sm:p-7 border-2 border-[#14b8a6]/30 bg-gradient-to-br from-[#14b8a6]/5 to-white dark:from-[#14b8a6]/10 dark:to-slate-800">
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400/10 to-emerald-500/10 flex items-center justify-center">
                         <CheckCircle2 size={20} className="text-emerald-500" />
                       </div>
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900">تم إنشاء الطلب بنجاح</h2>
-                        <p className="text-xs text-slate-400 mt-0.5">يمكنك الآن اختيار طريقة الدفع</p>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'تم إنشاء الطلب بنجاح' : 'Order Created Successfully'}</h2>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'يمكنك الآن اختيار طريقة الدفع' : 'You can now choose a payment method'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="p-4 rounded-xl bg-white border border-slate-200">
-                        <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium mb-1">رقم الطلب</p>
+                      <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'رقم الطلب' : 'Order Number'}</p>
                         <p className="text-lg font-bold text-[#2580eb] font-mono" dir="ltr">{orderData.orderNumber}</p>
                       </div>
-                      <div className="p-4 rounded-xl bg-white border border-slate-200">
-                        <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium mb-1">رقم الفاتورة</p>
+                      <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'رقم الفاتورة' : 'Invoice Number'}</p>
                         <p className="text-lg font-bold text-[#7c3aed] font-mono" dir="ltr">{orderData.invoiceNumber}</p>
                       </div>
                     </div>
-                    <p className="text-sm text-slate-500 mt-4">الآن يمكنك اختيار طريقة الدفع وإتمام عملية الشراء</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-4">{isAr ? 'الآن يمكنك اختيار طريقة الدفع وإتمام عملية الشراء' : 'You can now choose a payment method and complete the purchase'}</p>
                   </Card>
                 </motion.div>
               )}
@@ -779,17 +779,17 @@ export default function CheckoutPage() {
                         <CreditCard size={20} className="text-[#7c3aed]" />
                       </div>
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900">طريقة الدفع</h2>
-                        <p className="text-xs text-slate-400 mt-0.5">اختر طريقة الدفع المناسبة</p>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'طريقة الدفع' : 'Payment Method'}</h2>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'اختر طريقة الدفع المناسبة' : 'Choose the appropriate payment method'}</p>
                       </div>
                     </div>
                     {displayMethods.length === 0 ? (
                       <div className="text-center py-10">
-                        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                          <Wallet size={32} className="text-slate-300" />
+                        <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+                          <Wallet size={32} className="text-slate-300 dark:text-slate-500" />
                         </div>
-                        <p className="text-slate-600 font-semibold mb-1">لا توجد بوابات دفع مفعلة</p>
-                        <p className="text-sm text-slate-400">يرجى التواصل مع الإدارة لتفعيل بوابة دفع</p>
+                        <p className="text-slate-600 dark:text-slate-300 font-semibold mb-1">{isAr ? 'لا توجد بوابات دفع مفعلة' : 'No active payment gateways'}</p>
+                        <p className="text-sm text-slate-400 dark:text-slate-500">{isAr ? 'يرجى التواصل مع الإدارة لتفعيل بوابة دفع' : 'Please contact admin to activate a payment gateway'}</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -805,21 +805,21 @@ export default function CheckoutPage() {
                                 "w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all duration-200 text-right",
                                 isSelected
                                   ? "border-[#2580eb] bg-gradient-to-r from-[#2580eb]/5 to-[#14b8a6]/5 shadow-lg shadow-[#2580eb]/10"
-                                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md",
+                                  : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-md",
                               )}
                             >
                               <div className={cn(
                                 "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors",
-                                isSelected ? "bg-[#2580eb]/10" : "bg-slate-100",
+                                isSelected ? "bg-[#2580eb]/10" : "bg-slate-100 dark:bg-slate-600",
                               )}>
                                 <Wallet size={24} className={isSelected ? "text-[#2580eb]" : "text-slate-400"} />
                               </div>
                               <div className="flex-1 text-right">
-                                <p className="font-bold text-slate-900 text-sm sm:text-base">{method.name}</p>
+                                <p className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">{isAr ? method.name : method.name}</p>
                                 <p className="text-xs text-slate-500 mt-0.5">{method.supportedMethods.join(' · ')}</p>
                               </div>
                               {method.isDefault && (
-                                <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-bold uppercase tracking-wider">افتراضي</span>
+                                <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1 rounded-lg font-bold uppercase tracking-wider">{isAr ? 'افتراضي' : 'Default'}</span>
                               )}
                               <div className={cn(
                                 "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
@@ -849,7 +849,7 @@ export default function CheckoutPage() {
                       <Zap size={20} className="text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-white/60 uppercase tracking-wider font-medium">ملخص الطلب</p>
+                      <p className="text-xs text-white/60 uppercase tracking-wider font-medium">{isAr ? 'ملخص الطلب' : 'Order Summary'}</p>
                       <p className="font-bold text-sm mt-0.5">{service.name}</p>
                     </div>
                   </div>
@@ -861,15 +861,15 @@ export default function CheckoutPage() {
 
                 {/* Pricing */}
                 <div className="p-5 sm:p-6">
-                  <div className="space-y-3 pb-4 border-b border-slate-100">
+                  <div className="space-y-3 pb-4 border-b border-slate-100 dark:border-slate-700">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">السعر الأساسي</span>
-                      <span className="font-semibold text-slate-800">{formatPrice(basePrice, currencyCode)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">{isAr ? 'السعر الأساسي' : 'Base Price'}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formatPrice(basePrice, currencyCode)}</span>
                     </div>
                     {discount > 0 && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between items-center text-sm">
                         <span className="text-emerald-600 font-medium flex items-center gap-1">
-                          <Tag size={13} /> الخصم
+                          <Tag size={13} /> {isAr ? 'الخصم' : 'Discount'}
                         </span>
                         <span className="font-bold text-emerald-600">-{formatPrice(discount, currencyCode)}</span>
                       </motion.div>
@@ -877,7 +877,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="py-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-base font-bold text-slate-900">الإجمالي</span>
+                      <span className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'الإجمالي' : 'Total'}</span>
                       <motion.span
                         key={finalAmount}
                         initial={{ scale: 1.1 }}
@@ -892,7 +892,7 @@ export default function CheckoutPage() {
                   {/* Error */}
                   {error && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm mb-4">
+                      className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm mb-4">
                       <AlertCircle size={16} className="shrink-0" />
                       <span>{error}</span>
                     </motion.div>
@@ -909,7 +909,7 @@ export default function CheckoutPage() {
                         className="py-4 text-sm font-bold rounded-xl shadow-xl shadow-[#2580eb]/20 hover:shadow-[#2580eb]/30 transition-shadow"
                         iconLeft={!loading ? <Lock size={16} /> : undefined}
                       >
-                        {loading ? 'جار إنشاء الطلب...' : 'تأكيد الطلب'}
+                        {loading ? (isAr ? 'جار إنشاء الطلب...' : 'Creating order...') : (isAr ? 'تأكيد الطلب' : 'Confirm Order')}
                       </Button>
                     )}
 
@@ -923,22 +923,22 @@ export default function CheckoutPage() {
                         className="py-4 text-sm font-bold rounded-xl shadow-xl shadow-[#2580eb]/20 hover:shadow-[#2580eb]/30 transition-shadow"
                         iconLeft={!loading ? <Lock size={16} /> : undefined}
                       >
-                        {loading ? 'جار المعالجة...' : `إكمال الدفع ${formatPrice(finalAmount, currencyCode)}`}
+                        {loading ? (isAr ? 'جار المعالجة...' : 'Processing...') : `${isAr ? 'إكمال الدفع' : 'Pay'} ${formatPrice(finalAmount, currencyCode)}`}
                       </Button>
                     )}
 
                     {step === 'processing' && (
                       <div className="flex items-center justify-center gap-3 py-4">
                         <Loader2 size={24} className="animate-spin text-[#2580eb]" />
-                        <span className="text-slate-600 font-medium text-sm">جار معالجة الدفع...</span>
+                        <span className="text-slate-600 dark:text-slate-400 font-medium text-sm">{isAr ? 'جار معالجة الدفع...' : 'Processing payment...'}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Trust Badge */}
-                  <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <Shield size={13} className="text-emerald-500" />
-                    <span className="text-[11px] text-slate-400 font-medium">دفع آمن ومشفر بتقنية SSL</span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{isAr ? 'دفع آمن ومشفر بتقنية SSL' : 'Secure encrypted payment with SSL'}</span>
                   </div>
                 </div>
               </Card>

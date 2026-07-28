@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
   const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
-  const state = encodeURIComponent(safeRedirect);
+  const stateToken = crypto.randomUUID();
+  const state = encodeURIComponent(`${stateToken}:${safeRedirect}`);
 
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   googleAuthUrl.searchParams.set("client_id", clientId);
@@ -25,5 +26,14 @@ export async function GET(request: NextRequest) {
   googleAuthUrl.searchParams.set("prompt", "select_account");
   googleAuthUrl.searchParams.set("state", state);
 
-  return NextResponse.redirect(googleAuthUrl.toString());
+  const response = NextResponse.redirect(googleAuthUrl.toString());
+  response.cookies.set("google_oauth_state", stateToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 600,
+    path: "/",
+  });
+
+  return response;
 }

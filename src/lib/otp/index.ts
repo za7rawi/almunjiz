@@ -1,55 +1,68 @@
-const otpStore = new Map<string, { code: string; attempts: number; lastAttempt: number; createdAt: number }>();
+import { prisma } from "@/lib/prisma";
 
-const OTP_TTL = 5 * 60 * 1000;
+const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15 * 60 * 1000;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 export async function storeOTP(identifier: string, code: string): Promise<void> {
-  otpStore.set(identifier, {
-    code,
-    attempts: 0,
-    lastAttempt: 0,
-    createdAt: Date.now(),
+  await prisma.otpCode.create({
+    data: {
+      identifier: identifier.toLowerCase(),
+      code,
+      attempts: 0,
+      used: false,
+    },
   });
 }
 
-export function verifyStoredOTP(
+export async function verifyStoredOTP(
   identifier: string,
   code: string
-): { success: boolean; error?: string } {
-  const entry = otpStore.get(identifier);
+): Promise<{ success: boolean; error?: string }> {
+  const normalizedId = identifier.toLowerCase();
+
+  const entry = await prisma.otpCode.findFirst({
+    where: { identifier: normalizedId, used: false },
+    orderBy: { createdAt: "desc" },
+  });
 
   if (!entry) {
     return { success: false, error: "لم يتم إرسال رمز تحقق لهذا البريد" };
   }
 
-  if (Date.now() - entry.createdAt > OTP_TTL) {
-    otpStore.delete(identifier);
+  if (Date.now() - entry.createdAt.getTime() > OTP_TTL_MS) {
+    await prisma.otpCode.deleteMany({ where: { identifier: normalizedId } });
     return { success: false, error: "انتهت صلاحية الرمز. يرجى طلب رمز جديد" };
   }
 
   if (entry.attempts >= MAX_ATTEMPTS) {
-    if (Date.now() - entry.lastAttempt < LOCKOUT_DURATION) {
+    if (entry.lastAttempt && Date.now() - entry.lastAttempt.getTime() < LOCKOUT_DURATION_MS) {
       const remaining = Math.ceil(
-        (LOCKOUT_DURATION - (Date.now() - entry.lastAttempt)) / 60000
+        (LOCKOUT_DURATION_MS - (Date.now() - entry.lastAttempt.getTime())) / 60000
       );
       return {
         success: false,
         error: `تم تجاوز الحد المسموح من المحاولات. حاول مرة أخرى بعد ${remaining} دقيقة`,
       };
     }
-    entry.attempts = 0;
+    await prisma.otpCode.update({
+      where: { id: entry.id },
+      data: { attempts: 0 },
+    });
   }
 
-  entry.attempts++;
-  entry.lastAttempt = Date.now();
+  const newAttempts = entry.attempts + 1;
 
   if (entry.code !== code) {
-    const remaining = MAX_ATTEMPTS - entry.attempts;
+    await prisma.otpCode.update({
+      where: { id: entry.id },
+      data: { attempts: newAttempts, lastAttempt: new Date() },
+    });
+    const remaining = MAX_ATTEMPTS - newAttempts;
     return {
       success: false,
       error:
@@ -59,6 +72,10 @@ export function verifyStoredOTP(
     };
   }
 
-  otpStore.delete(identifier);
+  await prisma.otpCode.update({
+    where: { id: entry.id },
+    data: { used: true, attempts: newAttempts, lastAttempt: new Date() },
+  });
+
   return { success: true };
 }

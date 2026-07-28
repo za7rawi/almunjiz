@@ -19,6 +19,7 @@ import {
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguageStore } from '@/store/language-store';
 
 declare global {
   interface Window {
@@ -75,6 +76,8 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const { loginEmail, loginWithGoogle } = useAuthStore();
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
 
   const [mode, setMode] = useState<'otp' | 'password'>('otp');
   const [email, setEmail] = useState('');
@@ -102,20 +105,20 @@ export default function LoginPage() {
             redirect: false,
           });
           if (signInResult?.error) {
-            setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' });
+            setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Failed to create login session. Please try again' });
             useAuthStore.setState({ user: null, isAuthenticated: false });
             return;
           }
           router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
         } else {
-          setErrors({ general: result.message || 'فشل تسجيل الدخول بـ Google' });
+          setErrors({ general: result.message || (isAr ? 'فشل تسجيل الدخول بـ Google' : 'Google sign-in failed') });
         }
       } catch {
-        setErrors({ general: 'حدث خطأ أثناء التواصل مع Google' });
+        setErrors({ general: isAr ? 'حدث خطأ أثناء التواصل مع Google' : 'An error occurred communicating with Google' });
       }
       setGoogleLoading(false);
     },
-    [loginWithGoogle, router, redirectTo]
+    [loginWithGoogle, router, redirectTo, isAr]
   );
 
   useEffect(() => {
@@ -131,13 +134,13 @@ export default function LoginPage() {
             redirect: false,
           });
           if (signInResult?.error) {
-            setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول بـ Google' });
+            setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول بـ Google' : 'Failed to create Google login session' });
             return;
           }
           const redir = searchParams.get('redirect') || '/dashboard';
           router.push(redir);
         } catch {
-          setErrors({ general: 'حدث خطأ أثناء تسجيل الدخول بـ Google' });
+          setErrors({ general: isAr ? 'حدث خطأ أثناء تسجيل الدخول بـ Google' : 'An error occurred during Google sign-in' });
         } finally {
           setGoogleLoading(false);
         }
@@ -147,15 +150,15 @@ export default function LoginPage() {
     const errorParam = searchParams.get('error');
     if (errorParam) {
       const errorMessages: Record<string, string> = {
-        google_denied: 'تم إلغاء تسجيل الدخول بـ Google',
-        google_token: 'فشل التحقق من Google. يرجى المحاولة مرة أخرى',
-        google_profile: 'لم يتم استلام بيانات الملف الشخصي من Google',
-        google_config: 'تسجيل الدخول بـ Google غير مُعد حالياً',
-        google_error: 'حدث خطأ أثناء تسجيل الدخول بـ Google',
+        google_denied: isAr ? 'تم إلغاء تسجيل الدخول بـ Google' : 'Google sign-in cancelled',
+        google_token: isAr ? 'فشل التحقق من Google. يرجى المحاولة مرة أخرى' : 'Google verification failed. Please try again',
+        google_profile: isAr ? 'لم يتم استلام بيانات الملف الشخصي من Google' : 'No profile data received from Google',
+        google_config: isAr ? 'تسجيل الدخول بـ Google غير مُعد حالياً' : 'Google sign-in is not configured yet',
+        google_error: isAr ? 'حدث خطأ أثناء تسجيل الدخول بـ Google' : 'An error occurred during Google sign-in',
       };
-      setErrors({ general: errorMessages[errorParam] || 'حدث خطأ غير متوقع' });
+      setErrors({ general: errorMessages[errorParam] || (isAr ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred') });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, isAr]);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -192,14 +195,14 @@ export default function LoginPage() {
   };
 
   const validateEmail = (val: string) => {
-    if (!val) return 'البريد الإلكتروني مطلوب';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'البريد الإلكتروني غير صحيح';
+    if (!val) return isAr ? 'البريد الإلكتروني مطلوب' : 'Email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return isAr ? 'البريد الإلكتروني غير صحيح' : 'Invalid email address';
     return '';
   };
 
   const validatePassword = (val: string) => {
-    if (!val) return 'كلمة المرور مطلوبة';
-    if (val.length < 6) return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    if (!val) return isAr ? 'كلمة المرور مطلوبة' : 'Password is required';
+    if (val.length < 6) return isAr ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters';
     return '';
   };
 
@@ -223,10 +226,10 @@ export default function LoginPage() {
         if (data.devCode) sessionStorage.setItem('otp_dev_code', data.devCode);
         router.push(`/otp?redirect=${encodeURIComponent(redirectTo)}`);
       } else {
-        setErrors({ general: data.error || data.message || 'فشل إرسال رمز التحقق' });
+        setErrors({ general: data.error || data.message || (isAr ? 'فشل إرسال رمز التحقق' : 'Failed to send verification code') });
       }
     } catch {
-      setErrors({ general: 'حدث خطأ أثناء إرسال الرمز' });
+      setErrors({ general: isAr ? 'حدث خطأ أثناء إرسال الرمز' : 'An error occurred sending the code' });
     } finally {
       setOtpLoading(false);
     }
@@ -249,7 +252,7 @@ export default function LoginPage() {
         redirect: false,
       });
       if (signInResult?.error) {
-        setErrors({ general: 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' });
+        setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Failed to create login session. Please try again' });
         useAuthStore.setState({ user: null, isAuthenticated: false });
         setLoading(false);
         return;
@@ -266,8 +269,8 @@ export default function LoginPage() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="text-center mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">تسجيل الدخول</h2>
-        <p className="text-white/50 text-sm">أدخل بريدك الإلكتروني للمتابعة</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'تسجيل الدخول' : 'Sign In'}</h2>
+        <p className="text-white/50 text-sm">{isAr ? 'أدخل بريدك الإلكتروني للمتابعة' : 'Enter your email to continue'}</p>
       </motion.div>
 
       <AnimatePresence>
@@ -287,7 +290,7 @@ export default function LoginPage() {
       {/* Email input */}
       <motion.div variants={itemVariants} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-white/70 mb-2">البريد الإلكتروني</label>
+          <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
           <div className="relative group">
             <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
             <input
@@ -338,7 +341,7 @@ export default function LoginPage() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
           >
-            <label className="block text-sm font-medium text-white/70 mb-2">كلمة المرور</label>
+            <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'كلمة المرور' : 'Password'}</label>
             <div className="relative group">
               <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
               <input
@@ -400,7 +403,7 @@ export default function LoginPage() {
             iconLeft={!otpLoading ? <KeyRound size={18} /> : undefined}
             className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 hover:shadow-2xl hover:shadow-[#2580eb]/30 transition-all duration-300"
           >
-            إرسال رمز التحقق
+            {isAr ? 'إرسال رمز التحقق' : 'Send Verification Code'}
           </Button>
         ) : (
           <form onSubmit={handlePasswordSubmit}>
@@ -413,7 +416,7 @@ export default function LoginPage() {
               iconLeft={!loading ? <LogIn size={18} /> : undefined}
               className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 hover:shadow-2xl hover:shadow-[#2580eb]/30 transition-all duration-300"
             >
-              تسجيل الدخول
+              {isAr ? 'تسجيل الدخول' : 'Sign In'}
             </Button>
           </form>
         )}
@@ -430,7 +433,7 @@ export default function LoginPage() {
           }}
           className="text-xs text-white/40 hover:text-[#14b8a6] transition-colors"
         >
-          {mode === 'otp' ? 'تسجيل الدخول بكلمة المرور' : 'تسجيل الدخول برمز التحقق'}
+          {mode === 'otp' ? (isAr ? 'تسجيل الدخول بكلمة المرور' : 'Sign in with password') : (isAr ? 'تسجيل الدخول برمز التحقق' : 'Sign in with code')}
         </button>
       </motion.div>
 
@@ -440,7 +443,7 @@ export default function LoginPage() {
           <div className="w-full border-t border-white/[0.08]" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-transparent px-4 text-xs text-white/30 font-medium">أو</span>
+          <span className="bg-transparent px-4 text-xs text-white/30 font-medium">{isAr ? 'أو' : 'or'}</span>
         </div>
       </motion.div>
 
@@ -462,9 +465,9 @@ export default function LoginPage() {
       {/* Register link */}
       <motion.div variants={itemVariants} className="mt-6 text-center">
         <p className="text-sm text-white/40">
-          ليس لديك حساب؟{' '}
+          {isAr ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
           <Link href="/register" className="text-[#2580eb] hover:text-[#2580eb]/80 font-semibold transition-colors">
-            أنشئ حساباً جديداً
+            {isAr ? 'أنشئ حساباً جديداً' : 'Create new account'}
           </Link>
         </p>
       </motion.div>

@@ -83,7 +83,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching invoices:", error);
     return NextResponse.json(
-      { success: true, data: [], meta: { page: 1, limit: 50, total: 0, totalPages: 0 } },
+      { success: false, error: 'Internal server error', data: [], meta: { page: 1, limit: 50, total: 0, totalPages: 0 } },
+      { status: 500 }
     );
   }
 }

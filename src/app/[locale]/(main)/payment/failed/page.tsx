@@ -48,7 +48,7 @@ export default function PaymentFailedPage() {
   const tips = isAr ? tipsAr : tipsEn;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-red-50/30 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-red-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-red-900/10 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }} className="flex justify-center mb-8">
           <div className="relative">
@@ -58,17 +58,17 @@ export default function PaymentFailedPage() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.5 }} className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">{isAr ? 'فشل الدفع' : 'Payment Failed'}</h1>
-          <p className="text-slate-500 text-lg leading-relaxed max-w-md mx-auto">{isAr ? 'حدث خطأ أثناء معالجة الدفع. لم يتم خصم أي مبلغ.' : 'An error occurred during payment processing. No amount was charged.'}</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-4">{isAr ? 'فشل الدفع' : 'Payment Failed'}</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed max-w-md mx-auto">{isAr ? 'حدث خطأ أثناء معالجة الدفع. لم يتم خصم أي مبلغ.' : 'An error occurred during payment processing. No amount was charged.'}</p>
         </motion.div>
 
         {order && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.5 }} className="mb-8">
             <Card className="p-6">
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100"><span className="text-slate-500 text-sm">{isAr ? 'رقم الطلب' : 'Order ID'}</span><span className="font-mono font-semibold text-slate-900">#{order.orderNumber}</span></div>
-                {order.service?.name && <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100"><span className="text-slate-500 text-sm">{isAr ? 'الخدمة' : 'Service'}</span><span className="font-semibold text-slate-900">{order.service.name}</span></div>}
-                {order.total != null && <div className="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-100"><span className="text-red-500 text-sm font-medium">{isAr ? 'المبلغ' : 'Amount'}</span><span className="font-semibold text-red-600 line-through">{formatPrice(order.total, currency)}</span></div>}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5"><span className="text-slate-500 dark:text-slate-400 text-sm">{isAr ? 'رقم الطلب' : 'Order ID'}</span><span className="font-mono font-semibold text-slate-900 dark:text-white">#{order.orderNumber}</span></div>
+                {order.service?.name && <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5"><span className="text-slate-500 dark:text-slate-400 text-sm">{isAr ? 'الخدمة' : 'Service'}</span><span className="font-semibold text-slate-900 dark:text-white">{order.service.name}</span></div>}
+                {order.total != null && <div className="flex items-center justify-between p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20"><span className="text-red-500 dark:text-red-400 text-sm font-medium">{isAr ? 'المبلغ' : 'Amount'}</span><span className="font-semibold text-red-600 dark:text-red-400 line-through">{formatPrice(order.total, currency)}</span></div>}
               </div>
             </Card>
           </motion.div>
@@ -76,12 +76,12 @@ export default function PaymentFailedPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.5 }} className="mb-8">
           <Card className="p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">{isAr ? 'نصائح' : 'Tips'}</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{isAr ? 'نصائح' : 'Tips'}</h2>
             <ul className="space-y-3">
               {tips.map((tip, i) => (
-                <motion.li key={i} initial={{ opacity: 0, x: isRtl ? 20 : -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1 + i * 0.1, duration: 0.4 }} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0"><tip.icon size={16} className="text-amber-600" /></div>
-                  <span className="text-slate-700 text-sm">{tip.text}</span>
+                <motion.li key={i} initial={{ opacity: 0, x: isRtl ? 20 : -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1 + i * 0.1, duration: 0.4 }} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0"><tip.icon size={16} className="text-amber-600 dark:text-amber-400" /></div>
+                  <span className="text-slate-700 dark:text-slate-300 text-sm">{tip.text}</span>
                 </motion.li>
               ))}
             </ul>

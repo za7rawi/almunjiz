@@ -607,3 +607,16 @@ model FileAttachment {
   @@index([orderId])
   @@map("file_attachments")
 }
+
+model OtpCode {
+  id          String   @id @default(uuid())
+  identifier  String
+  code        String
+  attempts    Int      @default(0)
+  lastAttempt DateTime?
+  createdAt   DateTime @default(now())
+  used        Boolean  @default(false)
+
+  @@index([identifier])
+  @@map("otp_codes")
+}

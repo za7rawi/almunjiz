@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 
 type NotificationType = 'info' | 'success' | 'warning' | 'error';
 type NotificationTarget = 'all' | 'customers' | 'employees' | 'managers';
@@ -61,6 +63,9 @@ type FilterType = 'ALL' | NotificationType;
 type FilterRead = 'ALL' | 'read' | 'unread';
 
 export default function NotificationsPage() {
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const now = useSyncExternalStore(
@@ -72,6 +77,8 @@ export default function NotificationsPage() {
   const [filterRead, setFilterRead] = useState<FilterRead>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const [formTitle, setFormTitle] = useState('');
   const [formTitleEn, setFormTitleEn] = useState('');
@@ -88,7 +95,7 @@ export default function NotificationsPage() {
       const data = await res.json();
       if (data.success) setNotifications(data.data);
     } catch {
-      console.error('Failed to load notifications');
+      toast.error(isAr ? 'فشل تحميل الإشعارات' : 'Failed to load notifications');
     } finally {
       setLoading(false);
     }
@@ -104,6 +111,9 @@ export default function NotificationsPage() {
       return true;
     });
   }, [notifications, filterType, filterRead]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const total = notifications.length;
   const unread = notifications.filter((n) => !n.isRead).length;
@@ -141,7 +151,7 @@ export default function NotificationsPage() {
         setIsModalOpen(false);
       }
     } catch {
-      console.error('Failed to send notification');
+      toast.error(isAr ? 'فشل إرسال الإشعار' : 'Failed to send notification');
     } finally {
       setSending(false);
     }
@@ -190,26 +200,26 @@ export default function NotificationsPage() {
   function relativeTime(dateStr: string): string {
     const diff = now - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'الآن';
-    if (mins < 60) return `منذ ${mins} دقيقة`;
+    if (mins < 1) return isAr ? 'الآن' : 'Just now';
+    if (mins < 60) return isAr ? `منذ ${mins} دقيقة` : `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `منذ ${hrs} ساعة`;
+    if (hrs < 24) return isAr ? `منذ ${hrs} ساعة` : `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
-    return `منذ ${days} يوم`;
+    return isAr ? `منذ ${days} يوم` : `${days}d ago`;
   }
 
   const filterTypeLabels: Record<FilterType, string> = {
-    ALL: 'الكل',
-    info: 'معلومات',
-    success: 'نجاح',
-    warning: 'تحذير',
-    error: 'خطأ',
+    ALL: isAr ? 'الكل' : 'All',
+    info: isAr ? 'معلومات' : 'Info',
+    success: isAr ? 'نجاح' : 'Success',
+    warning: isAr ? 'تحذير' : 'Warning',
+    error: isAr ? 'خطأ' : 'Error',
   };
 
   const filterReadLabels: Record<FilterRead, string> = {
-    ALL: 'الكل',
-    read: 'مقروء',
-    unread: 'غير مقروء',
+    ALL: isAr ? 'الكل' : 'All',
+    read: isAr ? 'مقروء' : 'Read',
+    unread: isAr ? 'غير مقروء' : 'Unread',
   };
 
   const inputClass =
@@ -226,11 +236,11 @@ export default function NotificationsPage() {
   return (
     <div>
       <PageHeader
-        title="إدارة الإشعارات"
+        title={isAr ? 'إدارة الإشعارات' : 'Notifications Management'}
         breadcrumbs={[
-          { label: 'الرئيسية', href: '/' },
-          { label: 'الإدارة', href: '/admin' },
-          { label: 'الإشعارات' },
+          { label: isAr ? 'الرئيسية' : 'Home', href: '/' },
+          { label: isAr ? 'الإدارة' : 'Admin', href: '/admin' },
+          { label: isAr ? 'الإشعارات' : 'Notifications' },
         ]}
         actions={
           <Button
@@ -240,7 +250,7 @@ export default function NotificationsPage() {
               setIsModalOpen(true);
             }}
           >
-            إرسال إشعار جديد
+            {isAr ? 'إرسال إشعار جديد' : 'Send New Notification'}
           </Button>
         }
       />
@@ -259,7 +269,7 @@ export default function NotificationsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{total}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">إجمالي الإشعارات</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'إجمالي الإشعارات' : 'Total Notifications'}</p>
                 </div>
               </div>
             </CardContent>
@@ -279,7 +289,7 @@ export default function NotificationsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{unread}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">غير مقروء</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'غير مقروء' : 'Unread'}</p>
                 </div>
               </div>
             </CardContent>
@@ -299,7 +309,7 @@ export default function NotificationsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{read}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">مقروء</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'مقروء' : 'Read'}</p>
                 </div>
               </div>
             </CardContent>
@@ -311,11 +321,11 @@ export default function NotificationsPage() {
         <CardContent>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">النوع:</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'النوع:' : 'Type:'}</span>
               {(['ALL', 'info', 'success', 'warning', 'error'] as FilterType[]).map((t) => (
                 <button
                   key={t}
-                  onClick={() => setFilterType(t)}
+                  onClick={() => { setFilterType(t); setCurrentPage(1); }}
                   className={cn(
                     'px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
                     filterType === t
@@ -329,11 +339,11 @@ export default function NotificationsPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">الحالة:</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'الحالة:' : 'Status:'}</span>
               {(['ALL', 'unread', 'read'] as FilterRead[]).map((r) => (
                 <button
                   key={r}
-                  onClick={() => setFilterRead(r)}
+                  onClick={() => { setFilterRead(r); setCurrentPage(1); }}
                   className={cn(
                     'px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
                     filterRead === r
@@ -353,7 +363,7 @@ export default function NotificationsPage() {
                 iconLeft={<CheckCheck size={16} />}
                 onClick={markAllAsRead}
               >
-                تحديد الكل كمقروء
+                {isAr ? 'تحديد الكل كمقروء' : 'Mark all as read'}
               </Button>
             )}
           </div>
@@ -367,10 +377,10 @@ export default function NotificationsPage() {
                   className="text-center py-12"
                 >
                   <Bell size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                  <p className="text-slate-500 dark:text-slate-400">لا توجد إشعارات</p>
+                  <p className="text-slate-500 dark:text-slate-400">{isAr ? 'لا توجد إشعارات' : 'No notifications'}</p>
                 </motion.div>
               ) : (
-                filtered.map((notification, index) => {
+                paginatedData.map((notification, index) => {
                   const Icon = typeIcons[notification.type];
                   const color = typeColors[notification.type];
                   return (
@@ -398,7 +408,7 @@ export default function NotificationsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className={cn('text-sm font-semibold truncate', 'text-slate-900 dark:text-white')}>
-                            {notification.title}
+                            {isAr ? notification.title : notification.titleEn}
                           </h4>
                           {!notification.isRead && (
                             <span className="w-2 h-2 rounded-full bg-[#2580eb] shrink-0" />
@@ -408,7 +418,7 @@ export default function NotificationsPage() {
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
-                          {notification.message}
+                          {isAr ? notification.message : notification.messageEn}
                         </p>
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
                           {relativeTime(notification.createdAt)}
@@ -424,7 +434,7 @@ export default function NotificationsPage() {
                             onClick={() => markAsRead(notification.id)}
                             className="text-[#2580eb]"
                           >
-                            مقروء
+                            {isAr ? 'مقروء' : 'Read'}
                           </Button>
                         )}
                         <Button
@@ -441,28 +451,51 @@ export default function NotificationsPage() {
               )}
             </AnimatePresence>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 text-slate-600 dark:text-slate-300"
+                >
+                  {isAr ? 'السابق' : 'Previous'}
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 text-slate-600 dark:text-slate-300"
+                >
+                  {isAr ? 'التالي' : 'Next'}
+                </button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} size="lg">
         <ModalHeader>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">إرسال إشعار جديد</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'إرسال إشعار جديد' : 'Send New Notification'}</h2>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">العنوان (عربي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'العنوان (عربي)' : 'Title (Arabic)'}</label>
                 <input
                   type="text"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="أدخل العنوان"
+                  placeholder={isAr ? 'أدخل العنوان' : 'Enter title in Arabic'}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">العنوان (إنجليزي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'العنوان (إنجليزي)' : 'Title (English)'}</label>
                 <input
                   type="text"
                   value={formTitleEn}
@@ -475,17 +508,17 @@ export default function NotificationsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">الرسالة (عربي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'الرسالة (عربي)' : 'Message (Arabic)'}</label>
                 <textarea
                   value={formMessage}
                   onChange={(e) => setFormMessage(e.target.value)}
-                  placeholder="أدخل الرسالة"
+                  placeholder={isAr ? 'أدخل الرسالة' : 'Enter message in Arabic'}
                   rows={3}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">الرسالة (إنجليزي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'الرسالة (إنجليزي)' : 'Message (English)'}</label>
                 <textarea
                   value={formMessageEn}
                   onChange={(e) => setFormMessageEn(e.target.value)}
@@ -498,7 +531,7 @@ export default function NotificationsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">نوع الإشعار</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'نوع الإشعار' : 'Notification Type'}</label>
                 <div className="flex flex-wrap gap-2">
                   {(['info', 'success', 'warning', 'error'] as NotificationType[]).map((t) => {
                     const Icon = typeIcons[t];
@@ -523,14 +556,14 @@ export default function NotificationsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">الهدف</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'الهدف' : 'Target'}</label>
                 <div className="flex flex-wrap gap-2">
                   {(
                     [
-                      { value: 'all' as const, label: 'الجميع' },
-                      { value: 'customers' as const, label: 'العملاء' },
-                      { value: 'employees' as const, label: 'الموظفون' },
-                      { value: 'managers' as const, label: 'المديرون' },
+                      { value: 'all' as const, labelAr: 'الجميع', labelEn: 'All Users' },
+                      { value: 'customers' as const, labelAr: 'العملاء', labelEn: 'Customers' },
+                      { value: 'employees' as const, labelAr: 'الموظفون', labelEn: 'Employees' },
+                      { value: 'managers' as const, labelAr: 'المديرون', labelEn: 'Managers' },
                     ] as const
                   ).map((opt) => (
                     <button
@@ -544,7 +577,7 @@ export default function NotificationsPage() {
                           : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
                       )}
                     >
-                      {opt.label}
+                      {isAr ? opt.labelAr : opt.labelEn}
                     </button>
                   ))}
                 </div>
@@ -554,33 +587,33 @@ export default function NotificationsPage() {
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             iconLeft={sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             onClick={handleSend}
             disabled={!formTitle.trim() || !formMessage.trim() || sending}
           >
-            إرسال
+            {isAr ? 'إرسال' : 'Send'}
           </Button>
         </ModalFooter>
       </Modal>
 
       <Modal open={!!deleteId} onClose={() => setDeleteId(null)} size="sm">
         <ModalHeader>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">حذف الإشعار</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{isAr ? 'حذف الإشعار' : 'Delete Notification'}</h2>
         </ModalHeader>
         <ModalBody>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            هل أنت متأكد من حذف هذا الإشعار؟ لا يمكن التراجع عن هذا الإجراء.
+            {isAr ? 'هل أنت متأكد من حذف هذا الإشعار؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this notification? This action cannot be undone.'}
           </p>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => setDeleteId(null)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button variant="danger" iconLeft={<Trash2 size={16} />} onClick={handleDelete}>
-            حذف
+            {isAr ? 'حذف' : 'Delete'}
           </Button>
         </ModalFooter>
       </Modal>

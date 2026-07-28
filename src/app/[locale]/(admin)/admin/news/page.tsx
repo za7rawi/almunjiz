@@ -20,15 +20,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 
-const categories = [
-  'خدمات',
-  'عروض',
-  'أخبار عامة',
-  'تحديثات',
-  'فعاليات',
-  'نصائح',
-];
+const categoriesAr = ['خدمات', 'عروض', 'أخبار عامة', 'تحديثات', 'فعاليات', 'نصائح'];
+const categoriesEn = ['Services', 'Offers', 'General News', 'Updates', 'Events', 'Tips'];
 
 interface NewsArticle {
   id: string;
@@ -52,6 +48,8 @@ const inputClass = cn(
   'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30'
 );
 
+const PAGE_SIZE = 12;
+
 const emptyForm: Omit<NewsArticle, 'id' | 'createdAt' | 'updatedAt'> = {
   title: '',
   titleEn: '',
@@ -74,6 +72,10 @@ export default function AdminNewsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [activeTab, setActiveTab] = useState<'basic' | 'content' | 'settings'>('basic');
+  const [page, setPage] = useState(1);
+
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
 
   const fetchNews = useCallback(async () => {
     try {
@@ -82,7 +84,7 @@ export default function AdminNewsPage() {
       const data = await res.json();
       if (data.success) setNews(data.data);
     } catch {
-      console.error('Failed to load news');
+      toast.error(isAr ? 'فشل تحميل الأخبار' : 'Failed to load news');
     } finally {
       setLoading(false);
     }
@@ -101,6 +103,12 @@ export default function AdminNewsPage() {
     );
   }, [news, searchQuery]);
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
   const stats = useMemo(() => {
     const published = news.filter((n) => n.isPublished).length;
     const draft = news.filter((n) => !n.isPublished).length;
@@ -109,7 +117,7 @@ export default function AdminNewsPage() {
 
   const openAdd = () => {
     setEditingNews(null);
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, category: isAr ? 'خدمات' : 'Services' });
     setActiveTab('basic');
     setShowModal(true);
   };
@@ -158,7 +166,7 @@ export default function AdminNewsPage() {
       }
       setShowModal(false);
     } catch {
-      console.error('Failed to save news');
+      toast.error(isAr ? 'فشل حفظ الخبر' : 'Failed to save news');
     } finally {
       setSaving(false);
     }
@@ -172,7 +180,7 @@ export default function AdminNewsPage() {
         setNews((prev) => prev.filter((n) => n.id !== id));
       }
     } catch {
-      console.error('Failed to delete news');
+      toast.error(isAr ? 'فشل حذف الخبر' : 'Failed to delete news');
     }
     setDeleteConfirm(null);
   };
@@ -194,17 +202,19 @@ export default function AdminNewsPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Intl.DateTimeFormat('ar-SA', {
+    return new Intl.DateTimeFormat(isAr ? 'ar-SA' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     }).format(new Date(dateStr));
   };
 
+  const categories = isAr ? categoriesAr : categoriesEn;
+
   const tabs = [
-    { key: 'basic' as const, label: 'المعلومات الأساسية' },
-    { key: 'content' as const, label: 'المحتوى' },
-    { key: 'settings' as const, label: 'الإعدادات' },
+    { key: 'basic' as const, label: isAr ? 'المعلومات الأساسية' : 'Basic Info' },
+    { key: 'content' as const, label: isAr ? 'المحتوى' : 'Content' },
+    { key: 'settings' as const, label: isAr ? 'الإعدادات' : 'Settings' },
   ];
 
   if (loading) {
@@ -218,25 +228,25 @@ export default function AdminNewsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة الأخبار"
-        subtitle="إضافة وتعديل وحذف الأخبار والمقالات"
+        title={isAr ? 'إدارة الأخبار' : 'News Management'}
+        subtitle={isAr ? 'إضافة وتعديل وحذف الأخبار والمقالات' : 'Add, edit and delete news and articles'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'الأخبار' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'الأخبار' : 'News' },
         ]}
         actions={
           <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={openAdd}>
-            إضافة خبر
+            {isAr ? 'إضافة خبر' : 'Add News'}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[
-          { label: 'إجمالي الأخبار', value: stats.total, color: '#2580eb' },
-          { label: 'منشورة', value: stats.published, color: '#14b8a6' },
-          { label: 'مسودات', value: stats.draft, color: '#7c3aed' },
+          { label: isAr ? 'إجمالي الأخبار' : 'Total News', value: stats.total, color: '#2580eb' },
+          { label: isAr ? 'منشورة' : 'Published', value: stats.published, color: '#14b8a6' },
+          { label: isAr ? 'مسودات' : 'Drafts', value: stats.draft, color: '#7c3aed' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -269,14 +279,14 @@ export default function AdminNewsPage() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="بحث في الأخبار..."
+          onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          placeholder={isAr ? 'بحث في الأخبار...' : 'Search news...'}
           className={cn(inputClass, 'pr-10')}
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map((article, i) => (
+        {paginatedData.map((article, i) => (
           <motion.div
             key={article.id}
             initial={{ opacity: 0, y: 20 }}
@@ -294,7 +304,7 @@ export default function AdminNewsPage() {
                   <Badge variant="info" size="sm">{article.category}</Badge>
                   <button onClick={() => togglePublish(article.id)}>
                     <Badge variant={article.isPublished ? 'success' : 'warning'} size="sm" dot>
-                      {article.isPublished ? 'منشور' : 'مسودة'}
+                      {article.isPublished ? (isAr ? 'منشور' : 'Published') : (isAr ? 'مسودة' : 'Draft')}
                     </Badge>
                   </button>
                 </div>
@@ -314,7 +324,7 @@ export default function AdminNewsPage() {
                     <button
                       onClick={() => togglePublish(article.id)}
                       className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 transition-colors"
-                      title={article.isPublished ? 'إلغاء النشر' : 'نشر'}
+                      title={article.isPublished ? (isAr ? 'إلغاء النشر' : 'Unpublish') : (isAr ? 'نشر' : 'Publish')}
                     >
                       {article.isPublished ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -339,15 +349,39 @@ export default function AdminNewsPage() {
         {filtered.length === 0 && (
           <div className="col-span-full py-12 text-center text-slate-400">
             <Newspaper size={48} className="mx-auto mb-3 opacity-30" />
-            <p>لا توجد أخبار</p>
+            <p>{isAr ? 'لا توجد أخبار' : 'No news found'}</p>
           </div>
         )}
       </div>
 
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            {isAr ? 'السابق' : 'Previous'}
+          </Button>
+          <span className="text-sm text-slate-500">
+            {isAr ? `صفحة ${page} من ${totalPages}` : `Page ${page} of ${totalPages}`}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            {isAr ? 'التالي' : 'Next'}
+          </Button>
+        </div>
+      )}
+
       <Modal open={showModal} onClose={() => setShowModal(false)} size="lg">
         <ModalHeader>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editingNews ? 'تعديل الخبر' : 'إضافة خبر جديد'}
+            {editingNews ? (isAr ? 'تعديل الخبر' : 'Edit News') : (isAr ? 'إضافة خبر جديد' : 'Add New News')}
           </h2>
         </ModalHeader>
 
@@ -376,19 +410,19 @@ export default function AdminNewsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    العنوان (عربي) *
+                    {isAr ? 'العنوان (عربي) *' : 'Title (Arabic) *'}
                   </label>
                   <input
                     type="text"
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
                     className={inputClass}
-                    placeholder="عنوان الخبر بالعربي"
+                    placeholder={isAr ? 'عنوان الخبر بالعربي' : 'News title in Arabic'}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    العنوان (إنجليزي) *
+                    {isAr ? 'العنوان (إنجليزي) *' : 'Title (English) *'}
                   </label>
                   <input
                     type="text"
@@ -401,19 +435,19 @@ export default function AdminNewsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  ملخص (عربي)
+                  {isAr ? 'ملخص (عربي)' : 'Summary (Arabic)'}
                 </label>
                 <textarea
                   value={form.summary}
                   onChange={(e) => setForm({ ...form, summary: e.target.value })}
                   rows={2}
                   className={cn(inputClass, 'resize-none')}
-                  placeholder="ملخص مختصر للخبر"
+                  placeholder={isAr ? 'ملخص مختصر للخبر' : 'Brief summary in Arabic'}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  ملخص (إنجليزي)
+                  {isAr ? 'ملخص (إنجليزي)' : 'Summary (English)'}
                 </label>
                 <textarea
                   value={form.summaryEn}
@@ -425,7 +459,7 @@ export default function AdminNewsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  التصنيف
+                  {isAr ? 'التصنيف' : 'Category'}
                 </label>
                 <select
                   value={form.category}
@@ -444,19 +478,19 @@ export default function AdminNewsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  المحتوى (عربي)
+                  {isAr ? 'المحتوى (عربي)' : 'Content (Arabic)'}
                 </label>
                 <textarea
                   value={form.content}
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
                   rows={6}
                   className={cn(inputClass, 'resize-none')}
-                  placeholder="محتوى الخبر بالعربي"
+                  placeholder={isAr ? 'محتوى الخبر بالعربي' : 'News content in Arabic'}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  المحتوى (إنجليزي)
+                  {isAr ? 'المحتوى (إنجليزي)' : 'Content (English)'}
                 </label>
                 <textarea
                   value={form.contentEn}
@@ -473,8 +507,8 @@ export default function AdminNewsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">نشر الخبر</p>
-                  <p className="text-xs text-slate-500">عرض الخبر للمستخدمين</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{isAr ? 'نشر الخبر' : 'Publish News'}</p>
+                  <p className="text-xs text-slate-500">{isAr ? 'عرض الخبر للمستخدمين' : 'Show news to users'}</p>
                 </div>
                 <button
                   onClick={() => setForm({ ...form, isPublished: !form.isPublished })}
@@ -497,7 +531,7 @@ export default function AdminNewsPage() {
 
         <ModalFooter>
           <Button variant="ghost" onClick={() => setShowModal(false)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="primary"
@@ -505,7 +539,7 @@ export default function AdminNewsPage() {
             disabled={!form.title || !form.titleEn || saving}
             iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
           >
-            {editingNews ? 'حفظ التعديلات' : 'إضافة الخبر'}
+            {editingNews ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة الخبر' : 'Add News')}
           </Button>
         </ModalFooter>
       </Modal>
@@ -517,16 +551,16 @@ export default function AdminNewsPage() {
               <Trash2 size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-              حذف الخبر
+              {isAr ? 'حذف الخبر' : 'Delete News'}
             </h3>
             <p className="text-sm text-slate-500">
-              هل أنت متأكد من حذف هذا الخبر؟ لا يمكن التراجع عن هذا الإجراء.
+              {isAr ? 'هل أنت متأكد من حذف هذا الخبر؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this news? This action cannot be undone.'}
             </p>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" fullWidth onClick={() => setDeleteConfirm(null)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="danger"
@@ -534,7 +568,7 @@ export default function AdminNewsPage() {
             onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
             iconLeft={<Trash2 size={14} />}
           >
-            حذف
+            {isAr ? 'حذف' : 'Delete'}
           </Button>
         </ModalFooter>
       </Modal>

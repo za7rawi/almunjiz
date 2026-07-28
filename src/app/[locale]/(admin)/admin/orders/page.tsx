@@ -16,6 +16,7 @@ import { useLanguageStore } from '@/store/language-store';
 import { printInvoice } from '@/lib/print-invoice';
 import type { ApiOrder } from '@/types/api-order';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
 
 function isImageFile(mt: string): boolean { return mt?.startsWith('image/') || false; }
 function isPdfFile(mt: string): boolean { return mt === 'application/pdf'; }
@@ -28,23 +29,23 @@ function formatFileSize(bytes: number): string {
 
 type OrderStatus = 'ALL' | 'PENDING' | 'UNDER_REVIEW' | 'WAITING_CLIENT' | 'IN_PROGRESS' | 'COMPLETED' | 'DELIVERED' | 'CANCELLED';
 
-const statusConfig: Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'danger' | 'info' | 'secondary' }> = {
-  PENDING: { label: 'قيد الانتظار', variant: 'warning' },
-  UNDER_REVIEW: { label: 'قيد المراجعة', variant: 'info' },
-  WAITING_CLIENT: { label: 'بانتظار العميل', variant: 'secondary' },
-  IN_PROGRESS: { label: 'جار التنفيذ', variant: 'primary' },
-  COMPLETED: { label: 'مكتمل', variant: 'success' },
-  DELIVERED: { label: 'تم التسليم', variant: 'success' },
-  CANCELLED: { label: 'ملغى', variant: 'danger' },
+const statusConfig: Record<string, { label: string; labelEn: string; variant: 'warning' | 'primary' | 'success' | 'danger' | 'info' | 'secondary' }> = {
+  PENDING: { label: 'قيد الانتظار', labelEn: 'Pending', variant: 'warning' },
+  UNDER_REVIEW: { label: 'قيد المراجعة', labelEn: 'Under Review', variant: 'info' },
+  WAITING_CLIENT: { label: 'بانتظار العميل', labelEn: 'Waiting Client', variant: 'secondary' },
+  IN_PROGRESS: { label: 'جار التنفيذ', labelEn: 'In Progress', variant: 'primary' },
+  COMPLETED: { label: 'مكتمل', labelEn: 'Completed', variant: 'success' },
+  DELIVERED: { label: 'تم التسليم', labelEn: 'Delivered', variant: 'success' },
+  CANCELLED: { label: 'ملغى', labelEn: 'Cancelled', variant: 'danger' },
 };
 
-const paymentStatusConfig: Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'danger' }> = {
-  PENDING: { label: 'بانتظار الدفع', variant: 'warning' },
-  PROCESSING: { label: 'جار المعالجة', variant: 'primary' },
-  PAID: { label: 'مدفوع', variant: 'success' },
-  FAILED: { label: 'فشل', variant: 'danger' },
-  REFUNDED: { label: 'مسترد', variant: 'warning' },
-  CANCELLED: { label: 'ملغي', variant: 'danger' },
+const paymentStatusConfig: Record<string, { label: string; labelEn: string; variant: 'warning' | 'primary' | 'success' | 'danger' }> = {
+  PENDING: { label: 'بانتظار الدفع', labelEn: 'Pending Payment', variant: 'warning' },
+  PROCESSING: { label: 'جار المعالجة', labelEn: 'Processing', variant: 'primary' },
+  PAID: { label: 'مدفوع', labelEn: 'Paid', variant: 'success' },
+  FAILED: { label: 'فشل', labelEn: 'Failed', variant: 'danger' },
+  REFUNDED: { label: 'مسترد', labelEn: 'Refunded', variant: 'warning' },
+  CANCELLED: { label: 'ملغي', labelEn: 'Cancelled', variant: 'danger' },
 };
 
 export default function OrdersPage() {
@@ -57,13 +58,16 @@ export default function OrdersPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [internalNotes, setInternalNotes] = useState('');
   const [lightboxFile, setLightboxFile] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
+  const isAr = language === 'ar';
 
   useEffect(() => {
     const fetchData = () => {
       fetch('/api/orders?limit=200')
         .then((r) => r.json())
         .then((data) => { if (data.success && data.data) setOrders(data.data); })
-        .catch(() => {})
+        .catch(() => { toast.error(isAr ? 'فشل تحميل الطلبات' : 'Failed to load orders'); })
         .finally(() => setLoading(false));
     };
     fetchData();
@@ -75,30 +79,33 @@ export default function OrdersPage() {
     const counts: Record<string, number> = { ALL: orders.length };
     orders.forEach((o) => { counts[o.status] = (counts[o.status] || 0) + 1; });
     return [
-      { id: 'ALL' as OrderStatus, label: 'الكل', count: counts.ALL },
-      { id: 'PENDING' as OrderStatus, label: 'قيد الانتظار', count: counts.PENDING || 0 },
-      { id: 'UNDER_REVIEW' as OrderStatus, label: 'قيد المراجعة', count: counts.UNDER_REVIEW || 0 },
-      { id: 'WAITING_CLIENT' as OrderStatus, label: 'بانتظار العميل', count: counts.WAITING_CLIENT || 0 },
-      { id: 'IN_PROGRESS' as OrderStatus, label: 'جار التنفيذ', count: counts.IN_PROGRESS || 0 },
-      { id: 'COMPLETED' as OrderStatus, label: 'مكتمل', count: counts.COMPLETED || 0 },
-      { id: 'DELIVERED' as OrderStatus, label: 'تم التسليم', count: counts.DELIVERED || 0 },
-      { id: 'CANCELLED' as OrderStatus, label: 'ملغى', count: counts.CANCELLED || 0 },
+      { id: 'ALL' as OrderStatus, label: isAr ? 'الكل' : 'All', count: counts.ALL },
+      { id: 'PENDING' as OrderStatus, label: isAr ? statusConfig.PENDING.label : statusConfig.PENDING.labelEn, count: counts.PENDING || 0 },
+      { id: 'UNDER_REVIEW' as OrderStatus, label: isAr ? statusConfig.UNDER_REVIEW.label : statusConfig.UNDER_REVIEW.labelEn, count: counts.UNDER_REVIEW || 0 },
+      { id: 'WAITING_CLIENT' as OrderStatus, label: isAr ? statusConfig.WAITING_CLIENT.label : statusConfig.WAITING_CLIENT.labelEn, count: counts.WAITING_CLIENT || 0 },
+      { id: 'IN_PROGRESS' as OrderStatus, label: isAr ? statusConfig.IN_PROGRESS.label : statusConfig.IN_PROGRESS.labelEn, count: counts.IN_PROGRESS || 0 },
+      { id: 'COMPLETED' as OrderStatus, label: isAr ? statusConfig.COMPLETED.label : statusConfig.COMPLETED.labelEn, count: counts.COMPLETED || 0 },
+      { id: 'DELIVERED' as OrderStatus, label: isAr ? statusConfig.DELIVERED.label : statusConfig.DELIVERED.labelEn, count: counts.DELIVERED || 0 },
+      { id: 'CANCELLED' as OrderStatus, label: isAr ? statusConfig.CANCELLED.label : statusConfig.CANCELLED.labelEn, count: counts.CANCELLED || 0 },
     ];
-  }, [orders]);
+  }, [orders, isAr]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesStatus = activeStatus === 'ALL' || order.status === activeStatus;
       const matchesSearch =
         searchQuery === '' ||
-        (order.customerName && order.customerName.includes(searchQuery)) ||
+        (order.customerName && order.customerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (order.service?.name || '').includes(searchQuery) ||
+        (order.service?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (order.customerEmail || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (order.customerPhone || '').includes(searchQuery);
+        (order.customerPhone || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   }, [activeStatus, searchQuery, orders]);
+
+  const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE);
+  const paginatedData = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const handleUpdateStatus = async (status: string) => {
     if (!selectedOrder) return;
@@ -118,7 +125,9 @@ export default function OrdersPage() {
           setSelectedOrder({ ...selectedOrder, status });
         }
       }
-    } catch {}
+    } catch {
+      toast.error(isAr ? 'فشل تحديث الحالة' : 'Failed to update status');
+    }
   };
 
   const handleDownloadInvoice = async (order: ApiOrder) => {
@@ -159,7 +168,7 @@ export default function OrdersPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             placeholder={language === 'ar' ? 'بحث بالاسم، رقم الطلب، البريد، الجوال...' : 'Search by name, order ID, email, phone...'}
             className={cn(
               'w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200',
@@ -169,7 +178,7 @@ export default function OrdersPage() {
             )}
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <button onClick={() => { setSearchQuery(''); setCurrentPage(1); }} className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
               <X size={16} />
             </button>
           )}
@@ -182,7 +191,7 @@ export default function OrdersPage() {
             key={tab.id}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setActiveStatus(tab.id)}
+            onClick={() => { setActiveStatus(tab.id); setCurrentPage(1); }}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
               activeStatus === tab.id
@@ -218,7 +227,7 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredOrders.map((order) => (
+                  {paginatedData.map((order) => (
                     <motion.tr key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-b border-slate-50 dark:border-white/5 last:border-0 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                       <td className="py-3 px-4">
                         <div>
@@ -238,16 +247,16 @@ export default function OrdersPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-300 hidden lg:table-cell">{order.service?.name || '-'}</td>
-                      <td className="py-3 px-4 text-end font-bold text-slate-900 dark:text-white hidden md:table-cell">{Number(order.total || 0).toLocaleString()} ر.س</td>
+                      <td className="py-3 px-4 text-end font-bold text-slate-900 dark:text-white hidden md:table-cell">{Number(order.total || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</td>
                       <td className="py-3 px-4 hidden md:table-cell">
                         {order.paymentStatus && paymentStatusConfig[order.paymentStatus] ? (
-                          <Badge variant={paymentStatusConfig[order.paymentStatus].variant} size="sm">{paymentStatusConfig[order.paymentStatus].label}</Badge>
+                          <Badge variant={paymentStatusConfig[order.paymentStatus].variant} size="sm">{isAr ? paymentStatusConfig[order.paymentStatus].label : paymentStatusConfig[order.paymentStatus].labelEn}</Badge>
                         ) : (
                           <span className="text-xs text-slate-400">-</span>
                         )}
                       </td>
-                      <td className="py-3 px-4"><Badge variant={statusConfig[order.status]?.variant || 'primary'} size="sm">{statusConfig[order.status]?.label || order.status}</Badge></td>
-                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">{new Date(order.createdAt).toLocaleDateString('ar-SA')}</td>
+                      <td className="py-3 px-4"><Badge variant={statusConfig[order.status]?.variant || 'primary'} size="sm">{isAr ? (statusConfig[order.status]?.label || order.status) : (statusConfig[order.status]?.labelEn || order.status)}</Badge></td>
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">{new Date(order.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</td>
                       <td className="py-3 px-4 text-center">
                         <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => { setSelectedOrder(order); setInternalNotes(order.internalNotes || ''); setShowDetailModal(true); }} className="p-2 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors">
                           <Eye size={16} />
@@ -262,6 +271,29 @@ export default function OrdersPage() {
               <div className="py-12 text-center text-slate-400">
                 <Package size={48} className="mx-auto mb-3 opacity-30" />
                 <p>{language === 'ar' ? 'لا توجد طلبات' : 'No orders found'}</p>
+              </div>
+            )}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-white/5">
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 dark:text-slate-300"
+                  >
+                    {isAr ? 'السابق' : 'Previous'}
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 dark:text-slate-300"
+                  >
+                    {isAr ? 'التالي' : 'Next'}
+                  </button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -280,9 +312,9 @@ export default function OrdersPage() {
                 </div>
                 <div className="flex gap-2">
                   {selectedOrder.paymentStatus && paymentStatusConfig[selectedOrder.paymentStatus] && (
-                    <Badge variant={paymentStatusConfig[selectedOrder.paymentStatus].variant}>{paymentStatusConfig[selectedOrder.paymentStatus].label}</Badge>
+                    <Badge variant={paymentStatusConfig[selectedOrder.paymentStatus].variant}>{isAr ? paymentStatusConfig[selectedOrder.paymentStatus].label : paymentStatusConfig[selectedOrder.paymentStatus].labelEn}</Badge>
                   )}
-                  <Badge variant={statusConfig[selectedOrder.status]?.variant || 'primary'}>{statusConfig[selectedOrder.status]?.label || selectedOrder.status}</Badge>
+                  <Badge variant={statusConfig[selectedOrder.status]?.variant || 'primary'}>{isAr ? (statusConfig[selectedOrder.status]?.label || selectedOrder.status) : (statusConfig[selectedOrder.status]?.labelEn || selectedOrder.status)}</Badge>
                 </div>
               </div>
 
@@ -311,17 +343,17 @@ export default function OrdersPage() {
                   <DollarSign size={18} className="text-[#7c3aed] mt-0.5" />
                   <div>
                     <p className="text-xs text-slate-400">{language === 'ar' ? 'المبلغ' : 'Amount'}</p>
-                    <p className="font-bold text-slate-900 dark:text-white">{Number(selectedOrder.total || 0).toLocaleString()} ر.س</p>
-                    {Number(selectedOrder.discount || 0) > 0 && <p className="text-[10px] text-green-500">خصم: {Number(selectedOrder.discount || 0).toLocaleString()} ر.س</p>}
-                    {Number(selectedOrder.tax || 0) > 0 && <p className="text-[10px] text-slate-400">ضريبة: {Number(selectedOrder.tax || 0).toLocaleString()} ر.س</p>}
+                    <p className="font-bold text-slate-900 dark:text-white">{Number(selectedOrder.total || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</p>
+                    {Number(selectedOrder.discount || 0) > 0 && <p className="text-[10px] text-green-500">{isAr ? 'خصم' : 'Discount'}: {Number(selectedOrder.discount || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</p>}
+                    {Number(selectedOrder.tax || 0) > 0 && <p className="text-[10px] text-slate-400">{isAr ? 'ضريبة' : 'Tax'}: {Number(selectedOrder.tax || 0).toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</p>}
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
                   <Calendar size={18} className="text-amber-500 mt-0.5" />
                   <div>
                     <p className="text-xs text-slate-400">{language === 'ar' ? 'التاريخ' : 'Date'}</p>
-                    <p className="font-medium text-slate-900 dark:text-white">{new Date(selectedOrder.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                    <p className="text-[10px] text-slate-400">{new Date(selectedOrder.createdAt).toLocaleTimeString('ar-SA')}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">{new Date(selectedOrder.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-[10px] text-slate-400">{new Date(selectedOrder.createdAt).toLocaleTimeString(isAr ? 'ar-SA' : 'en-US')}</p>
                   </div>
                 </div>
               </div>
@@ -378,12 +410,12 @@ export default function OrdersPage() {
 
               {selectedOrder.fileAttachments && selectedOrder.fileAttachments.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <Paperclip size={16} /> الملفات المرفقة ({selectedOrder.fileAttachments.length})
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Paperclip size={16} /> {isAr ? 'الملفات المرفقة' : 'Attached Files'} ({selectedOrder.fileAttachments.length})
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {selectedOrder.fileAttachments.map((file) => (
-                      <div key={file.id} className="border border-slate-200 rounded-xl p-3 hover:border-[#2580eb]/30 transition-colors">
+                      <div key={file.id} className="border border-slate-200 dark:border-white/10 rounded-xl p-3 hover:border-[#2580eb]/30 transition-colors dark:bg-white/5">
                         {isImageFile(file.mimeType || file.fileType) ? (
                           <div className="relative group cursor-pointer mb-2" onClick={() => setLightboxFile(`/api/files/${file.id}?inline=true`)}>
                             <img src={`/api/files/${file.id}?inline=true`} alt={file.fileName} className="w-full h-32 object-cover rounded-lg" />
@@ -392,25 +424,25 @@ export default function OrdersPage() {
                             </div>
                           </div>
                         ) : isPdfFile(file.mimeType || file.fileType) ? (
-                          <div className="flex items-center gap-3 mb-2 p-2 bg-red-50 rounded-lg">
+                          <div className="flex items-center gap-3 mb-2 p-2 bg-red-50 dark:bg-red-500/10 rounded-lg">
                             <FileText size={24} className="text-red-500 shrink-0" />
-                            <span className="text-xs font-medium text-slate-700 truncate">{file.fileName}</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{file.fileName}</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3 mb-2 p-2 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-3 mb-2 p-2 bg-slate-50 dark:bg-white/5 rounded-lg">
                             <FileIcon size={24} className="text-amber-500 shrink-0" />
-                            <span className="text-xs font-medium text-slate-700 truncate">{file.fileName}</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{file.fileName}</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] text-slate-400">{formatFileSize(file.fileSize)}</span>
                           <div className="flex items-center gap-1">
                             {isPdfFile(file.mimeType || file.fileType) && (
-                              <a href={`/api/files/${file.id}?inline=true`} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-blue-50 text-blue-500">
+                              <a href={`/api/files/${file.id}?inline=true`} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-500/20 text-blue-500">
                                 <ExternalLink size={12} />
                               </a>
                             )}
-                            <a href={`/api/files/${file.id}`} download={file.fileName} className="p-1 rounded hover:bg-[#2580eb]/10 text-[#2580eb]">
+                            <a href={`/api/files/${file.id}`} download={file.fileName} className="p-1 rounded hover:bg-[#2580eb]/10 dark:hover:bg-[#2580eb]/20 text-[#2580eb]">
                               <Download size={12} />
                             </a>
                           </div>
@@ -426,7 +458,7 @@ export default function OrdersPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {Object.entries(statusConfig).map(([key, config]) => (
                     <motion.button key={key} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => handleUpdateStatus(key)} className={cn('px-3 py-2 rounded-xl text-xs font-medium transition-all border', selectedOrder.status === key ? 'border-[#2580eb] bg-[#2580eb]/10 text-[#2580eb]' : 'border-slate-200 dark:border-white/10 text-slate-500 hover:border-slate-300')}>
-                      {config.label}
+                      {isAr ? config.label : config.labelEn}
                     </motion.button>
                   ))}
                 </div>
@@ -453,7 +485,7 @@ export default function OrdersPage() {
             <img src={lightboxFile} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg" />
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
               <a href={lightboxFile} download className="px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg text-white text-xs hover:bg-white/30 flex items-center gap-1">
-                <Download size={14} /> تحميل
+                <Download size={14} /> {isAr ? 'تحميل' : 'Download'}
               </a>
             </div>
           </div>

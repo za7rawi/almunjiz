@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 
 interface StaticPage {
   id: string;
@@ -58,6 +60,10 @@ export default function AdminPagesPage() {
   const [editingPage, setEditingPage] = useState<StaticPage | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
 
   const fetchPages = useCallback(async () => {
     try {
@@ -66,7 +72,7 @@ export default function AdminPagesPage() {
       const data = await res.json();
       if (data.success) setPages(data.data);
     } catch {
-      console.error('Failed to load pages');
+      toast.error(isAr ? 'فشل تحميل الصفحات' : 'Failed to load pages');
     } finally {
       setLoading(false);
     }
@@ -84,6 +90,9 @@ export default function AdminPagesPage() {
         p.slug.toLowerCase().includes(q)
     );
   }, [pages, searchQuery]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const stats = useMemo(() => {
     const published = pages.filter((p) => p.isPublished).length;
@@ -147,7 +156,7 @@ export default function AdminPagesPage() {
       }
       setShowModal(false);
     } catch {
-      console.error('Failed to save page');
+      toast.error(isAr ? 'فشل حفظ الصفحة' : 'Failed to save page');
     } finally {
       setSaving(false);
     }
@@ -161,7 +170,7 @@ export default function AdminPagesPage() {
         setPages((prev) => prev.filter((p) => p.id !== id));
       }
     } catch {
-      console.error('Failed to delete page');
+      toast.error(isAr ? 'فشل حذف الصفحة' : 'Failed to delete page');
     }
     setDeleteConfirm(null);
   };
@@ -183,7 +192,7 @@ export default function AdminPagesPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Intl.DateTimeFormat('ar-SA', {
+    return new Intl.DateTimeFormat(isAr ? 'ar-SA' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -201,25 +210,25 @@ export default function AdminPagesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة الصفحات"
-        subtitle="إضافة وتعديل وحذف الصفحات الثابتة"
+        title={isAr ? 'إدارة الصفحات' : 'Pages Management'}
+        subtitle={isAr ? 'إضافة وتعديل وحذف الصفحات الثابتة' : 'Add, edit, and delete static pages'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'الصفحات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'الصفحات' : 'Pages' },
         ]}
         actions={
           <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={openAdd}>
-            إضافة صفحة
+            {isAr ? 'إضافة صفحة' : 'Add Page'}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[
-          { label: 'إجمالي الصفحات', value: stats.total, color: '#2580eb' },
-          { label: 'منشورة', value: stats.published, color: '#14b8a6' },
-          { label: 'مسودات', value: stats.draft, color: '#7c3aed' },
+          { label: isAr ? 'إجمالي الصفحات' : 'Total Pages', value: stats.total, color: '#2580eb' },
+          { label: isAr ? 'منشورة' : 'Published', value: stats.published, color: '#14b8a6' },
+          { label: isAr ? 'مسودات' : 'Drafts', value: stats.draft, color: '#7c3aed' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -252,8 +261,8 @@ export default function AdminPagesPage() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="بحث في الصفحات..."
+          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+          placeholder={isAr ? 'بحث في الصفحات...' : 'Search pages...'}
           className={cn(inputClass, 'pr-10')}
         />
       </div>
@@ -264,24 +273,24 @@ export default function AdminPagesPage() {
             <thead>
               <tr className="border-b border-slate-100 dark:border-white/5">
                 <th className="text-right px-5 py-3.5 font-semibold text-slate-600 dark:text-slate-400">
-                  العنوان
+                  {isAr ? 'العنوان' : 'Title'}
                 </th>
                 <th className="text-right px-5 py-3.5 font-semibold text-slate-600 dark:text-slate-400">
-                  الرابط
+                  {isAr ? 'الرابط' : 'Slug'}
                 </th>
                 <th className="text-center px-5 py-3.5 font-semibold text-slate-600 dark:text-slate-400">
-                  الحالة
+                  {isAr ? 'الحالة' : 'Status'}
                 </th>
                 <th className="text-right px-5 py-3.5 font-semibold text-slate-600 dark:text-slate-400">
-                  التاريخ
+                  {isAr ? 'التاريخ' : 'Date'}
                 </th>
                 <th className="text-center px-5 py-3.5 font-semibold text-slate-600 dark:text-slate-400">
-                  الإجراءات
+                  {isAr ? 'الإجراءات' : 'Actions'}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((page, i) => (
+              {paginatedData.map((page, i) => (
                 <motion.tr
                   key={page.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -308,7 +317,7 @@ export default function AdminPagesPage() {
                   <td className="px-5 py-4 text-center">
                     <button onClick={() => togglePublish(page.id)}>
                       <Badge variant={page.isPublished ? 'success' : 'warning'} size="sm" dot>
-                        {page.isPublished ? 'منشور' : 'مسودة'}
+                        {page.isPublished ? (isAr ? 'منشور' : 'Published') : (isAr ? 'مسودة' : 'Draft')}
                       </Badge>
                     </button>
                   </td>
@@ -320,7 +329,7 @@ export default function AdminPagesPage() {
                       <button
                         onClick={() => togglePublish(page.id)}
                         className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 transition-colors"
-                        title={page.isPublished ? 'إلغاء النشر' : 'نشر'}
+                        title={page.isPublished ? (isAr ? 'إلغاء النشر' : 'Unpublish') : (isAr ? 'نشر' : 'Publish')}
                       >
                         {page.isPublished ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
@@ -344,19 +353,42 @@ export default function AdminPagesPage() {
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-400">
                     <File size={48} className="mx-auto mb-3 opacity-30" />
-                    <p>لا توجد صفحات</p>
+                    <p>{isAr ? 'لا توجد صفحات' : 'No pages found'}</p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-white/5">
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 text-slate-600 dark:text-slate-300"
+              >
+                {isAr ? 'السابق' : 'Previous'}
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm rounded-lg border border-slate-200 dark:border-white/10 disabled:opacity-50 text-slate-600 dark:text-slate-300"
+              >
+                {isAr ? 'التالي' : 'Next'}
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Modal open={showModal} onClose={() => setShowModal(false)} size="lg">
         <ModalHeader>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editingPage ? 'تعديل الصفحة' : 'إضافة صفحة جديدة'}
+            {editingPage ? (isAr ? 'تعديل الصفحة' : 'Edit Page') : (isAr ? 'إضافة صفحة جديدة' : 'Add New Page')}
           </h2>
         </ModalHeader>
 
@@ -365,19 +397,19 @@ export default function AdminPagesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان (عربي) *
+                  {isAr ? 'العنوان (عربي) *' : 'Title (Arabic) *'}
                 </label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className={inputClass}
-                  placeholder="عنوان الصفحة بالعربي"
+                  placeholder={isAr ? 'عنوان الصفحة بالعربي' : 'Page title in Arabic'}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان (إنجليزي) *
+                  {isAr ? 'العنوان (إنجليزي) *' : 'Title (English) *'}
                 </label>
                 <input
                   type="text"
@@ -398,7 +430,7 @@ export default function AdminPagesPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                الرابط (Slug) *
+                {isAr ? 'الرابط (Slug) *' : 'Slug *'}
               </label>
               <input
                 type="text"
@@ -415,20 +447,20 @@ export default function AdminPagesPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                المحتوى (عربي)
+                {isAr ? 'المحتوى (عربي)' : 'Content (Arabic)'}
               </label>
               <textarea
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 rows={5}
                 className={cn(inputClass, 'resize-none')}
-                placeholder="محتوى الصفحة بالعربي"
+                placeholder={isAr ? 'محتوى الصفحة بالعربي' : 'Page content in Arabic'}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                المحتوى (إنجليزي)
+                {isAr ? 'المحتوى (إنجليزي)' : 'Content (English)'}
               </label>
               <textarea
                 value={form.contentEn}
@@ -441,8 +473,8 @@ export default function AdminPagesPage() {
 
             <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5">
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">نشر الصفحة</p>
-                <p className="text-xs text-slate-500">عرض الصفحة للمستخدمين</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">{isAr ? 'نشر الصفحة' : 'Publish Page'}</p>
+                <p className="text-xs text-slate-500">{isAr ? 'عرض الصفحة للمستخدمين' : 'Make page visible to users'}</p>
               </div>
               <button
                 onClick={() => setForm({ ...form, isPublished: !form.isPublished })}
@@ -464,7 +496,7 @@ export default function AdminPagesPage() {
 
         <ModalFooter>
           <Button variant="ghost" onClick={() => setShowModal(false)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="primary"
@@ -472,7 +504,7 @@ export default function AdminPagesPage() {
             disabled={!form.title || !form.titleEn || !form.slug || saving}
             iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
           >
-            {editingPage ? 'حفظ التعديلات' : 'إضافة الصفحة'}
+            {editingPage ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة الصفحة' : 'Add Page')}
           </Button>
         </ModalFooter>
       </Modal>
@@ -484,16 +516,16 @@ export default function AdminPagesPage() {
               <Trash2 size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-              حذف الصفحة
+              {isAr ? 'حذف الصفحة' : 'Delete Page'}
             </h3>
             <p className="text-sm text-slate-500">
-              هل أنت متأكد من حذف هذه الصفحة؟ لا يمكن التراجع عن هذا الإجراء.
+              {isAr ? 'هل أنت متأكد من حذف هذه الصفحة؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this page? This action cannot be undone.'}
             </p>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" fullWidth onClick={() => setDeleteConfirm(null)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="danger"
@@ -501,7 +533,7 @@ export default function AdminPagesPage() {
             onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
             iconLeft={<Trash2 size={14} />}
           >
-            حذف
+            {isAr ? 'حذف' : 'Delete'}
           </Button>
         </ModalFooter>
       </Modal>

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguageStore } from '@/store/language-store';
 import { signIn } from 'next-auth/react';
 
 const containerVariants = {
@@ -79,6 +80,8 @@ export default function OtpPage() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const { login } = useAuthStore();
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -132,7 +135,7 @@ export default function OtpPage() {
         });
         if (signInResult?.error) {
           setError(true);
-          setErrorMsg('فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى');
+          setErrorMsg(isAr ? 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Failed to create login session. Please try again');
           useAuthStore.setState({ user: null, isAuthenticated: false });
           setLoading(false);
           return;
@@ -143,18 +146,18 @@ export default function OtpPage() {
         setTimeout(() => router.push(redirectTo), 1500);
       } else {
         setError(true);
-        setErrorMsg(data.message || 'الرمز غير صحيح');
+        setErrorMsg(data.message || (isAr ? 'الرمز غير صحيح' : 'Invalid code'));
         setOtp(['', '', '', '', '', '']);
         setTimeout(() => inputRefs.current[0]?.focus(), 100);
       }
     } catch {
       setError(true);
-      setErrorMsg('حدث خطأ أثناء التحقق. حاول مرة أخرى');
+      setErrorMsg(isAr ? 'حدث خطأ أثناء التحقق. حاول مرة أخرى' : 'An error occurred verifying. Try again');
       setOtp(['', '', '', '', '', '']);
     } finally {
       setLoading(false);
     }
-  }, [identifier, router, login, redirectTo]);
+  }, [identifier, router, login, redirectTo, isAr]);
 
   const handleChange = useCallback((index: number, value: string) => {
     if (value.length > 1 || (value && !/^\d$/.test(value))) return;
@@ -207,10 +210,10 @@ export default function OtpPage() {
         setErrorMsg('');
         inputRefs.current[0]?.focus();
       } else {
-        setErrorMsg('فشل إعادة إرسال الرمز. حاول مرة أخرى.');
+        setErrorMsg(isAr ? 'فشل إعادة إرسال الرمز. حاول مرة أخرى.' : 'Failed to resend code. Try again.');
       }
     } catch {
-      setErrorMsg('فشل إعادة إرسال الرمز. حاول مرة أخرى.');
+      setErrorMsg(isAr ? 'فشل إعادة إرسال الرمز. حاول مرة أخرى.' : 'Failed to resend code. Try again.');
     } finally {
       setResending(false);
     }
@@ -227,8 +230,8 @@ export default function OtpPage() {
         >
           <Shield className="w-8 h-8 text-white" />
         </motion.div>
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">التحقق من الرمز</h2>
-        <p className="text-white/50 text-sm mb-3">أدخل الرمز المكون من 6 أرقام المرسل إلى</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'التحقق من الرمز' : 'Verify Code'}</h2>
+        <p className="text-white/50 text-sm mb-3">{isAr ? 'أدخل الرمز المكون من 6 أرقام المرسل إلى' : 'Enter the 6-digit code sent to'}</p>
         <div className="flex items-center justify-center gap-2">
           <Mail size={16} className="text-[#14b8a6]" />
           <p className="text-white font-semibold text-base tracking-wider" dir="ltr">{maskedEmail}</p>
@@ -241,9 +244,9 @@ export default function OtpPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 rounded-xl bg-[#14b8a6]/10 border border-[#14b8a6]/20 text-center"
         >
-          <p className="text-xs text-[#14b8a6] mb-1">رمز التحقق للتجربة</p>
+          <p className="text-xs text-[#14b8a6] mb-1">{isAr ? 'رمز التحقق للتجربة' : 'Test verification code'}</p>
           <p className="text-2xl font-bold text-white tracking-[0.3em] font-mono" dir="ltr">{devCode}</p>
-          <p className="text-[10px] text-white/30 mt-1">هذا الرمز يظهر في وضع التطوير فقط</p>
+          <p className="text-[10px] text-white/30 mt-1">{isAr ? 'هذا الرمز يظهر في وضع التطوير فقط' : 'This code is shown in development mode only'}</p>
         </motion.div>
       )}
 
@@ -260,7 +263,7 @@ export default function OtpPage() {
               onKeyDown={(e) => handleKeyDown(i, e)}
               onPaste={handlePaste}
               disabled={loading || verified}
-              className={`w-11 h-14 sm:w-13 sm:h-16 text-center text-xl sm:text-2xl font-bold text-white bg-white/[0.05] border rounded-xl focus:outline-none transition-all duration-300 disabled:opacity-50 ${
+              className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-xl sm:text-2xl font-bold text-white bg-white/[0.05] border rounded-xl focus:outline-none transition-all duration-300 disabled:opacity-50 ${
                 verified ? 'border-emerald-500/50 bg-emerald-500/10' : error ? 'border-red-500/50 bg-red-500/10' : digit ? 'border-[#2580eb]/50 bg-[#2580eb]/5 shadow-lg shadow-[#2580eb]/10' : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
               }`}
             />
@@ -285,8 +288,8 @@ export default function OtpPage() {
                 <CheckCircle2 className="w-10 h-10 text-emerald-400" />
               </motion.div>
             </motion.div>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-white font-semibold text-lg">تم التحقق بنجاح!</motion.p>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-white/50 text-sm mt-1">جاري التحويل إلى لوحة التحكم...</motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-white font-semibold text-lg">{isAr ? 'تم التحقق بنجاح!' : 'Verified successfully!'}</motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-white/50 text-sm mt-1">{isAr ? 'جاري التحويل إلى لوحة التحكم...' : 'Redirecting to dashboard...'}</motion.p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -294,7 +297,7 @@ export default function OtpPage() {
       {!verified && (
         <motion.div variants={itemVariants}>
           <Button variant="primary" size="lg" fullWidth loading={loading} onClick={() => handleVerify(otp.join(''))} iconLeft={!loading ? <ArrowRight size={18} className="rtl:rotate-180" /> : undefined} disabled={otp.join('').length < 6 || loading} className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 disabled:opacity-40 disabled:shadow-none transition-all duration-300">
-            تحقق
+            {isAr ? 'تحقق' : 'Verify'}
           </Button>
         </motion.div>
       )}
@@ -307,21 +310,21 @@ export default function OtpPage() {
               <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{timer}</span>
             </div>
             <div className="text-right">
-              <p className="text-sm text-white/40">إعادة الإرسال بعد</p>
-              <p className="text-xs text-white/40">{timer} ثانية</p>
+              <p className="text-sm text-white/40">{isAr ? 'إعادة الإرسال بعد' : 'Resend in'}</p>
+              <p className="text-xs text-white/40">{timer} {isAr ? 'ثانية' : 'seconds'}</p>
             </div>
           </div>
         ) : (
           <motion.button onClick={handleResend} disabled={resending} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2580eb]/10 border border-[#2580eb]/20 text-[#2580eb] text-sm font-semibold hover:bg-[#2580eb]/15 transition-all duration-200 disabled:opacity-50">
             {resending ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-            إعادة إرسال الرمز
+            {isAr ? 'إعادة إرسال الرمز' : 'Resend Code'}
           </motion.button>
         )}
       </motion.div>
 
       <motion.div variants={itemVariants} className="mt-6 text-center">
         <Link href="/login" className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/60 transition-colors">
-          العودة لتسجيل الدخول
+          {isAr ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}
           <ArrowLeft size={14} className="rtl:rotate-180" />
         </Link>
       </motion.div>

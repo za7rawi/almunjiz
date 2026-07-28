@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
+import { toast } from '@/components/ui/toast';
 import { useLanguageStore } from '@/store/language-store';
 
 interface ApiOrder {
@@ -51,34 +53,35 @@ interface AuditLog {
 
 const statusConfig: Record<
   string,
-  { label: string; variant: 'warning' | 'primary' | 'success' | 'info' | 'danger'; color: string }
+  { labelAr: string; labelEn: string; variant: 'warning' | 'primary' | 'success' | 'info' | 'danger'; color: string }
 > = {
-  PENDING: { label: 'قيد الانتظار', variant: 'warning', color: '#f59e0b' },
-  UNDER_REVIEW: { label: 'قيد المراجعة', variant: 'info', color: '#0ea5e9' },
-  IN_PROGRESS: { label: 'جار التنفيذ', variant: 'primary', color: '#2580eb' },
-  COMPLETED: { label: 'مكتمل', variant: 'success', color: '#10b981' },
-  DELIVERED: { label: 'تم التسليم', variant: 'success', color: '#10b981' },
-  CANCELLED: { label: 'ملغى', variant: 'danger', color: '#ef4444' },
+  PENDING: { labelAr: 'قيد الانتظار', labelEn: 'Pending', variant: 'warning', color: '#f59e0b' },
+  UNDER_REVIEW: { labelAr: 'قيد المراجعة', labelEn: 'Under Review', variant: 'info', color: '#0ea5e9' },
+  IN_PROGRESS: { labelAr: 'جار التنفيذ', labelEn: 'In Progress', variant: 'primary', color: '#2580eb' },
+  COMPLETED: { labelAr: 'مكتمل', labelEn: 'Completed', variant: 'success', color: '#10b981' },
+  DELIVERED: { labelAr: 'تم التسليم', labelEn: 'Delivered', variant: 'success', color: '#10b981' },
+  CANCELLED: { labelAr: 'ملغى', labelEn: 'Cancelled', variant: 'danger', color: '#ef4444' },
 };
 
 const quickActions = [
-  { label: 'إضافة خدمة', href: '/admin/services', icon: Wrench, color: '#2580eb' },
-  { label: 'إدارة الطلبات', href: '/admin/orders', icon: Package, color: '#14b8a6' },
-  { label: 'المدفوعات', href: '/admin/payments', icon: DollarSign, color: '#7c3aed' },
-  { label: 'العملاء', href: '/admin/customers', icon: Users, color: '#f59e0b' },
-  { label: 'السجلات', href: '/admin/audit-logs', icon: FileText, color: '#ef4444' },
+  { labelAr: 'إضافة خدمة', labelEn: 'Add Service', href: '/admin/services', icon: Wrench, color: '#2580eb' },
+  { labelAr: 'إدارة الطلبات', labelEn: 'Manage Orders', href: '/admin/orders', icon: Package, color: '#14b8a6' },
+  { labelAr: 'المدفوعات', labelEn: 'Payments', href: '/admin/payments', icon: DollarSign, color: '#7c3aed' },
+  { labelAr: 'العملاء', labelEn: 'Customers', href: '/admin/customers', icon: Users, color: '#f59e0b' },
+  { labelAr: 'السجلات', labelEn: 'Audit Logs', href: '/admin/audit-logs', icon: FileText, color: '#ef4444' },
 ];
 
-const auditActionLabels: Record<string, string> = {
-  CREATE: 'إنشاء',
-  UPDATE: 'تعديل',
-  DELETE: 'حذف',
-  LOGIN: 'تسجيل دخول',
-  LOGOUT: 'تسجيل خروج',
+const auditActionLabels: Record<string, { ar: string; en: string }> = {
+  CREATE: { ar: 'إنشاء', en: 'Create' },
+  UPDATE: { ar: 'تعديل', en: 'Update' },
+  DELETE: { ar: 'حذف', en: 'Delete' },
+  LOGIN: { ar: 'تسجيل دخول', en: 'Login' },
+  LOGOUT: { ar: 'تسجيل خروج', en: 'Logout' },
 };
 
 export default function AdminDashboardPage() {
   const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [customerCount, setCustomerCount] = useState(0);
   const [newCustomerCount, setNewCustomerCount] = useState(0);
@@ -106,7 +109,9 @@ export default function AdminDashboardPage() {
           const paidOrders = allOrders.filter(
             (o) => o.paymentStatus === 'PAID' || o.status === 'COMPLETED' || o.status === 'DELIVERED'
           );
-          const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+          const dayNamesAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+          const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayNames = isAr ? dayNamesAr : dayNamesEn;
           const now = new Date();
           const weekData: { day: string; value: number }[] = [];
           for (let i = 6; i >= 0; i--) {
@@ -138,6 +143,7 @@ export default function AdminDashboardPage() {
           setAuditLogs(logsData.data);
         }
       } catch {
+        toast.error(isAr ? 'فشل تحميل البيانات' : 'Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -184,7 +190,7 @@ export default function AdminDashboardPage() {
 
   const serviceCounts: Record<string, number> = {};
   orders.forEach((o) => {
-    const name = o.service?.name || 'أخرى';
+    const name = o.service?.name || (isAr ? 'أخرى' : 'Other');
     serviceCounts[name] = (serviceCounts[name] || 0) + 1;
   });
   const topServices = Object.entries(serviceCounts)
@@ -193,22 +199,24 @@ export default function AdminDashboardPage() {
   const maxServiceCount = Math.max(...topServices.map(([, c]) => c), 1);
 
   const statCards = [
-    { label: 'إجمالي الطلبات', value: orders.length, suffix: '', icon: Package, color: '#2580eb', numeric: orders.length },
-    { label: 'إجمالي الإيرادات', value: totalRevenue, suffix: ' ر.س', icon: DollarSign, color: '#14b8a6', numeric: totalRevenue },
-    { label: 'عدد العملاء', value: customerCount, suffix: '', icon: Users, color: '#7c3aed', numeric: customerCount },
-    { label: 'طلبات جديدة', value: newOrders, suffix: '', icon: ShoppingCart, color: '#f59e0b', numeric: newOrders },
-    { label: 'طلبات اليوم', value: todayOrdersCount, suffix: '', icon: CalendarDays, color: '#06b6d4', numeric: todayOrdersCount },
-    { label: 'طلبات هذا الأسبوع', value: weekOrdersCount, suffix: '', icon: Clock, color: '#4f46e5', numeric: weekOrdersCount },
-    { label: 'إيرادات هذا الشهر', value: monthRevenue, suffix: ' ر.س', icon: TrendingUp, color: '#10b981', numeric: monthRevenue },
-    { label: 'طلبات قيد التنفيذ', value: inProgressOrders, suffix: '', icon: Loader2, color: '#f97316', numeric: inProgressOrders },
+    { label: isAr ? 'إجمالي الطلبات' : 'Total Orders', value: orders.length, suffix: '', icon: Package, color: '#2580eb', numeric: orders.length },
+    { label: isAr ? 'إجمالي الإيرادات' : 'Total Revenue', value: totalRevenue, suffix: ' ر.س', icon: DollarSign, color: '#14b8a6', numeric: totalRevenue },
+    { label: isAr ? 'عدد العملاء' : 'Customers', value: customerCount, suffix: '', icon: Users, color: '#7c3aed', numeric: customerCount },
+    { label: isAr ? 'طلبات جديدة' : 'New Orders', value: newOrders, suffix: '', icon: ShoppingCart, color: '#f59e0b', numeric: newOrders },
+    { label: isAr ? 'طلبات اليوم' : "Today's Orders", value: todayOrdersCount, suffix: '', icon: CalendarDays, color: '#06b6d4', numeric: todayOrdersCount },
+    { label: isAr ? 'طلبات هذا الأسبوع' : 'This Week Orders', value: weekOrdersCount, suffix: '', icon: Clock, color: '#4f46e5', numeric: weekOrdersCount },
+    { label: isAr ? 'إيرادات هذا الشهر' : "This Month Revenue", value: monthRevenue, suffix: ' ر.س', icon: TrendingUp, color: '#10b981', numeric: monthRevenue },
+    { label: isAr ? 'طلبات قيد التنفيذ' : 'In Progress Orders', value: inProgressOrders, suffix: '', icon: Loader2, color: '#f97316', numeric: inProgressOrders },
   ];
+
+  const getStatusLabel = (status: string) => statusConfig[status]?.[isAr ? 'labelAr' : 'labelEn'] || status;
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">لوحة تحكم المدير</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">مرحباً بك في لوحة التحكم</p>
-      </div>
+      <PageHeader
+        title={isAr ? 'لوحة تحكم المدير' : 'Admin Dashboard'}
+        subtitle={isAr ? 'مرحباً بك في لوحة التحكم' : 'Welcome to the dashboard'}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
@@ -244,9 +252,9 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <h3 className="font-bold text-slate-900 dark:text-white">الطلبات الأخيرة</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'الطلبات الأخيرة' : 'Recent Orders'}</h3>
               <Link href="/admin/orders" className="text-sm text-[#2580eb] hover:underline flex items-center gap-1">
-                عرض الكل <ArrowUpRight size={14} />
+                {isAr ? 'عرض الكل' : 'View All'} <ArrowUpRight size={14} />
               </Link>
             </CardHeader>
             <CardContent>
@@ -254,10 +262,10 @@ export default function AdminDashboardPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-white/5">
-                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">العميل</th>
-                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">الخدمة</th>
-                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">الحالة</th>
-                      <th className="text-end py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">المبلغ</th>
+                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'العميل' : 'Customer'}</th>
+                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الخدمة' : 'Service'}</th>
+                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الحالة' : 'Status'}</th>
+                      <th className="text-end py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'المبلغ' : 'Amount'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -269,10 +277,10 @@ export default function AdminDashboardPage() {
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-xs font-bold">
-                              {(order.customerName || 'م').charAt(0)}
+                              {(order.customerName || (isAr ? 'م' : 'C')).charAt(0)}
                             </div>
                             <div>
-                              <p className="font-medium text-slate-900 dark:text-white">{order.customerName || 'عميل'}</p>
+                              <p className="font-medium text-slate-900 dark:text-white">{order.customerName || (isAr ? 'عميل' : 'Customer')}</p>
                               <p className="text-xs text-slate-400">{order.orderNumber}</p>
                             </div>
                           </div>
@@ -280,7 +288,7 @@ export default function AdminDashboardPage() {
                         <td className="py-3 px-2 text-slate-600 dark:text-slate-300">{order.service?.name || '-'}</td>
                         <td className="py-3 px-2">
                           <Badge variant={statusConfig[order.status]?.variant || 'primary'} size="sm" dot>
-                            {statusConfig[order.status]?.label || order.status}
+                            {getStatusLabel(order.status)}
                           </Badge>
                         </td>
                         <td className="py-3 px-2 text-end font-bold text-slate-900 dark:text-white">
@@ -291,7 +299,7 @@ export default function AdminDashboardPage() {
                     {recentOrders.length === 0 && (
                       <tr>
                         <td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500">
-                          لا توجد طلبات بعد
+                          {isAr ? 'لا توجد طلبات بعد' : 'No orders yet'}
                         </td>
                       </tr>
                     )}
@@ -303,7 +311,7 @@ export default function AdminDashboardPage() {
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">توزيع حالات الطلبات</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'توزيع حالات الطلبات' : 'Order Status Distribution'}</h3>
             </CardHeader>
             <CardContent>
               <div className="w-full h-8 rounded-full overflow-hidden flex bg-slate-100 dark:bg-white/10">
@@ -321,7 +329,7 @@ export default function AdminDashboardPage() {
                       style={{ backgroundColor: cfg.color }}
                     >
                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {cfg.label}: {pct.toFixed(1)}%
+                        {getStatusLabel(status)}: {pct.toFixed(1)}%
                       </div>
                     </motion.div>
                   );
@@ -335,7 +343,7 @@ export default function AdminDashboardPage() {
                     <div key={status} className="flex items-center gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                       <span className="text-xs text-slate-600 dark:text-slate-400">
-                        {cfg.label}: {count}
+                        {getStatusLabel(status)}: {count}
                       </span>
                     </div>
                   );
@@ -346,11 +354,11 @@ export default function AdminDashboardPage() {
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">الخدمات الأكثر طلباً</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'الخدمات الأكثر طلباً' : 'Top Services'}</h3>
             </CardHeader>
             <CardContent>
               {topServices.length === 0 ? (
-                <p className="text-center text-slate-400 dark:text-slate-500 py-6">لا توجد بيانات</p>
+                <p className="text-center text-slate-400 dark:text-slate-500 py-6">{isAr ? 'لا توجد بيانات' : 'No data yet'}</p>
               ) : (
                 <div className="space-y-4">
                   {topServices.map(([name, count], i) => (
@@ -360,7 +368,7 @@ export default function AdminDashboardPage() {
                           <Star size={14} className="text-[#f59e0b]" />
                           <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{name}</span>
                         </div>
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">{count} طلب</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">{count} {isAr ? 'طلب' : 'orders'}</span>
                       </div>
                       <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
                         <motion.div
@@ -381,7 +389,7 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">ملخص اليوم</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'ملخص اليوم' : "Today's Summary"}</h3>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -390,7 +398,7 @@ export default function AdminDashboardPage() {
                     <div className="w-9 h-9 rounded-lg bg-[#2580eb]/10 flex items-center justify-center">
                       <ShoppingCart size={18} className="text-[#2580eb]" />
                     </div>
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">طلبات اليوم</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'طلبات اليوم' : "Today's Orders"}</span>
                   </div>
                   <span className="text-lg font-bold text-slate-900 dark:text-white">{todayOrdersCount}</span>
                 </div>
@@ -399,7 +407,7 @@ export default function AdminDashboardPage() {
                     <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                       <DollarSign size={18} className="text-emerald-500" />
                     </div>
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">إيرادات اليوم</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'إيرادات اليوم' : "Today's Revenue"}</span>
                   </div>
                   <span className="text-lg font-bold text-slate-900 dark:text-white">{todayRevenue.toLocaleString()} ر.س</span>
                 </div>
@@ -408,7 +416,7 @@ export default function AdminDashboardPage() {
                     <div className="w-9 h-9 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center">
                       <Users size={18} className="text-[#7c3aed]" />
                     </div>
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">عملاء جدد اليوم</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'عملاء جدد اليوم' : 'New Customers Today'}</span>
                   </div>
                   <span className="text-lg font-bold text-slate-900 dark:text-white">{newCustomerCount}</span>
                 </div>
@@ -418,7 +426,7 @@ export default function AdminDashboardPage() {
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">إجراءات سريعة</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'إجراءات سريعة' : 'Quick Actions'}</h3>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -434,7 +442,7 @@ export default function AdminDashboardPage() {
                       >
                         <action.icon size={18} style={{ color: action.color }} />
                       </div>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{action.label}</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? action.labelAr : action.labelEn}</span>
                     </motion.div>
                   </Link>
                 ))}
@@ -444,18 +452,18 @@ export default function AdminDashboardPage() {
 
           <Card>
             <CardHeader>
-              <h3 className="font-bold text-slate-900 dark:text-white">النشاط الأخير</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'النشاط الأخير' : 'Recent Activity'}</h3>
             </CardHeader>
             <CardContent>
               {auditLogs.length === 0 ? (
-                <p className="text-center text-slate-400 dark:text-slate-500 py-4 text-sm">لا يوجد نشاط حديث</p>
+                <p className="text-center text-slate-400 dark:text-slate-500 py-4 text-sm">{isAr ? 'لا يوجد نشاط حديث' : 'No recent activity'}</p>
               ) : (
                 <div className="space-y-3">
                   {auditLogs.map((log) => {
                     const actionIcon = log.action === 'CREATE' ? CheckCircle2 : log.action === 'DELETE' ? Ban : AlertCircle;
                     const actionColor = log.action === 'CREATE' ? '#10b981' : log.action === 'DELETE' ? '#ef4444' : '#f59e0b';
                     const LogIcon = actionIcon;
-                    const timeAgo = getTimeAgo(log.createdAt);
+                    const timeAgo = getTimeAgo(log.createdAt, isAr);
                     return (
                       <div key={log.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                         <div
@@ -466,8 +474,8 @@ export default function AdminDashboardPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-slate-700 dark:text-slate-200">
-                            <span className="font-medium">{log.user?.name || 'مستخدم'}</span>{' '}
-                            {auditActionLabels[log.action] || log.action}{' '}
+                            <span className="font-medium">{log.user?.name || (isAr ? 'مستخدم' : 'User')}</span>{' '}
+                            {auditActionLabels[log.action]?.[isAr ? 'ar' : 'en'] || log.action}{' '}
                             <span className="font-medium">{log.resource}</span>
                           </p>
                           <p className="text-xs text-slate-400 mt-0.5">{timeAgo}</p>
@@ -484,7 +492,7 @@ export default function AdminDashboardPage() {
 
       <Card>
         <CardHeader>
-          <h3 className="font-bold text-slate-900 dark:text-white">إيرادات آخر 7 أيام (المدفوعة فقط)</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'إيرادات آخر 7 أيام (المدفوعة فقط)' : 'Last 7 Days Revenue (Paid Only)'}</h3>
         </CardHeader>
         <CardContent>
           <div className="h-52 flex items-end justify-between gap-3 px-2">
@@ -510,15 +518,23 @@ export default function AdminDashboardPage() {
   );
 }
 
-function getTimeAgo(dateStr: string): string {
+function getTimeAgo(dateStr: string, isAr: boolean): string {
   const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return 'الآن';
-  if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+  if (isAr) {
+    if (diffMin < 1) return 'الآن';
+    if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `منذ ${diffH} ساعة`;
+    const diffD = Math.floor(diffH / 24);
+    return `منذ ${diffD} يوم`;
+  }
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin} min ago`;
   const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `منذ ${diffH} ساعة`;
+  if (diffH < 24) return `${diffH}h ago`;
   const diffD = Math.floor(diffH / 24);
-  return `منذ ${diffD} يوم`;
+  return `${diffD}d ago`;
 }

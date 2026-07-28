@@ -58,7 +58,7 @@ export async function GET(
     }
 
     const filename = file.storedName || file.fileUrl.split("/").pop() || "file";
-    const filepath = join(process.cwd(), "public", file.fileUrl);
+    const filepath = join(process.cwd(), file.fileUrl);
 
     let fileBuffer: Buffer;
     try {

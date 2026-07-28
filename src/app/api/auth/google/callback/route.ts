@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
 import { sendWelcomeEmail } from "@/lib/email/service";
+import { setRoleCookieOnRedirect } from "@/lib/auth/role-cookie";
 
 async function exchangeCodeForTokens(code: string, redirectUri: string) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -39,34 +40,69 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
+  const storedState = request.cookies.get("google_oauth_state")?.value;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
   const acceptLanguage = request.headers.get("accept-language") || "";
   const locale = acceptLanguage.startsWith("en") ? "en" : "ar";
 
   if (error || !code) {
-    return NextResponse.redirect(
+    const response = NextResponse.redirect(
       new URL(`/${locale}/login?error=google_denied`, baseUrl)
     );
+    response.cookies.delete("google_oauth_state");
+    return response;
   }
 
-  const rawState = state ? decodeURIComponent(state) : "/dashboard";
-  const redirectPath = rawState.startsWith('/') && !rawState.includes('://') ? rawState : '/dashboard';
+  if (!state || !storedState) {
+    const response = NextResponse.redirect(
+      new URL(`/${locale}/login?error=google_state_missing`, baseUrl)
+    );
+    response.cookies.delete("google_oauth_state");
+    return response;
+  }
+
+  const decodedState = decodeURIComponent(state);
+  const colonIndex = decodedState.indexOf(":");
+  if (colonIndex === -1) {
+    const response = NextResponse.redirect(
+      new URL(`/${locale}/login?error=google_state_invalid`, baseUrl)
+    );
+    response.cookies.delete("google_oauth_state");
+    return response;
+  }
+
+  const stateToken = decodedState.substring(0, colonIndex);
+  const rawRedirect = decodedState.substring(colonIndex + 1);
+
+  if (stateToken !== storedState) {
+    const response = NextResponse.redirect(
+      new URL(`/${locale}/login?error=google_state_mismatch`, baseUrl)
+    );
+    response.cookies.delete("google_oauth_state");
+    return response;
+  }
+
+  const redirectPath = rawRedirect.startsWith('/') && !rawRedirect.includes('://') ? rawRedirect : '/dashboard';
 
   try {
     const redirectUri = `${baseUrl}/api/auth/google/callback`;
     const tokenData = await exchangeCodeForTokens(code, redirectUri);
     if (!tokenData?.access_token) {
-      return NextResponse.redirect(
+      const response = NextResponse.redirect(
         new URL(`/${locale}/login?error=google_token`, baseUrl)
       );
+      response.cookies.delete("google_oauth_state");
+      return response;
     }
 
     const googleUser = await fetchUserInfo(tokenData.access_token);
     if (!googleUser?.email) {
-      return NextResponse.redirect(
+      const response = NextResponse.redirect(
         new URL(`/${locale}/login?error=google_profile`, baseUrl)
       );
+      response.cookies.delete("google_oauth_state");
+      return response;
     }
 
     let user = await prisma.user.findUnique({
@@ -109,11 +145,15 @@ export async function GET(request: NextRequest) {
     loginUrl.searchParams.set("googleEmail", user.email);
     loginUrl.searchParams.set("redirect", redirectPath);
 
-    return NextResponse.redirect(loginUrl.toString());
+    const roleResponse = await setRoleCookieOnRedirect(loginUrl.toString(), user.role);
+    roleResponse.cookies.delete("google_oauth_state");
+    return roleResponse;
   } catch (err) {
     console.error("[Google OAuth] Callback error:", err);
-    return NextResponse.redirect(
+    const response = NextResponse.redirect(
       new URL(`/${locale}/login?error=google_error`, baseUrl)
     );
+    response.cookies.delete("google_oauth_state");
+    return response;
   }
 }

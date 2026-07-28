@@ -27,6 +27,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
+import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
 type GatewayProvider = 'TAP' | 'MOYASAR' | 'HYPERPAY' | 'PAYTABS' | 'MYFATOORAH' | 'STRIPE' | 'EDFAPAY' | 'TAMARA' | 'TABBY' | 'CUSTOM';
@@ -81,16 +82,16 @@ interface GatewayForm {
 }
 
 const PROVIDER_COLORS: Record<GatewayProvider, { bg: string; label: string; labelEn: string }> = {
-  TAP: { bg: 'bg-blue-100 text-blue-700', label: 'تيب', labelEn: 'Tap' },
-  MOYASAR: { bg: 'bg-emerald-100 text-emerald-700', label: 'موياسر', labelEn: 'Moyasar' },
-  HYPERPAY: { bg: 'bg-purple-100 text-purple-700', label: 'هايبر باي', labelEn: 'HyperPay' },
-  PAYTABS: { bg: 'bg-orange-100 text-orange-700', label: 'بايتابس', labelEn: 'PayTabs' },
-  MYFATOORAH: { bg: 'bg-teal-100 text-teal-700', label: 'ميفاتورة', labelEn: 'MyFatoorah' },
-  STRIPE: { bg: 'bg-violet-100 text-violet-700', label: 'سترايب', labelEn: 'Stripe' },
-  EDFAPAY: { bg: 'bg-cyan-100 text-cyan-700', label: 'ادفع باي', labelEn: 'EdfaPay' },
-  TAMARA: { bg: 'bg-pink-100 text-pink-700', label: 'تمارا', labelEn: 'Tamara' },
-  TABBY: { bg: 'bg-yellow-100 text-yellow-700', label: 'تابي', labelEn: 'Tabby' },
-  CUSTOM: { bg: 'bg-slate-100 text-slate-700', label: 'مخصص', labelEn: 'Custom' },
+  TAP: { bg: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400', label: 'تيب', labelEn: 'Tap' },
+  MOYASAR: { bg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400', label: 'موياسر', labelEn: 'Moyasar' },
+  HYPERPAY: { bg: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400', label: 'هايبر باي', labelEn: 'HyperPay' },
+  PAYTABS: { bg: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400', label: 'بايتابس', labelEn: 'PayTabs' },
+  MYFATOORAH: { bg: 'bg-teal-100 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400', label: 'ميفاتورة', labelEn: 'MyFatoorah' },
+  STRIPE: { bg: 'bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400', label: 'سترايب', labelEn: 'Stripe' },
+  EDFAPAY: { bg: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400', label: 'ادفع باي', labelEn: 'EdfaPay' },
+  TAMARA: { bg: 'bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-400', label: 'تمارا', labelEn: 'Tamara' },
+  TABBY: { bg: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400', label: 'تابي', labelEn: 'Tabby' },
+  CUSTOM: { bg: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300', label: 'مخصص', labelEn: 'Custom' },
 };
 
 const CURRENCIES = ['SAR', 'AED', 'KWD', 'BHD', 'QAR', 'OMR', 'EGP', 'USD', 'EUR', 'GBP'];
@@ -143,6 +144,7 @@ export default function GatewaysPage() {
       if (data.success) setGateways(data.data);
     } catch {
       console.error('Failed to load gateways');
+      toast.error(isAr ? 'فشل تحميل بوابات الدفع' : 'Failed to load gateways');
     } finally {
       setLoading(false);
     }
@@ -240,6 +242,7 @@ export default function GatewaysPage() {
       fetchGateways();
     } catch {
       console.error('Failed to save gateway');
+      toast.error(isAr ? 'فشل حفظ بوابة الدفع' : 'Failed to save gateway');
     } finally {
       setSaving(false);
     }
@@ -251,6 +254,7 @@ export default function GatewaysPage() {
       setGateways((prev) => prev.filter((g) => g.id !== id));
     } catch {
       console.error('Failed to delete gateway');
+      toast.error(isAr ? 'فشل حذف بوابة الدفع' : 'Failed to delete gateway');
     }
     setDeleteConfirm(null);
   };
@@ -261,6 +265,7 @@ export default function GatewaysPage() {
       await fetch(`/api/admin/gateways/${id}/test`, { method: 'POST' });
     } catch {
       console.error('Test failed');
+      toast.error(isAr ? 'فشل اختبار الاتصال' : 'Test connection failed');
     }
     setTestingId(null);
   };
@@ -322,7 +327,7 @@ export default function GatewaysPage() {
   }
 
   return (
-    <div className={cn('space-y-6', isRtl && 'font-[Cairo,Tajawal,sans-serif]')}>
+    <div className={cn('space-y-6 dark:bg-slate-900 dark:text-white', isRtl && 'font-[Cairo,Tajawal,sans-serif]')}>
       <PageHeader
         title={isAr ? 'بوابات الدفع' : 'Payment Gateways'}
         subtitle={isAr ? `إدارة بوابات الدفع المتاحة (${gateways.length})` : `Manage payment gateways (${gateways.length})`}
@@ -411,7 +416,7 @@ export default function GatewaysPage() {
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-slate-900 dark:text-white truncate">{gw.displayNameEn || gw.name}</span>
                               {gw.isDefault && (
-                                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-0.5">
+                                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 flex items-center gap-0.5">
                                   <Star size={8} fill="currentColor" /> {isAr ? 'افتراضي' : 'Default'}
                                 </span>
                               )}
@@ -433,7 +438,7 @@ export default function GatewaysPage() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-center hidden lg:table-cell">
-                        <span className="text-xs text-slate-500 font-medium">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                           {(gw.supportedCurrencies || []).join(', ') || '—'}
                         </span>
                       </td>
@@ -704,8 +709,8 @@ export default function GatewaysPage() {
                       'flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all',
                       form.environment === env
                         ? env === 'SANDBOX'
-                          ? 'border-yellow-400 bg-yellow-50 text-yellow-700'
-                          : 'border-green-400 bg-green-50 text-green-700'
+                          ? 'border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                          : 'border-green-400 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
                         : 'border-slate-200 dark:border-white/10 text-slate-500 hover:border-slate-300',
                     )}
                   >

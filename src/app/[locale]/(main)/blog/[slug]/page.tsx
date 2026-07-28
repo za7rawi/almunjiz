@@ -37,11 +37,11 @@ export default function BlogPostPage({
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <FileText size={64} className="text-slate-300 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">{isAr ? 'المقال غير موجود' : 'Article Not Found'}</h1>
-          <p className="text-slate-500 mb-6">{isAr ? 'عذراً، المقال الذي تبحث عنه غير موجود.' : 'Sorry, the article you are looking for does not exist.'}</p>
+          <FileText size={64} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'المقال غير موجود' : 'Article Not Found'}</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">{isAr ? 'عذراً، المقال الذي تبحث عنه غير موجود.' : 'Sorry, the article you are looking for does not exist.'}</p>
           <Link
             href="/blog"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white font-semibold hover:shadow-lg transition-all"
@@ -66,7 +66,7 @@ export default function BlogPostPage({
     .slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
       {/* Hero */}
       <section className="relative py-16 md:py-24 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
@@ -77,7 +77,7 @@ export default function BlogPostPage({
             <motion.div variants={itemVariants}>
               <Link
                 href="/blog"
-                className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-[#2580eb] transition-colors mb-6"
+                className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-[#2580eb] transition-colors mb-6"
               >
                 <ArrowRight size={16} />
                 {isAr ? 'العودة للمدونة' : 'Back to Blog'}
@@ -93,12 +93,12 @@ export default function BlogPostPage({
 
             <motion.h1
               variants={itemVariants}
-              className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 leading-tight"
+              className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 leading-tight"
             >
               {title}
             </motion.h1>
 
-            <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+            <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
                 <User size={14} />
                 {author}
@@ -126,14 +126,14 @@ export default function BlogPostPage({
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="bg-white rounded-2xl border border-slate-100 p-8 md:p-12 shadow-sm"
+          className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-8 md:p-12 shadow-sm"
         >
           <div
-            className="prose prose-lg prose-slate max-w-none
-              prose-headings:text-slate-900 prose-headings:font-bold
-              prose-p:text-slate-600 prose-p:leading-relaxed prose-p:text-base
-              prose-li:text-slate-600
-              prose-strong:text-slate-800
+            className="prose prose-lg prose-slate max-w-none dark:prose-invert
+              prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:font-bold
+              prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-p:leading-relaxed prose-p:text-base
+              prose-li:text-slate-600 dark:prose-li:text-slate-400
+              prose-strong:text-slate-800 dark:prose-strong:text-slate-200
               prose-a:text-[#2580eb] prose-a:no-underline hover:prose-a:underline"
             dangerouslySetInnerHTML={{ __html: content }}
           />
@@ -147,13 +147,13 @@ export default function BlogPostPage({
             transition={{ duration: 0.6, delay: 0.5 }}
             className="mt-16"
           >
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">{isAr ? 'مقالات ذات صلة' : 'Related Articles'}</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'مقالات ذات صلة' : 'Related Articles'}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {relatedPosts.map((related) => (
                 <Link
                   key={related.id}
                   href={`/blog/${related.slug}`}
-                  className="group rounded-2xl overflow-hidden bg-white border border-slate-100 hover:shadow-xl hover:shadow-black/5 transition-all duration-500"
+                  className="group rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:shadow-black/5 transition-all duration-500"
                 >
                   <div className={`h-36 bg-gradient-to-br ${related.gradient} relative overflow-hidden`}>
                     <div className="absolute inset-0 bg-black/10" />
@@ -162,7 +162,7 @@ export default function BlogPostPage({
                     </div>
                   </div>
                   <div className="p-5">
-                    <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mb-2">
                       <Calendar size={12} />
                       {new Date(related.date).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {
                         year: 'numeric',
@@ -170,10 +170,10 @@ export default function BlogPostPage({
                         day: 'numeric',
                       })}
                     </div>
-                    <h3 className="text-base font-bold text-slate-900 line-clamp-2 group-hover:text-[#2580eb] transition-colors">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2 group-hover:text-[#2580eb] transition-colors">
                       {isAr ? related.title : related.titleEn}
                     </h3>
-                    <p className="text-sm text-slate-500 line-clamp-2 mt-1">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
                       {isAr ? related.excerpt : related.excerptEn}
                     </p>
                   </div>

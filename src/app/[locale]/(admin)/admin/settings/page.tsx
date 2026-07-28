@@ -35,6 +35,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/language-store';
 
 const inputClass = cn(
   'w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200',
@@ -110,16 +111,6 @@ const defaultSettings: Settings = {
   orderNotifications: 'true',
   paymentNotifications: 'true',
 };
-
-const tabs: { key: Tab; label: string; icon: typeof Globe; color: string }[] = [
-  { key: 'general', label: 'عام', icon: Settings, color: '#2580eb' },
-  { key: 'account', label: 'الحساب', icon: Shield, color: '#ef4444' },
-  { key: 'email', label: 'البريد الإلكتروني', icon: Mail, color: '#14b8a6' },
-  { key: 'payment', label: 'الدفع', icon: CreditCard, color: '#7c3aed' },
-  { key: 'seo', label: 'SEO', icon: Search, color: '#f59e0b' },
-  { key: 'notifications', label: 'الإشعارات', icon: Bell, color: '#06b6d4' },
-  { key: 'backup', label: 'النسخ الاحتياطي', icon: Database, color: '#8b5cf6' },
-];
 
 interface Toast {
   id: string;
@@ -199,12 +190,14 @@ function UploadArea({
   onUpload,
   onRemove,
   uploading,
+  isAr,
 }: {
   label: string;
   preview: string;
   onUpload: (url: string) => void;
   onRemove: () => void;
   uploading?: boolean;
+  isAr: boolean;
 }) {
   const handleFile = async (file: File) => {
     const formData = new FormData();
@@ -256,8 +249,8 @@ function UploadArea({
       ) : (
         <Image size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
       )}
-      <p className="text-sm text-slate-500">{uploading ? 'جاري التحميل...' : 'اسحب هنا أو اضغط للتحميل'}</p>
-      <p className="text-xs text-slate-400 mt-1">PNG, SVG, JPG (حد أقصى 2MB)</p>
+      <p className="text-sm text-slate-500">{uploading ? (isAr ? 'جاري التحميل...' : 'Uploading...') : (isAr ? 'اسحب هنا أو اضغط للتحميل' : 'Drag here or click to upload')}</p>
+      <p className="text-xs text-slate-400 mt-1">{isAr ? 'PNG, SVG, JPG (حد أقصى 2MB)' : 'PNG, SVG, JPG (max 2MB)'}</p>
     </label>
   );
 }
@@ -287,6 +280,19 @@ export default function SettingsPage() {
 
   const [backupCounts, setBackupCounts] = useState<Record<string, number> | null>(null);
   const [exportingBackup, setExportingBackup] = useState(false);
+
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
+
+  const tabs: { key: Tab; label: string; icon: typeof Globe; color: string }[] = [
+    { key: 'general', label: isAr ? 'عام' : 'General', icon: Settings, color: '#2580eb' },
+    { key: 'account', label: isAr ? 'الحساب' : 'Account', icon: Shield, color: '#ef4444' },
+    { key: 'email', label: isAr ? 'البريد الإلكتروني' : 'Email', icon: Mail, color: '#14b8a6' },
+    { key: 'payment', label: isAr ? 'الدفع' : 'Payment', icon: CreditCard, color: '#7c3aed' },
+    { key: 'seo', label: 'SEO', icon: Search, color: '#f59e0b' },
+    { key: 'notifications', label: isAr ? 'الإشعارات' : 'Notifications', icon: Bell, color: '#06b6d4' },
+    { key: 'backup', label: isAr ? 'النسخ الاحتياطي' : 'Backup', icon: Database, color: '#8b5cf6' },
+  ];
 
   const toastTimerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -328,11 +334,9 @@ export default function SettingsPage() {
         setOriginalSettings(merged);
       }
     } catch {
-      addToast('error', 'فشل تحميل الإعدادات');
-    } finally {
-      setLoading(false);
+      addToast('error', isAr ? 'فشل تحميل الإعدادات' : 'Failed to load settings');
     }
-  }, [addToast]);
+  }, [addToast, isAr]);
 
   useEffect(() => {
     fetchSettings();
@@ -359,13 +363,13 @@ export default function SettingsPage() {
         setSaved((prev) => ({ ...prev, [section]: true }));
         setOriginalSettings(settings);
         setHasUnsavedChanges(false);
-        addToast('success', 'تم حفظ الإعدادات بنجاح');
+        addToast('success', isAr ? 'تم حفظ الإعدادات بنجاح' : 'Settings saved successfully');
         setTimeout(() => setSaved((prev) => ({ ...prev, [section]: false })), 2000);
       } else {
-        addToast('error', data.error || 'فشل حفظ الإعدادات');
+        addToast('error', data.error || (isAr ? 'فشل حفظ الإعدادات' : 'Failed to save settings'));
       }
     } catch {
-      addToast('error', 'حدث خطأ أثناء الحفظ');
+      addToast('error', isAr ? 'حدث خطأ أثناء الحفظ' : 'An error occurred while saving');
     } finally {
       setSaving('');
     }
@@ -373,15 +377,15 @@ export default function SettingsPage() {
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword) {
-      addToast('error', 'يرجى ملء جميع الحقول');
+      addToast('error', isAr ? 'يرجى ملء جميع الحقول' : 'Please fill in all fields');
       return;
     }
     if (newPassword.length < 8) {
-      addToast('error', 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل');
+      addToast('error', isAr ? 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل' : 'New password must be at least 8 characters');
       return;
     }
     if (newPassword !== confirmPassword) {
-      addToast('error', 'كلمتا المرور غير متطابقتين');
+      addToast('error', isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match');
       return;
     }
 
@@ -394,15 +398,15 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        addToast('success', 'تم تغيير كلمة المرور بنجاح');
+        addToast('success', isAr ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        addToast('error', data.error || 'فشل تغيير كلمة المرور');
+        addToast('error', data.error || (isAr ? 'فشل تغيير كلمة المرور' : 'Failed to change password'));
       }
     } catch {
-      addToast('error', 'حدث خطأ أثناء تغيير كلمة المرور');
+      addToast('error', isAr ? 'حدث خطأ أثناء تغيير كلمة المرور' : 'An error occurred while changing password');
     } finally {
       setChangingPassword(false);
     }
@@ -410,7 +414,7 @@ export default function SettingsPage() {
 
   const handleTestEmail = async () => {
     if (!testEmail || !testEmail.includes('@')) {
-      addToast('error', 'يرجى إدخال بريد إلكتروني صحيح');
+      addToast('error', isAr ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Please enter a valid email');
       return;
     }
     setSendingTest(true);
@@ -422,12 +426,12 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        addToast('success', 'تم إرسال البريد التجريبي بنجاح');
+        addToast('success', isAr ? 'تم إرسال البريد التجريبي بنجاح' : 'Test email sent successfully');
       } else {
-        addToast('error', data.error || 'فشل إرسال البريد');
+        addToast('error', data.error || (isAr ? 'فشل إرسال البريد' : 'Failed to send email'));
       }
     } catch {
-      addToast('error', 'حدث خطأ أثناء إرسال البريد');
+      addToast('error', isAr ? 'حدث خطأ أثناء إرسال البريد' : 'An error occurred while sending email');
     } finally {
       setSendingTest(false);
     }
@@ -447,15 +451,15 @@ export default function SettingsPage() {
         setGatewayResults(data.data.summary);
         const { passed, failed } = data.data.summary;
         if (failed === 0) {
-          addToast('success', `جميع بوابات الدفع تعمل بشكل صحيح (${passed} نشطة)`);
+          addToast('success', isAr ? `جميع بوابات الدفع تعمل بشكل صحيح (${passed} نشطة)` : `All payment gateways working (${passed} active)`);
         } else {
-          addToast('error', `بعض بوابات الدفع لا تعمل (${failed} فاشلة)`);
+          addToast('error', isAr ? `بعض بوابات الدفع لا تعمل (${failed} فاشلة)` : `Some payment gateways failing (${failed} failed)`);
         }
       } else {
-        addToast('error', data.error || 'فشل اختبار بوابات الدفع');
+        addToast('error', data.error || (isAr ? 'فشل اختبار بوابات الدفع' : 'Failed to test payment gateways'));
       }
     } catch {
-      addToast('error', 'حدث خطأ أثناء اختبار بوابات الدفع');
+      addToast('error', isAr ? 'حدث خطأ أثناء اختبار بوابات الدفع' : 'An error occurred while testing gateways');
     } finally {
       setTestingGateways(false);
     }
@@ -475,12 +479,12 @@ export default function SettingsPage() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        addToast('success', 'تم تحميل النسخة الاحتياطية بنجاح');
+        addToast('success', isAr ? 'تم تحميل النسخة الاحتياطية بنجاح' : 'Backup downloaded successfully');
       } else {
-        addToast('error', 'فشل تحميل النسخة الاحتياطية');
+        addToast('error', isAr ? 'فشل تحميل النسخة الاحتياطية' : 'Failed to download backup');
       }
     } catch {
-      addToast('error', 'حدث خطأ أثناء تحميل النسخة الاحتياطية');
+      addToast('error', isAr ? 'حدث خطأ أثناء تحميل النسخة الاحتياطية' : 'An error occurred while downloading backup');
     } finally {
       setExportingBackup(false);
     }
@@ -489,7 +493,7 @@ export default function SettingsPage() {
   const handleDiscardChanges = () => {
     setSettings(originalSettings);
     setHasUnsavedChanges(false);
-    addToast('info', 'تم تجاهل التغييرات');
+    addToast('info', isAr ? 'تم تجاهل التغييرات' : 'Changes discarded');
   };
 
   if (loading) {
@@ -505,12 +509,12 @@ export default function SettingsPage() {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <PageHeader
-        title="إعدادات الموقع"
-        subtitle="إدارة جميع إعدادات المنصة"
+        title={isAr ? 'إعدادات الموقع' : 'Site Settings'}
+        subtitle={isAr ? 'إدارة جميع إعدادات المنصة' : 'Manage all platform settings'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'الإعدادات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'الإعدادات' : 'Settings' },
         ]}
       />
 
@@ -524,7 +528,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3">
             <AlertTriangle size={18} className="text-amber-500" />
             <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
-              لديك تغييرات غير محفوظة
+              {isAr ? 'لديك تغييرات غير محفوظة' : 'You have unsaved changes'}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -534,7 +538,7 @@ export default function SettingsPage() {
               onClick={handleDiscardChanges}
               className="text-amber-600 hover:text-amber-700"
             >
-              تجاهل
+              {isAr ? 'تجاهل' : 'Discard'}
             </Button>
             <Button
               size="sm"
@@ -542,7 +546,7 @@ export default function SettingsPage() {
               onClick={() => handleSave(activeTab)}
               disabled={!!saving}
             >
-              حفظ الآن
+              {isAr ? 'حفظ الآن' : 'Save Now'}
             </Button>
           </div>
         </motion.div>
@@ -556,7 +560,7 @@ export default function SettingsPage() {
               key={tab.key}
               onClick={() => {
                 if (hasUnsavedChanges) {
-                  if (!confirm('لديك تغييرات غير محفوظة. هل تريد المتابعة؟')) return;
+                  if (!confirm(isAr ? 'لديك تغييرات غير محفوظة. هل تريد المتابعة؟' : 'You have unsaved changes. Do you want to continue?')) return;
                   setHasUnsavedChanges(false);
                 }
                 setActiveTab(tab.key);
@@ -577,48 +581,48 @@ export default function SettingsPage() {
 
       {activeTab === 'general' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <SectionCard title="المعلومات العامة" subtitle="اسم الموقع والوصف والشعارات" icon={Globe} color="#2580eb">
+          <SectionCard title={isAr ? 'المعلومات العامة' : 'General Information'} subtitle={isAr ? 'اسم الموقع والوصف والشعارات' : 'Site name, description and logos'} icon={Globe} color="#2580eb">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">اسم الموقع (عربي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'اسم الموقع (عربي)' : 'Site Name (Arabic)'}</label>
                 <input type="text" value={settings.siteName} onChange={(e) => update({ siteName: e.target.value })} className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">اسم الموقع (إنجليزي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'اسم الموقع (إنجليزي)' : 'Site Name (English)'}</label>
                 <input type="text" value={settings.siteNameEn} onChange={(e) => update({ siteNameEn: e.target.value })} className={inputClass} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">وصف الموقع (عربي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'وصف الموقع (عربي)' : 'Site Description (Arabic)'}</label>
                 <textarea value={settings.siteDescription} onChange={(e) => update({ siteDescription: e.target.value })} rows={3} className={textareaClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">وصف الموقع (إنجليزي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'وصف الموقع (إنجليزي)' : 'Site Description (English)'}</label>
                 <textarea value={settings.siteDescriptionEn} onChange={(e) => update({ siteDescriptionEn: e.target.value })} rows={3} className={textareaClass} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">شعار الموقع</label>
-                <UploadArea label="شعار الموقع" preview={settings.logo} onUpload={(url) => update({ logo: url })} onRemove={() => update({ logo: '' })} />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{isAr ? 'شعار الموقع' : 'Site Logo'}</label>
+                <UploadArea label={isAr ? 'شعار الموقع' : 'Site Logo'} preview={settings.logo} onUpload={(url) => update({ logo: url })} onRemove={() => update({ logo: '' })} isAr={isAr} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الأيقونة المفضلة</label>
-                <UploadArea label="الأيقونة المفضلة" preview={settings.favicon} onUpload={(url) => update({ favicon: url })} onRemove={() => update({ favicon: '' })} />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{isAr ? 'الأيقونة المفضلة' : 'Favicon'}</label>
+                <UploadArea label={isAr ? 'الأيقونة المفضلة' : 'Favicon'} preview={settings.favicon} onUpload={(url) => update({ favicon: url })} onRemove={() => update({ favicon: '' })} isAr={isAr} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">العملة</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'العملة' : 'Currency'}</label>
                 <input type="text" value={settings.currency} onChange={(e) => update({ currency: e.target.value })} className={inputClass} placeholder="SAR" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">رمز العملة</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'رمز العملة' : 'Currency Symbol'}</label>
                 <input type="text" value={settings.currencySymbol} onChange={(e) => update({ currencySymbol: e.target.value })} className={inputClass} placeholder="ر.س" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">نسبة الضريبة (%)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'نسبة الضريبة (%)' : 'Tax Rate (%)'}</label>
                 <input type="text" value={settings.taxRate} onChange={(e) => update({ taxRate: e.target.value })} className={inputClass} placeholder="15" />
               </div>
             </div>
@@ -628,41 +632,41 @@ export default function SettingsPage() {
                 <Phone size={18} className="text-[#14b8a6]" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-white">معلومات التواصل</h3>
-                <p className="text-xs text-slate-400">بيانات التواصل والعنوان</p>
+                <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'معلومات التواصل' : 'Contact Information'}</h3>
+                <p className="text-xs text-slate-400">{isAr ? 'بيانات التواصل والعنوان' : 'Contact details and address'}</p>
               </div>
             </CardHeader>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">رقم الهاتف (عربي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'رقم الهاتف (عربي)' : 'Phone Number (Arabic)'}</label>
                 <input type="text" value={settings.phone} onChange={(e) => update({ phone: e.target.value })} className={inputClass} placeholder="+966112345678" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">رقم الهاتف (إنجليزي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'رقم الهاتف (إنجليزي)' : 'Phone Number (English)'}</label>
                 <input type="text" value={settings.phoneEn} onChange={(e) => update({ phoneEn: e.target.value })} className={inputClass} placeholder="+966112345678" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">رقم الواتساب</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'رقم الواتساب' : 'WhatsApp Number'}</label>
               <input type="text" value={settings.whatsapp} onChange={(e) => update({ whatsapp: e.target.value })} className={inputClass} placeholder="+966500000000" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">البريد الإلكتروني (عربي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'البريد الإلكتروني (عربي)' : 'Email (Arabic)'}</label>
                 <input type="email" value={settings.email} onChange={(e) => update({ email: e.target.value })} className={inputClass} placeholder="info@almunjiz.com" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">البريد الإلكتروني (إنجليزي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'البريد الإلكتروني (إنجليزي)' : 'Email (English)'}</label>
                 <input type="email" value={settings.emailEn} onChange={(e) => update({ emailEn: e.target.value })} className={inputClass} placeholder="info@almunjiz.com" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">العنوان (عربي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'العنوان (عربي)' : 'Address (Arabic)'}</label>
                 <input type="text" value={settings.address} onChange={(e) => update({ address: e.target.value })} className={inputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">العنوان (إنجليزي)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'العنوان (إنجليزي)' : 'Address (English)'}</label>
                 <input type="text" value={settings.addressEn} onChange={(e) => update({ addressEn: e.target.value })} className={inputClass} />
               </div>
             </div>
@@ -683,7 +687,7 @@ export default function SettingsPage() {
                 onClick={() => handleSave('general')}
                 disabled={saving === 'general'}
               >
-                {saved['general'] ? 'تم الحفظ ✓' : 'حفظ جميع التغييرات'}
+                {saved['general'] ? (isAr ? 'تم الحفظ ✓' : 'Saved ✓') : (isAr ? 'حفظ جميع التغييرات' : 'Save All Changes')}
               </Button>
             </div>
           </SectionCard>
@@ -693,27 +697,27 @@ export default function SettingsPage() {
       {activeTab === 'account' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <SectionCard
-            title="الأمان وكلمة المرور"
-            subtitle="تغيير كلمة المرور وإعدادات الحساب"
+            title={isAr ? 'الأمان وكلمة المرور' : 'Security & Password'}
+            subtitle={isAr ? 'تغيير كلمة المرور وإعدادات الحساب' : 'Change password and account settings'}
             icon={Shield}
             color="#ef4444"
           >
             <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5">
               <div className="flex items-center gap-3 mb-4">
                 <Shield size={16} className="text-slate-400" />
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">تغيير كلمة المرور</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'تغيير كلمة المرور' : 'Change Password'}</span>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">كلمة المرور الحالية</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'كلمة المرور الحالية' : 'Current Password'}</label>
                   <div className="relative">
                     <input
                       type={showCurrentPassword ? 'text' : 'password'}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       className={cn(inputClass, 'pr-10')}
-                      placeholder="أدخل كلمة المرور الحالية"
+                      placeholder={isAr ? 'أدخل كلمة المرور الحالية' : 'Enter current password'}
                     />
                     <button
                       type="button"
@@ -726,14 +730,14 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">كلمة المرور الجديدة</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'كلمة المرور الجديدة' : 'New Password'}</label>
                   <div className="relative">
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className={cn(inputClass, 'pr-10')}
-                      placeholder="8 أحرف على الأقل"
+                      placeholder={isAr ? '8 أحرف على الأقل' : 'At least 8 characters'}
                     />
                     <button
                       type="button"
@@ -746,13 +750,13 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">تأكيد كلمة المرور الجديدة</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm New Password'}</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className={inputClass}
-                    placeholder="أعد إدخال كلمة المرور الجديدة"
+                    placeholder={isAr ? 'أعد إدخال كلمة المرور الجديدة' : 'Re-enter new password'}
                   />
                 </div>
               </div>
@@ -765,7 +769,7 @@ export default function SettingsPage() {
                   onClick={handleChangePassword}
                   disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
                 >
-                  {changingPassword ? 'جاري التغيير...' : 'تغيير كلمة المرور'}
+                  {changingPassword ? (isAr ? 'جاري التغيير...' : 'Changing...') : (isAr ? 'تغيير كلمة المرور' : 'Change Password')}
                 </Button>
               </div>
             </div>
@@ -775,22 +779,22 @@ export default function SettingsPage() {
 
       {activeTab === 'email' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <SectionCard title="إعدادات البريد الإلكتروني" subtitle="اختبار إرسال البريد وعرض الإعدادات" icon={Mail} color="#14b8a6">
+          <SectionCard title={isAr ? 'إعدادات البريد الإلكتروني' : 'Email Settings'} subtitle={isAr ? 'اختبار إرسال البريد وعرض الإعدادات' : 'Test email sending and view settings'} icon={Mail} color="#14b8a6">
             <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5 space-y-3">
               <div className="flex items-center gap-3 mb-2">
                 <Mail size={16} className="text-slate-400" />
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">إعدادات SMTP</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'إعدادات SMTP' : 'SMTP Settings'}</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">الخدمة</label>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{isAr ? 'الخدمة' : 'Service'}</label>
                   <div className="px-3 py-2 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-700 dark:text-slate-300">
                     Resend
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">المرسل</label>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{isAr ? 'المرسل' : 'Sender'}</label>
                   <div className="px-3 py-2 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-700 dark:text-slate-300">
                     noreply@munjiz.store
                   </div>
@@ -799,17 +803,17 @@ export default function SettingsPage() {
 
               <div className="flex items-center gap-2 pt-1">
                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">متصل ونشط</span>
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{isAr ? 'متصل ونشط' : 'Connected & Active'}</span>
               </div>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center gap-3 mb-3">
                 <TestTube size={16} className="text-blue-500" />
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">اختبار إرسال البريد</span>
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{isAr ? 'اختبار إرسال البريد' : 'Test Email Sending'}</span>
               </div>
               <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">
-                أرسل بريداً إلكترونياً تجريبياً للتأكد من أن إعدادات البريد تعمل بشكل صحيح.
+                {isAr ? 'أرسل بريداً إلكترونياً تجريبياً للتأكد من أن إعدادات البريد تعمل بشكل صحيح.' : 'Send a test email to verify that email settings are working correctly.'}
               </p>
               <div className="flex gap-2">
                 <input
@@ -826,7 +830,7 @@ export default function SettingsPage() {
                   onClick={handleTestEmail}
                   disabled={sendingTest || !testEmail}
                 >
-                  {sendingTest ? 'جاري الإرسال...' : 'إرسال تجريبي'}
+                  {sendingTest ? (isAr ? 'جاري الإرسال...' : 'Sending...') : (isAr ? 'إرسال تجريبي' : 'Send Test')}
                 </Button>
               </div>
             </div>
@@ -836,7 +840,7 @@ export default function SettingsPage() {
 
       {activeTab === 'payment' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <SectionCard title="إعدادات الدفع" subtitle="إدارة واختبار بوابات الدفع" icon={CreditCard} color="#7c3aed">
+          <SectionCard title={isAr ? 'إعدادات الدفع' : 'Payment Settings'} subtitle={isAr ? 'إدارة واختبار بوابات الدفع' : 'Manage and test payment gateways'} icon={CreditCard} color="#7c3aed">
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/admin/gateways" className="flex-1">
                 <Card glass className="cursor-pointer hover:border-[#7c3aed]/50 transition-colors h-full">
@@ -845,8 +849,8 @@ export default function SettingsPage() {
                       <CreditCard size={24} className="text-[#7c3aed]" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-900 dark:text-white">إدارة بوابات الدفع</h4>
-                      <p className="text-xs text-slate-400">إضافة وتعديل وحذف بوابات الدفع</p>
+                      <h4 className="font-bold text-slate-900 dark:text-white">{isAr ? 'إدارة بوابات الدفع' : 'Manage Payment Gateways'}</h4>
+                      <p className="text-xs text-slate-400">{isAr ? 'إضافة وتعديل وحذف بوابات الدفع' : 'Add, edit and delete payment gateways'}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -857,10 +861,10 @@ export default function SettingsPage() {
                   <CardContent className="pt-4 space-y-3">
                     <div className="flex items-center gap-3">
                       <TestTube size={16} className="text-[#7c3aed]" />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">اختبار الاتصال</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'اختبار الاتصال' : 'Connection Test'}</span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      اختبار جميع بوابات الدفع النشطة للتأكد من أنها تعمل بشكل صحيح.
+                      {isAr ? 'اختبار جميع بوابات الدفع النشطة للتأكد من أنها تعمل بشكل صحيح.' : 'Test all active payment gateways to ensure they are working correctly.'}
                     </p>
                     <Button
                       size="sm"
@@ -869,7 +873,7 @@ export default function SettingsPage() {
                       onClick={handleTestGateways}
                       disabled={testingGateways}
                     >
-                      {testingGateways ? 'جاري الاختبار...' : 'اختبار جميع البوابات'}
+                      {testingGateways ? (isAr ? 'جاري الاختبار...' : 'Testing...') : (isAr ? 'اختبار جميع البوابات' : 'Test All Gateways')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -882,23 +886,23 @@ export default function SettingsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5"
               >
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">نتائج الاختبار</h4>
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">{isAr ? 'نتائج الاختبار' : 'Test Results'}</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="text-center p-3 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10">
                     <div className="text-2xl font-bold text-slate-900 dark:text-white">{gatewayResults.total}</div>
-                    <div className="text-xs text-slate-400">المجموع</div>
+                    <div className="text-xs text-slate-400">{isAr ? 'المجموع' : 'Total'}</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700">
                     <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{gatewayResults.passed}</div>
-                    <div className="text-xs text-emerald-500">ناجحة</div>
+                    <div className="text-xs text-emerald-500">{isAr ? 'ناجحة' : 'Passed'}</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
                     <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{gatewayResults.partial}</div>
-                    <div className="text-xs text-amber-500">جزئية</div>
+                    <div className="text-xs text-amber-500">{isAr ? 'جزئية' : 'Partial'}</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700">
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400">{gatewayResults.failed}</div>
-                    <div className="text-xs text-red-500">فاشلة</div>
+                    <div className="text-xs text-red-500">{isAr ? 'فاشلة' : 'Failed'}</div>
                   </div>
                 </div>
               </motion.div>
@@ -909,27 +913,27 @@ export default function SettingsPage() {
 
       {activeTab === 'seo' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <SectionCard title="تحسين محركات البحث (SEO)" subtitle="إعدادات Meta Tags وتحسين الظهور" icon={Search} color="#f59e0b">
+          <SectionCard title={isAr ? 'تحسين محركات البحث (SEO)' : 'Search Engine Optimization (SEO)'} subtitle={isAr ? 'إعدادات Meta Tags وتحسين الظهور' : 'Meta Tags settings and visibility optimization'} icon={Search} color="#f59e0b">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">عنوان Meta</label>
-              <input type="text" value={settings.metaTitle} onChange={(e) => update({ metaTitle: e.target.value })} className={inputClass} placeholder="عنوان الصفحة في نتائج البحث" />
-              <p className="text-xs text-slate-400 mt-1">{settings.metaTitle.length}/60 حرف</p>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'عنوان Meta' : 'Meta Title'}</label>
+              <input type="text" value={settings.metaTitle} onChange={(e) => update({ metaTitle: e.target.value })} className={inputClass} placeholder={isAr ? 'عنوان الصفحة في نتائج البحث' : 'Page title in search results'} />
+              <p className="text-xs text-slate-400 mt-1">{settings.metaTitle.length}/60 {isAr ? 'حرف' : 'chars'}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">وصف Meta</label>
-              <textarea value={settings.metaDescription} onChange={(e) => update({ metaDescription: e.target.value })} rows={3} className={textareaClass} placeholder="وصف الصفحة في نتائج البحث" />
-              <p className="text-xs text-slate-400 mt-1">{settings.metaDescription.length}/160 حرف</p>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'وصف Meta' : 'Meta Description'}</label>
+              <textarea value={settings.metaDescription} onChange={(e) => update({ metaDescription: e.target.value })} rows={3} className={textareaClass} placeholder={isAr ? 'وصف الصفحة في نتائج البحث' : 'Page description in search results'} />
+              <p className="text-xs text-slate-400 mt-1">{settings.metaDescription.length}/160 {isAr ? 'حرف' : 'chars'}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">الكلمات المفتاحية</label>
-              <input type="text" value={settings.keywords} onChange={(e) => update({ keywords: e.target.value })} className={inputClass} placeholder="كلمة1, كلمة2, كلمة3" />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'الكلمات المفتاحية' : 'Keywords'}</label>
+              <input type="text" value={settings.keywords} onChange={(e) => update({ keywords: e.target.value })} className={inputClass} placeholder={isAr ? 'كلمة1, كلمة2, كلمة3' : 'keyword1, keyword2, keyword3'} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">صورة Open Graph</label>
-              <UploadArea label="صورة Open Graph" preview={settings.ogImage} onUpload={(url) => update({ ogImage: url })} onRemove={() => update({ ogImage: '' })} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{isAr ? 'صورة Open Graph' : 'Open Graph Image'}</label>
+              <UploadArea label={isAr ? 'صورة Open Graph' : 'Open Graph Image'} preview={settings.ogImage} onUpload={(url) => update({ ogImage: url })} onRemove={() => update({ ogImage: '' })} isAr={isAr} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">حساب Twitter</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{isAr ? 'حساب Twitter' : 'Twitter Account'}</label>
               <input type="text" value={settings.twitterHandle} onChange={(e) => update({ twitterHandle: e.target.value })} className={inputClass} placeholder="@username" />
             </div>
 
@@ -938,8 +942,8 @@ export default function SettingsPage() {
                 <Link2 size={18} className="text-[#7c3aed]" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-white">وسائل التواصل الاجتماعي</h3>
-                <p className="text-xs text-slate-400">روابط حسابات التواصل الاجتماعي</p>
+                <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'وسائل التواصل الاجتماعي' : 'Social Media'}</h3>
+                <p className="text-xs text-slate-400">{isAr ? 'روابط حسابات التواصل الاجتماعي' : 'Social media account links'}</p>
               </div>
             </CardHeader>
             {[
@@ -971,7 +975,7 @@ export default function SettingsPage() {
                 onClick={() => handleSave('seo')}
                 disabled={saving === 'seo'}
               >
-                {saved['seo'] ? 'تم الحفظ ✓' : 'حفظ'}
+                {saved['seo'] ? (isAr ? 'تم الحفظ ✓' : 'Saved ✓') : (isAr ? 'حفظ' : 'Save')}
               </Button>
             </div>
           </SectionCard>
@@ -980,23 +984,23 @@ export default function SettingsPage() {
 
       {activeTab === 'notifications' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <SectionCard title="إعدادات الإشعارات" subtitle="إدارة إشعارات البريد الإلكتروني" icon={Bell} color="#06b6d4">
+          <SectionCard title={isAr ? 'إعدادات الإشعارات' : 'Notification Settings'} subtitle={isAr ? 'إدارة إشعارات البريد الإلكتروني' : 'Manage email notifications'} icon={Bell} color="#06b6d4">
             <div className="space-y-4">
               {[
                 {
                   key: 'emailNotifications' as const,
-                  label: 'إشعارات البريد الإلكتروني',
-                  description: 'إرسال إشعارات عبر البريد الإلكتروني للأحداث المهمة',
+                  label: isAr ? 'إشعارات البريد الإلكتروني' : 'Email Notifications',
+                  description: isAr ? 'إرسال إشعارات عبر البريد الإلكتروني للأحداث المهمة' : 'Send email notifications for important events',
                 },
                 {
                   key: 'orderNotifications' as const,
-                  label: 'إشعارات الطلبات',
-                  description: 'إشعار عند إنشاء طلب جديد أو تحديث حالته',
+                  label: isAr ? 'إشعارات الطلبات' : 'Order Notifications',
+                  description: isAr ? 'إشعار عند إنشاء طلب جديد أو تحديث حالته' : 'Notify when a new order is created or its status is updated',
                 },
                 {
                   key: 'paymentNotifications' as const,
-                  label: 'إشعارات الدفع',
-                  description: 'إشعار عند استلام الدفع أو فشل عملية الدفع',
+                  label: isAr ? 'إشعارات الدفع' : 'Payment Notifications',
+                  description: isAr ? 'إشعار عند استلام الدفع أو فشل عملية الدفع' : 'Notify when payment is received or a payment fails',
                 },
               ].map((item) => (
                 <div
@@ -1044,7 +1048,7 @@ export default function SettingsPage() {
                 onClick={() => handleSave('notifications')}
                 disabled={saving === 'notifications'}
               >
-                {saved['notifications'] ? 'تم الحفظ ✓' : 'حفظ'}
+                {saved['notifications'] ? (isAr ? 'تم الحفظ ✓' : 'Saved ✓') : (isAr ? 'حفظ' : 'Save')}
               </Button>
             </div>
           </SectionCard>
@@ -1053,14 +1057,14 @@ export default function SettingsPage() {
 
       {activeTab === 'backup' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <SectionCard title="النسخ الاحتياطي" subtitle="تصدير نسخة احتياطية من جميع البيانات" icon={Database} color="#8b5cf6">
+          <SectionCard title={isAr ? 'النسخ الاحتياطي' : 'Backup'} subtitle={isAr ? 'تصدير نسخة احتياطية من جميع البيانات' : 'Export a backup of all data'} icon={Database} color="#8b5cf6">
             <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/5 space-y-4">
               <div className="flex items-center gap-3">
                 <Database size={16} className="text-slate-400" />
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">تصدير البيانات</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{isAr ? 'تصدير البيانات' : 'Export Data'}</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                سيتم تصدير جميع بيانات المنصة كملف JSON يحتوي على: الإعدادات، الخدمات، الطلبات، الفواتير، المدفوعات، المستخدمين، بوابات الدفع، المحتوى، والإشعارات.
+                {isAr ? ' سيتم تصدير جميع بيانات المنصة كملف JSON يحتوي على: الإعدادات، الخدمات، الطلبات، الفواتير، المدفوعات، المستخدمين، بوابات الدفع، المحتوى، والإشعارات.' : 'All platform data will be exported as a JSON file containing: settings, services, orders, invoices, payments, users, payment gateways, content, and notifications.'}
               </p>
 
               <div className="flex items-center gap-3">
@@ -1071,7 +1075,7 @@ export default function SettingsPage() {
                   onClick={handleExportBackup}
                   disabled={exportingBackup}
                 >
-                  {exportingBackup ? 'جاري التصدير...' : 'تحميل النسخة الاحتياطية'}
+                  {exportingBackup ? (isAr ? 'جاري التصدير...' : 'Exporting...') : (isAr ? 'تحميل النسخة الاحتياطية' : 'Download Backup')}
                 </Button>
               </div>
 
@@ -1091,9 +1095,9 @@ export default function SettingsPage() {
               <div className="flex items-start gap-3">
                 <AlertTriangle size={16} className="text-amber-500 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-medium text-amber-700 dark:text-amber-300">ملاحظة أمنية</h4>
+                  <h4 className="text-sm font-medium text-amber-700 dark:text-amber-300">{isAr ? 'ملاحظة أمنية' : 'Security Note'}</h4>
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    النسخة الاحتياطية تحتوي على جميع بيانات المنصة بما في ذلك كلمات المرور المشفرة. يُرجى حفظ الملف في مكان آمن وعدم مشاركته.
+                    {isAr ? 'النسخة الاحتياطية تحتوي على جميع بيانات المنصة بما في ذلك كلمات المرور المشفرة. يُرجى حفظ الملف في مكان آمن وعدم مشاركته.' : 'The backup contains all platform data including encrypted passwords. Please store the file securely and do not share it.'}
                   </p>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendWelcomeEmail } from "@/lib/email/service";
 import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
+import { setRoleCookie } from "@/lib/auth/role-cookie";
 
 async function verifyGoogleToken(
   idToken: string
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
 
     const token = createVerificationToken(userData.email, 'google');
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: "تم تسجيل الدخول بنجاح",
       user: {
@@ -96,6 +97,8 @@ export async function POST(request: Request) {
       },
       token,
     });
+
+    return setRoleCookie(response, user.role);
   } catch {
     return NextResponse.json(
       { success: false, message: "حدث خطأ أثناء تسجيل الدخول بـ Google" },

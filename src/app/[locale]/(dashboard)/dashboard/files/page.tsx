@@ -25,6 +25,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth-store'
+import { useLanguageStore } from '@/store/language-store'
 
 type FileType = 'all' | 'document' | 'image' | 'other'
 
@@ -37,13 +38,6 @@ interface FileRecord {
   uploadedAt: string
   order?: { id: string; orderNumber: string } | null
 }
-
-const tabs: { id: FileType; label: string; labelEn: string }[] = [
-  { id: 'all', label: 'الكل', labelEn: 'All' },
-  { id: 'document', label: 'مستندات', labelEn: 'Documents' },
-  { id: 'image', label: 'صور', labelEn: 'Images' },
-  { id: 'other', label: 'أخرى', labelEn: 'Other' },
-]
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -77,13 +71,13 @@ function getFileIcon(category: 'image' | 'document' | 'other', mimeType: string)
   return <File size={20} className="text-amber-500" />
 }
 
-function getFileTypeBadge(mimeType: string): { label: string; variant: 'danger' | 'success' | 'primary' | 'warning' } {
+function getFileTypeBadge(mimeType: string, isAr: boolean): { label: string; variant: 'danger' | 'success' | 'primary' | 'warning' } {
   if (mimeType.includes('pdf')) return { label: 'PDF', variant: 'danger' }
-  if (mimeType.startsWith('image/')) return { label: 'صورة', variant: 'success' }
-  if (mimeType.includes('word') || mimeType.includes('document')) return { label: 'مستند', variant: 'primary' }
-  if (mimeType.includes('sheet') || mimeType.includes('excel')) return { label: 'جدول', variant: 'primary' }
-  if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('rar')) return { label: 'أرشيف', variant: 'warning' }
-  return { label: 'ملف', variant: 'warning' }
+  if (mimeType.startsWith('image/')) return { label: isAr ? 'صورة' : 'Image', variant: 'success' }
+  if (mimeType.includes('word') || mimeType.includes('document')) return { label: isAr ? 'مستند' : 'Document', variant: 'primary' }
+  if (mimeType.includes('sheet') || mimeType.includes('excel')) return { label: isAr ? 'جدول' : 'Spreadsheet', variant: 'primary' }
+  if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('rar')) return { label: isAr ? 'أرشيف' : 'Archive', variant: 'warning' }
+  return { label: isAr ? 'ملف' : 'File', variant: 'warning' }
 }
 
 export default function FilesPage() {
@@ -101,6 +95,15 @@ export default function FilesPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
+  const isAr = language === 'ar'
+
+  const tabs: { id: FileType; label: string }[] = [
+    { id: 'all', label: isAr ? 'الكل' : 'All' },
+    { id: 'document', label: isAr ? 'مستندات' : 'Documents' },
+    { id: 'image', label: isAr ? 'صور' : 'Images' },
+    { id: 'other', label: isAr ? 'أخرى' : 'Other' },
+  ]
 
   const fetchFiles = useCallback(async () => {
     try {
@@ -201,11 +204,11 @@ export default function FilesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="ملفاتي"
-        subtitle={`${files.length} ملف`}
+        title={isAr ? 'ملفاتي' : 'My Files'}
+        subtitle={`${files.length} ${isAr ? 'ملف' : 'files'}`}
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/dashboard' },
-          { label: 'ملفاتي' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/dashboard' },
+          { label: isAr ? 'ملفاتي' : 'My Files' },
         ]}
         gradient
       />
@@ -221,8 +224,8 @@ export default function FilesPage() {
         onClick={() => !uploading && fileInputRef.current?.click()}
         className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 ${
           dragOver
-            ? 'border-[#2580eb] bg-[#2580eb]/5'
-            : 'border-slate-200 hover:border-[#2580eb]/50 hover:bg-slate-50'
+            ? 'border-[#2580eb] bg-[#2580eb]/5 dark:border-[#2580eb] dark:bg-[#2580eb]/10'
+            : 'border-slate-200 hover:border-[#2580eb]/50 hover:bg-slate-50 dark:border-slate-700 dark:hover:border-[#2580eb]/50 dark:hover:bg-slate-800/50'
         }`}
       >
         <input
@@ -238,17 +241,17 @@ export default function FilesPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center"
+                className="w-16 h-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"
               >
                 <CheckCircle2 size={32} className="text-emerald-500" />
               </motion.div>
             ) : (
-              <div className="w-16 h-16 mx-auto rounded-full bg-[#2580eb]/10 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-[#2580eb]/10 dark:bg-[#2580eb]/20 flex items-center justify-center">
                 <CloudUpload size={32} className="text-[#2580eb] animate-bounce" />
               </div>
             )}
             <div className="max-w-xs mx-auto">
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full"
                   initial={{ width: 0 }}
@@ -256,18 +259,24 @@ export default function FilesPage() {
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <p className="text-sm text-slate-500 mt-2">
-                {uploadSuccess ? 'تم الرفع بنجاح!' : `جاري الرفع... ${Math.round(uploadProgress)}%`}
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                {uploadSuccess
+                  ? (isAr ? 'تم الرفع بنجاح!' : 'Upload successful!')
+                  : (isAr ? `جاري الرفع... ${Math.round(uploadProgress)}%` : `Uploading... ${Math.round(uploadProgress)}%`)}
               </p>
             </div>
           </div>
         ) : (
           <>
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 flex items-center justify-center mb-4">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 dark:from-[#2580eb]/20 dark:to-[#14b8a6]/20 flex items-center justify-center mb-4">
               <Upload size={28} className="text-[#2580eb]" />
             </div>
-            <p className="text-sm font-medium text-slate-700 mb-1">اسحب الملفات هنا أو انقر للرفع</p>
-            <p className="text-xs text-slate-400">PDF, PNG, JPG, DOCX — حتى 10 ميجابايت لكل ملف</p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              {isAr ? 'اسحب الملفات هنا أو انقر للرفع' : 'Drag files here or click to upload'}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              PDF, PNG, JPG, DOCX — {isAr ? 'حتى 10 ميجابايت لكل ملف' : 'Up to 10 MB per file'}
+            </p>
           </>
         )}
       </motion.div>
@@ -276,43 +285,45 @@ export default function FilesPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex gap-2 overflow-x-auto pb-2 w-full sm:w-auto">
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
+              variant={activeTab === tab.id ? 'primary' : 'ghost'}
+              size="sm"
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                activeTab === tab.id
-                  ? 'bg-[#2580eb] text-white shadow-lg shadow-[#2580eb]/25'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-[#2580eb]/30'
-              }`}
+              className="whitespace-nowrap"
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="بحث..."
-              className="pr-9 pl-4 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all w-48"
+              placeholder={isAr ? 'بحث...' : 'Search...'}
+              className="pr-9 pl-4 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all w-48 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-[#2580eb] dark:focus:ring-[#2580eb]/20"
             />
           </div>
-          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <button
+          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setViewMode('grid')}
-              className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-[#2580eb] text-white' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`p-2 rounded-none ${viewMode === 'grid' ? 'bg-[#2580eb] text-white' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'}`}
             >
               <Grid3X3 size={16} />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setViewMode('list')}
-              className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-[#2580eb] text-white' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`p-2 rounded-none ${viewMode === 'list' ? 'bg-[#2580eb] text-white' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'}`}
             >
               <List size={16} />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -325,9 +336,13 @@ export default function FilesPage() {
       ) : files.length === 0 ? (
         <Card padding="lg">
           <div className="py-16 text-center">
-            <FolderOpen size={48} className="mx-auto text-slate-300 mb-3" />
-            <p className="text-sm text-slate-500">لا توجد ملفات</p>
-            <p className="text-xs text-slate-400 mt-1">ابدأ برفع ملفاتك الأولى</p>
+            <FolderOpen size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {isAr ? 'لا توجد ملفات' : 'No files'}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              {isAr ? 'ابدأ برفع ملفاتك الأولى' : 'Start uploading your first files'}
+            </p>
           </div>
         </Card>
       ) : viewMode === 'grid' ? (
@@ -335,7 +350,7 @@ export default function FilesPage() {
           <AnimatePresence>
             {files.map((file, i) => {
               const category = getFileCategory(file.fileType)
-              const badge = getFileTypeBadge(file.fileType)
+              const badge = getFileTypeBadge(file.fileType, isAr)
               const isImage = file.fileType.startsWith('image/')
               return (
                 <motion.div
@@ -346,11 +361,11 @@ export default function FilesPage() {
                   transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -4 }}
                 >
-                  <Card padding="none" className="overflow-hidden hover:border-[#2580eb]/30 transition-all group">
+                  <Card padding="none" className="overflow-hidden hover:border-[#2580eb]/30 dark:hover:border-[#2580eb]/40 transition-all group">
                     <div className="p-4">
                       {isImage && (
                         <div
-                          className="w-full h-32 rounded-xl mb-3 bg-slate-100 overflow-hidden cursor-pointer relative group/preview"
+                          className="w-full h-32 rounded-xl mb-3 bg-slate-100 dark:bg-slate-700 overflow-hidden cursor-pointer relative group/preview"
                           onClick={() => setPreviewUrl(`/api/files/${file.id}?inline=true`)}
                         >
                           <img
@@ -364,41 +379,47 @@ export default function FilesPage() {
                         </div>
                       )}
                       <div className="flex items-start justify-between mb-3">
-                        <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
                           {getFileIcon(category, file.fileType)}
                         </div>
                         <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
                       </div>
-                      <h4 className="text-sm font-medium text-slate-900 truncate mb-1">{file.fileName}</h4>
-                      <p className="text-xs text-slate-400">
-                        {formatFileSize(file.fileSize)} · {new Date(file.uploadedAt).toLocaleDateString('ar-SA')}
+                      <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate mb-1">{file.fileName}</h4>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
+                        {formatFileSize(file.fileSize)} · {new Date(file.uploadedAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}
                       </p>
                       {file.order && (
-                        <p className="text-xs text-[#2580eb] mt-1 truncate">طلب: {file.order.orderNumber}</p>
+                        <p className="text-xs text-[#2580eb] mt-1 truncate">
+                          {isAr ? 'طلب:' : 'Order:'} {file.order.orderNumber}
+                        </p>
                       )}
                     </div>
-                    <div className="flex border-t border-slate-100">
+                    <div className="flex border-t border-slate-100 dark:border-slate-700/50">
                       <a
                         href={`/api/files/${file.id}`}
                         download={file.fileName}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#2580eb] hover:bg-[#2580eb]/5 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-[#2580eb] hover:bg-[#2580eb]/5 dark:hover:bg-[#2580eb]/10 transition-colors"
                       >
                         <Download size={14} />
-                        تحميل
+                        {isAr ? 'تحميل' : 'Download'}
                       </a>
-                      <div className="w-px bg-slate-100" />
-                      <button
+                      <div className="w-px bg-slate-100 dark:bg-slate-700/50" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => deleteFile(file.id)}
                         disabled={deletingId === file.id}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors disabled:opacity-50 ${confirmDeleteId === file.id ? 'bg-red-50 text-red-600 font-bold' : 'text-red-500 hover:bg-red-50'}`}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium rounded-none transition-colors disabled:opacity-50 ${confirmDeleteId === file.id ? 'bg-red-50 text-red-600 font-bold dark:bg-red-900/20 dark:text-red-400' : 'text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'}`}
                       >
                         {deletingId === file.id ? (
                           <Loader2 size={14} className="animate-spin" />
                         ) : (
                           <Trash2 size={14} />
                         )}
-                        {confirmDeleteId === file.id ? 'هل أنت متأكد؟' : 'حذف'}
-                      </button>
+                        {confirmDeleteId === file.id
+                          ? (isAr ? 'هل أنت متأكد؟' : 'Are you sure?')
+                          : (isAr ? 'حذف' : 'Delete')}
+                      </Button>
                     </div>
                   </Card>
                 </motion.div>
@@ -407,37 +428,49 @@ export default function FilesPage() {
           </AnimatePresence>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase">الاسم</th>
-                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase hidden sm:table-cell">النوع</th>
-                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase hidden md:table-cell">الحجم</th>
-                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase hidden md:table-cell">التاريخ</th>
-                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase">إجراءات</th>
+                <tr className="border-b border-slate-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-800/50">
+                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase dark:text-slate-400">
+                    {isAr ? 'الاسم' : 'Name'}
+                  </th>
+                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase hidden sm:table-cell dark:text-slate-400">
+                    {isAr ? 'النوع' : 'Type'}
+                  </th>
+                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase hidden md:table-cell dark:text-slate-400">
+                    {isAr ? 'الحجم' : 'Size'}
+                  </th>
+                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase hidden md:table-cell dark:text-slate-400">
+                    {isAr ? 'التاريخ' : 'Date'}
+                  </th>
+                  <th className="text-right px-6 py-3 text-xs font-bold text-slate-500 uppercase dark:text-slate-400">
+                    {isAr ? 'إجراءات' : 'Actions'}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {files.map((file, i) => {
                   const category = getFileCategory(file.fileType)
-                  const badge = getFileTypeBadge(file.fileType)
+                  const badge = getFileTypeBadge(file.fileType, isAr)
                   return (
                     <motion.tr
                       key={file.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: i * 0.03 }}
-                      className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors"
+                      className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors dark:border-slate-700/50 dark:hover:bg-slate-700/30"
                     >
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-3">
                           {getFileIcon(category, file.fileType)}
                           <div>
-                            <span className="text-sm font-medium text-slate-900">{file.fileName}</span>
+                            <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{file.fileName}</span>
                             {file.order && (
-                              <p className="text-xs text-[#2580eb]">طلب: {file.order.orderNumber}</p>
+                              <p className="text-xs text-[#2580eb]">
+                                {isAr ? 'طلب:' : 'Order:'} {file.order.orderNumber}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -445,11 +478,11 @@ export default function FilesPage() {
                       <td className="px-6 py-3 hidden sm:table-cell">
                         <Badge variant={badge.variant} size="sm">{badge.label}</Badge>
                       </td>
-                      <td className="px-6 py-3 text-sm text-slate-500 hidden md:table-cell">
+                      <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400 hidden md:table-cell">
                         {formatFileSize(file.fileSize)}
                       </td>
-                      <td className="px-6 py-3 text-sm text-slate-500 hidden md:table-cell">
-                        {new Date(file.uploadedAt).toLocaleDateString('ar-SA')}
+                      <td className="px-6 py-3 text-sm text-slate-500 dark:text-slate-400 hidden md:table-cell">
+                        {new Date(file.uploadedAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}
                       </td>
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-1">
@@ -458,7 +491,7 @@ export default function FilesPage() {
                             whileTap={{ scale: 0.9 }}
                             href={`/api/files/${file.id}`}
                             download={file.fileName}
-                            className="p-1.5 rounded-lg hover:bg-[#2580eb]/10 text-[#2580eb] transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-[#2580eb]/10 dark:hover:bg-[#2580eb]/20 text-[#2580eb] transition-colors"
                           >
                             <Download size={15} />
                           </motion.a>
@@ -467,8 +500,10 @@ export default function FilesPage() {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => deleteFile(file.id)}
                             disabled={deletingId === file.id}
-                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${confirmDeleteId === file.id ? 'bg-red-100 text-red-600' : 'hover:bg-red-50 text-red-500'}`}
-                            title={confirmDeleteId === file.id ? 'هل أنت متأكد؟' : 'حذف'}
+                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${confirmDeleteId === file.id ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'hover:bg-red-50 text-red-500 dark:hover:bg-red-900/20 dark:text-red-400'}`}
+                            title={confirmDeleteId === file.id
+                              ? (isAr ? 'هل أنت متأكد؟' : 'Are you sure?')
+                              : (isAr ? 'حذف' : 'Delete')}
                           >
                             {deletingId === file.id ? (
                               <Loader2 size={15} className="animate-spin" />

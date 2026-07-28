@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 
 interface ApiOrder {
   id: string;
@@ -39,17 +40,18 @@ interface ApiUser {
   createdAt: string;
 }
 
-const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING: { label: 'قيد الانتظار', color: '#f59e0b', bg: '#f59e0b15' },
-  UNDER_REVIEW: { label: 'قيد المراجعة', color: '#2580eb', bg: '#2580eb15' },
-  WAITING_CLIENT: { label: 'بانتظار العميل', color: '#8b5cf6', bg: '#8b5cf615' },
-  IN_PROGRESS: { label: 'جار التنفيذ', color: '#2580eb', bg: '#2580eb15' },
-  COMPLETED: { label: 'مكتمل', color: '#16a34a', bg: '#16a34a15' },
-  DELIVERED: { label: 'تم التسليم', color: '#16a34a', bg: '#16a34a15' },
-  CANCELLED: { label: 'ملغى', color: '#ef4444', bg: '#ef444415' },
+const statusConfig: Record<string, { label: string; labelEn: string; color: string; bg: string }> = {
+  PENDING: { label: 'قيد الانتظار', labelEn: 'Pending', color: '#f59e0b', bg: '#f59e0b15' },
+  UNDER_REVIEW: { label: 'قيد المراجعة', labelEn: 'Under Review', color: '#2580eb', bg: '#2580eb15' },
+  WAITING_CLIENT: { label: 'بانتظار العميل', labelEn: 'Waiting for Client', color: '#8b5cf6', bg: '#8b5cf615' },
+  IN_PROGRESS: { label: 'جار التنفيذ', labelEn: 'In Progress', color: '#2580eb', bg: '#2580eb15' },
+  COMPLETED: { label: 'مكتمل', labelEn: 'Completed', color: '#16a34a', bg: '#16a34a15' },
+  DELIVERED: { label: 'تم التسليم', labelEn: 'Delivered', color: '#16a34a', bg: '#16a34a15' },
+  CANCELLED: { label: 'ملغى', labelEn: 'Cancelled', color: '#ef4444', bg: '#ef444415' },
 };
 
-const monthLabels = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const monthLabelsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const monthLabelsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const serviceColors = [
   { color: '#2580eb', gradientFrom: '#2580eb', gradientTo: '#14b8a6' },
@@ -59,7 +61,7 @@ const serviceColors = [
   { color: '#ef4444', gradientFrom: '#ef4444', gradientTo: '#f87171' },
 ];
 
-function MonthlyRevenueChart({ data }: { data: { month: string; label: string; value: number }[] }) {
+function MonthlyRevenueChart({ data, isAr }: { data: { month: string; label: string; value: number }[]; isAr: boolean }) {
   const maxRevenue = Math.max(...data.map((d) => d.value), 1);
   const svgWidth = 700;
   const svgHeight = 240;
@@ -120,7 +122,7 @@ function MonthlyRevenueChart({ data }: { data: { month: string; label: string; v
                 transition={{ delay: i * 0.06, type: 'spring', stiffness: 120, damping: 14 }}
                 className="cursor-pointer hover:opacity-80 transition-opacity"
               >
-                <title>{`${d.label}: ${d.value.toLocaleString()} ر.س`}</title>
+                <title>{`${d.label}: ${d.value.toLocaleString()} ${isAr ? 'ر.س' : 'SAR'}`}</title>
               </motion.rect>
               {d.value > 0 && (
                 <motion.text
@@ -157,8 +159,10 @@ function MonthlyRevenueChart({ data }: { data: { month: string; label: string; v
 
 function TopServicesChart({
   data,
+  isAr,
 }: {
   data: { name: string; revenue: number; count: number; color: string; gradientFrom: string; gradientTo: string }[];
+  isAr: boolean;
 }) {
   const maxRevenue = Math.max(...data.map((s) => s.revenue), 1);
 
@@ -169,8 +173,8 @@ function TopServicesChart({
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{service.name}</span>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-400">{service.count} طلب</span>
-              <span className="text-sm font-bold text-slate-900 dark:text-white">{service.revenue.toLocaleString()} ر.س</span>
+              <span className="text-xs text-slate-400">{service.count} {isAr ? 'طلب' : 'orders'}</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">{service.revenue.toLocaleString()} {isAr ? 'ر.س' : 'SAR'}</span>
             </div>
           </div>
           <div className="h-3 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
@@ -187,7 +191,7 @@ function TopServicesChart({
         </div>
       ))}
       {data.length === 0 && (
-        <p className="text-center text-slate-400 dark:text-slate-500 py-8">لا توجد بيانات بعد</p>
+        <p className="text-center text-slate-400 dark:text-slate-500 py-8">{isAr ? 'لا توجد بيانات بعد' : 'No data yet'}</p>
       )}
     </div>
   );
@@ -195,6 +199,7 @@ function TopServicesChart({
 
 export default function AdminReportsPage() {
   const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -211,7 +216,7 @@ export default function AdminReportsPage() {
         if (ordersRes.success && ordersRes.data) setOrders(ordersRes.data);
         if (usersRes.success && usersRes.data) setUsers(usersRes.data);
       })
-      .catch(() => {})
+      .catch(() => { toast.error(isAr ? 'فشل تحميل التقارير' : 'Failed to load reports'); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -274,7 +279,7 @@ export default function AdminReportsPage() {
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = monthLabels[d.getMonth()];
+      const label = isAr ? monthLabelsAr[d.getMonth()] : monthLabelsEn[d.getMonth()];
       const value = paidOrders
         .filter((o) => o.createdAt.startsWith(prefix))
         .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
@@ -286,7 +291,7 @@ export default function AdminReportsPage() {
   const topServices = useMemo(() => {
     const map: Record<string, { revenue: number; count: number }> = {};
     paidOrders.forEach((o) => {
-      const name = o.service?.name || 'غير محدد';
+      const name = o.service?.name || (isAr ? 'غير محدد' : 'Unspecified');
       if (!map[name]) map[name] = { revenue: 0, count: 0 };
       map[name].revenue += Number(o.total) || 0;
       map[name].count += 1;
@@ -304,23 +309,23 @@ export default function AdminReportsPage() {
 
   const statsCards = [
     {
-      label: 'إجمالي الإيرادات',
+      label: isAr ? 'إجمالي الإيرادات' : 'Total Revenue',
       value: totalRevenue,
       prefix: '',
-      suffix: ' ر.س',
+      suffix: ` ${isAr ? 'ر.س' : 'SAR'}`,
       icon: DollarSign,
       numericValue: totalRevenue,
     },
     {
-      label: 'إيرادات الشهر',
+      label: isAr ? 'إيرادات الشهر' : 'Monthly Revenue',
       value: monthlyRevenue,
       prefix: '',
-      suffix: ' ر.س',
+      suffix: ` ${isAr ? 'ر.س' : 'SAR'}`,
       icon: BarChart3,
       numericValue: monthlyRevenue,
     },
     {
-      label: 'إجمالي الطلبات',
+      label: isAr ? 'إجمالي الطلبات' : 'Total Orders',
       value: totalOrders,
       prefix: '',
       suffix: '',
@@ -328,15 +333,15 @@ export default function AdminReportsPage() {
       numericValue: totalOrders,
     },
     {
-      label: 'متوسط الطلب',
+      label: isAr ? 'متوسط الطلب' : 'Avg Order Value',
       value: Math.round(avgOrderValue),
       prefix: '',
-      suffix: ' ر.س',
+      suffix: ` ${isAr ? 'ر.س' : 'SAR'}`,
       icon: ShoppingCart,
       numericValue: Math.round(avgOrderValue),
     },
     {
-      label: 'العملاء',
+      label: isAr ? 'العملاء' : 'Customers',
       value: totalCustomers,
       prefix: '',
       suffix: '',
@@ -344,7 +349,7 @@ export default function AdminReportsPage() {
       numericValue: totalCustomers,
     },
     {
-      label: 'عملاء جدد (الشهر)',
+      label: isAr ? 'عملاء جدد (الشهر)' : 'New Customers (Month)',
       value: newCustomersThisMonth,
       prefix: '',
       suffix: '',
@@ -361,50 +366,52 @@ export default function AdminReportsPage() {
 
       const rows: string[] = [];
 
-      rows.push('التقرير العام');
+      rows.push(isAr ? 'التقرير العام' : 'General Report');
       rows.push('');
-      rows.push('المقياس,القيمة');
+      rows.push(isAr ? 'المقياس,القيمة' : 'Metric,Value');
       statsCards.forEach((s) => {
         rows.push(`${escapeCsv(s.label)},${escapeCsv(`${s.numericValue.toLocaleString()}${s.suffix}`)}`);
       });
 
       rows.push('');
-      rows.push('إيرادات المبيعات الشهرية');
-      rows.push('الشهر,الإيرادات (ر.س)');
+      rows.push(isAr ? 'إيرادات المبيعات الشهرية' : 'Monthly Sales Revenue');
+      rows.push(isAr ? 'الشهر,الإيرادات (ر.س)' : 'Month,Revenue (SAR)');
       revenueByMonth.forEach((m) => {
         rows.push(`${escapeCsv(m.label)},${m.value}`);
       });
 
       rows.push('');
-      rows.push('أعلى الخدمات إيراداً');
-      rows.push('الخدمة,الإيرادات (ر.س),عدد الطلبات');
+      rows.push(isAr ? 'أعلى الخدمات إيراداً' : 'Top Services by Revenue');
+      rows.push(isAr ? 'الخدمة,الإيرادات (ر.س),عدد الطلبات' : 'Service,Revenue (SAR),Order Count');
       topServices.forEach((s) => {
         rows.push(`${escapeCsv(s.name)},${s.revenue},${s.count}`);
       });
 
       rows.push('');
-      rows.push('توزيع الطلبات حسب الحالة');
-      rows.push('الحالة,العدد,النسبة المئوية');
+      rows.push(isAr ? 'توزيع الطلبات حسب الحالة' : 'Orders by Status');
+      rows.push(isAr ? 'الحالة,العدد,النسبة المئوية' : 'Status,Count,Percentage');
       Object.entries(ordersByStatus)
         .sort((a, b) => b[1] - a[1])
         .forEach(([status, count]) => {
-          const cfg = statusConfig[status] || { label: status };
+          const cfg = statusConfig[status] || { label: status, labelEn: status };
+          const statusLabel = isAr ? cfg.label : cfg.labelEn;
           const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : '0';
-          rows.push(`${escapeCsv(cfg.label)},${count},${pct}%`);
+          rows.push(`${escapeCsv(statusLabel)},${count},${pct}%`);
         });
 
       rows.push('');
-      rows.push('تفاصيل الطلبات');
-      rows.push('رقم الطلب,الحالة,المبلغ,حالة الدفع,تاريخ الإنشاء,الخدمة,اسم العميل,البريد الإلكتروني');
+      rows.push(isAr ? 'تفاصيل الطلبات' : 'Order Details');
+      rows.push(isAr ? 'رقم الطلب,الحالة,المبلغ,حالة الدفع,تاريخ الإنشاء,الخدمة,اسم العميل,البريد الإلكتروني' : 'Order Number,Status,Amount,Payment Status,Created At,Service,Customer Name,Customer Email');
       filteredOrders.forEach((o) => {
-        const cfg = statusConfig[o.status] || { label: o.status };
+        const cfg = statusConfig[o.status] || { label: o.status, labelEn: o.status };
+        const statusLabel = isAr ? cfg.label : cfg.labelEn;
         rows.push([
           escapeCsv(o.orderNumber),
-          escapeCsv(cfg.label),
+          escapeCsv(statusLabel),
           Number(o.total) || 0,
-          o.paymentStatus === 'PAID' ? 'مدفوع' : 'غير مدفوع',
+          o.paymentStatus === 'PAID' ? (isAr ? 'مدفوع' : 'Paid') : (isAr ? 'غير مدفوع' : 'Unpaid'),
           o.createdAt,
-          escapeCsv(o.service?.name || 'غير محدد'),
+          escapeCsv(o.service?.name || (isAr ? 'غير محدد' : 'Unspecified')),
           escapeCsv(o.customerName || ''),
           escapeCsv(o.customerEmail || ''),
         ].join(','));
@@ -415,7 +422,7 @@ export default function AdminReportsPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `تقرير-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `${isAr ? 'تقرير' : 'report'}-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -427,11 +434,11 @@ export default function AdminReportsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="التقارير"
+        title={isAr ? 'التقارير' : 'Reports'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'التقارير' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'التقارير' : 'Reports' },
         ]}
       />
 
@@ -452,7 +459,7 @@ export default function AdminReportsPage() {
               dir="ltr"
             />
           </div>
-          <span className="text-slate-400 text-sm">إلى</span>
+          <span className="text-slate-400 text-sm">{isAr ? 'إلى' : 'to'}</span>
           <div className="flex items-center gap-2 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2">
             <Calendar size={16} className="text-slate-400" />
             <input
@@ -510,14 +517,14 @@ export default function AdminReportsPage() {
             <CardContent>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">إيرادات المبيعات الشهرية</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">إيرادات آخر 12 شهر (المدفوعة فقط)</p>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">{isAr ? 'إيرادات المبيعات الشهرية' : 'Monthly Sales Revenue'}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{isAr ? 'إيرادات آخر 12 شهر (المدفوعة فقط)' : 'Revenue for last 12 months (paid only)'}</p>
                 </div>
                 <Badge variant="success" size="sm">
-                  {paidOrders.length} طلب مدفوع
+                  {paidOrders.length} {isAr ? 'طلب مدفوع' : 'paid orders'}
                 </Badge>
               </div>
-              <MonthlyRevenueChart data={revenueByMonth} />
+              <MonthlyRevenueChart data={revenueByMonth} isAr={isAr} />
             </CardContent>
           </Card>
         </motion.div>
@@ -527,12 +534,12 @@ export default function AdminReportsPage() {
             <CardContent>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">أعلى الخدمات إيراداً</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">ترتيب الخدمات حسب الإيرادات</p>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg">{isAr ? 'أعلى الخدمات إيراداً' : 'Top Services by Revenue'}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{isAr ? 'ترتيب الخدمات حسب الإيرادات' : 'Services ranked by revenue'}</p>
                 </div>
-                <Badge variant="primary" size="sm">{topServices.length} خدمات</Badge>
+                <Badge variant="primary" size="sm">{topServices.length} {isAr ? 'خدمات' : 'services'}</Badge>
               </div>
-              <TopServicesChart data={topServices} />
+              <TopServicesChart data={topServices} isAr={isAr} />
             </CardContent>
           </Card>
         </motion.div>
@@ -543,16 +550,17 @@ export default function AdminReportsPage() {
           <CardContent>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-white text-lg">توزيع الطلبات حسب الحالة</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">عدد الطلبات في كل حالة</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">{isAr ? 'توزيع الطلبات حسب الحالة' : 'Orders by Status'}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{isAr ? 'عدد الطلبات في كل حالة' : 'Number of orders per status'}</p>
               </div>
-              <Badge variant="info" size="sm">{totalOrders} طلب</Badge>
+              <Badge variant="info" size="sm">{totalOrders} {isAr ? 'طلب' : 'orders'}</Badge>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {Object.entries(ordersByStatus)
                 .sort((a, b) => b[1] - a[1])
                 .map(([status, count], i) => {
-                  const cfg = statusConfig[status] || { label: status, color: '#6b7280', bg: '#6b728015' };
+                  const cfg = statusConfig[status] || { label: status, labelEn: status, color: '#6b7280', bg: '#6b728015' };
+                  const statusLabel = isAr ? cfg.label : cfg.labelEn;
                   const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : '0';
                   return (
                     <motion.div
@@ -564,10 +572,10 @@ export default function AdminReportsPage() {
                     >
                       <div className="flex items-center gap-2 mb-3">
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.color }} />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{cfg.label}</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{statusLabel}</span>
                       </div>
                       <p className="text-2xl font-bold text-slate-900 dark:text-white">{count}</p>
-                      <p className="text-xs text-slate-400 mt-1">{pct}% من الإجمالي</p>
+                      <p className="text-xs text-slate-400 mt-1">{pct}% {isAr ? 'من الإجمالي' : 'of total'}</p>
                       <div className="mt-3 h-1.5 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
                         <motion.div
                           className="h-full rounded-full"
@@ -581,7 +589,7 @@ export default function AdminReportsPage() {
                   );
                 })}
               {Object.keys(ordersByStatus).length === 0 && !loading && (
-                <p className="col-span-full text-center text-slate-400 dark:text-slate-500 py-8">لا توجد طلبات بعد</p>
+                <p className="col-span-full text-center text-slate-400 dark:text-slate-500 py-8">{isAr ? 'لا توجد طلبات بعد' : 'No orders yet'}</p>
               )}
             </div>
           </CardContent>
@@ -596,7 +604,7 @@ export default function AdminReportsPage() {
       >
         <Button onClick={handleExport} disabled={exporting} className="gap-2">
           <Download size={16} />
-          {exporting ? 'جاري التصدير...' : 'تصدير التقرير'}
+          {exporting ? (isAr ? 'جاري التصدير...' : 'Exporting...') : (isAr ? 'تصدير التقرير' : 'Export Report')}
         </Button>
       </motion.div>
     </div>

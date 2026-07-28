@@ -151,6 +151,7 @@ export const useAuthStore = create<AuthStore>()(
       logout: async () => {
         set({ user: null, isAuthenticated: false });
         try { localStorage.removeItem('almunjiz-request-progress'); } catch {}
+        document.cookie = 'almunjiz-role=; path=/; max-age=0';
         const { signOut } = await import('next-auth/react');
         await signOut({ redirect: false });
         window.location.href = '/login';

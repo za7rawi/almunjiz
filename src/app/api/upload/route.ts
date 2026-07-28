@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadDir = join(process.cwd(), "public", "uploads");
+    const uploadDir = join(process.cwd(), "data", "uploads");
     await mkdir(uploadDir, { recursive: true });
 
     const uploadedFiles: {
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
       await writeFile(filepath, buffer);
 
-      const fileUrl = `/uploads/${storedName}`;
+      const fileUrl = `/data/uploads/${storedName}`;
 
       const record = await prisma.fileAttachment.create({
         data: {

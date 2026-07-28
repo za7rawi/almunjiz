@@ -11,32 +11,28 @@ import { useAuthStore } from '@/store/auth-store'
 import { getInitials } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useIsClient } from '@/hooks/use-is-client'
+import { useLanguageStore } from '@/store/language-store'
 
-const tabs = [
-  { id: 'profile', label: 'الملف الشخصي', icon: User },
-  { id: 'password', label: 'تغيير كلمة المرور', icon: Lock },
-  { id: 'notifications', label: 'الإشعارات', icon: Bell },
-  { id: 'danger', label: 'حذف الحساب', icon: Trash2 },
-]
-
-function PasswordStrength({ password }: { password: string }) {
+function PasswordStrength({ password, isAr }: { password: string; isAr: boolean }) {
   let strength = 0
   if (password.length >= 6) strength++
   if (password.length >= 10) strength++
   if (/[A-Z]/.test(password)) strength++
   if (/[0-9]/.test(password)) strength++
   if (/[^A-Za-z0-9]/.test(password)) strength++
-  const labels = ['ضعيف جداً', 'ضعيف', 'متوسط', 'قوي', 'قوي جداً']
+  const labels = isAr
+    ? ['ضعيف جداً', 'ضعيف', 'متوسط', 'قوي', 'قوي جداً']
+    : ['Very Weak', 'Weak', 'Medium', 'Strong', 'Very Strong']
   const colors = ['#ef4444', '#f59e0b', '#eab308', '#22c55e', '#10b981']
   const percent = (strength / 5) * 100
   if (password.length === 0) return null
   return (
     <div className="mt-2">
       <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-slate-500">قوة كلمة المرور</span>
+        <span className="text-slate-500 dark:text-slate-400">{isAr ? 'قوة كلمة المرور' : 'Password strength'}</span>
         <span style={{ color: colors[strength] }}>{labels[strength]}</span>
       </div>
-      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
         <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className="h-full rounded-full" style={{ backgroundColor: colors[strength] }} transition={{ duration: 0.3 }} />
       </div>
     </div>
@@ -45,7 +41,7 @@ function PasswordStrength({ password }: { password: string }) {
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (val: boolean) => void }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#2580eb]/30 ${checked ? 'bg-[#2580eb]' : 'bg-slate-200'}`}>
+    <button type="button" onClick={() => onChange(!checked)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#2580eb]/30 ${checked ? 'bg-[#2580eb]' : 'bg-slate-200 dark:bg-slate-600'}`}>
       <motion.span layout transition={{ type: 'spring', stiffness: 500, damping: 30 }} className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ${checked ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
     </button>
   )
@@ -60,6 +56,15 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const router = useRouter()
   const { user, updateUser, logout } = useAuthStore()
+  const { language } = useLanguageStore()
+  const isAr = language === 'ar'
+
+  const tabs = [
+    { id: 'profile', label: isAr ? 'الملف الشخصي' : 'Profile', icon: User },
+    { id: 'password', label: isAr ? 'تغيير كلمة المرور' : 'Change Password', icon: Lock },
+    { id: 'notifications', label: isAr ? 'الإشعارات' : 'Notifications', icon: Bell },
+    { id: 'danger', label: isAr ? 'حذف الحساب' : 'Delete Account', icon: Trash2 },
+  ]
 
   const [name, setName] = useState(user?.name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
@@ -111,11 +116,11 @@ export default function SettingsPage() {
     setPasswordError('')
     setPasswordSuccess('')
     if (newPassword !== confirmPassword) {
-      setPasswordError('كلمتا المرور غير متطابقتين')
+      setPasswordError(isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match')
       return
     }
     if (newPassword.length < 8) {
-      setPasswordError('كلمة المرور يجب أن تكون 8 أحرف على الأقل')
+      setPasswordError(isAr ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' : 'Password must be at least 8 characters')
       return
     }
     setSaving(true)
@@ -127,15 +132,15 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (data.success) {
-        setPasswordSuccess('تم تحديث كلمة المرور بنجاح')
+        setPasswordSuccess(isAr ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully')
         setCurrentPassword('')
         setNewPassword('')
         setConfirmPassword('')
       } else {
-        setPasswordError(data.message || 'فشل تحديث كلمة المرور')
+        setPasswordError(data.message || (isAr ? 'فشل تحديث كلمة المرور' : 'Failed to update password'))
       }
     } catch {
-      setPasswordError('حدث خطأ أثناء تحديث كلمة المرور')
+      setPasswordError(isAr ? 'حدث خطأ أثناء تحديث كلمة المرور' : 'An error occurred while updating password')
     } finally {
       setSaving(false)
     }
@@ -148,13 +153,13 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="الإعدادات" subtitle="إدارة حسابك وتفضيلاتك" gradient />
+      <PageHeader title={isAr ? 'الإعدادات' : 'Settings'} subtitle={isAr ? 'إدارة حسابك وتفضيلاتك' : 'Manage your account and preferences'} gradient />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl border border-slate-200 p-2 space-y-1 shadow-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-2 space-y-1 shadow-sm">
             {tabs.map((tab) => (
-              <motion.button key={tab.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-[#2580eb]/10 text-[#2580eb]' : 'text-slate-600 hover:bg-slate-50'}`}>
+              <motion.button key={tab.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-[#2580eb]/10 text-[#2580eb]' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
                 <tab.icon size={18} />{tab.label}
               </motion.button>
             ))}
@@ -166,25 +171,25 @@ export default function SettingsPage() {
             {activeTab === 'profile' && (
               <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                 <Card>
-                  <CardHeader><h3 className="font-bold text-slate-900">الملف الشخصي</h3></CardHeader>
+                  <CardHeader><h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'الملف الشخصي' : 'Profile'}</h3></CardHeader>
                   <CardContent>
                     <div className="space-y-5">
                       <div className="flex items-center gap-4 mb-6">
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-                          {avatar ? <img src={avatar} alt="avatar" className="w-full h-full object-cover" /> : getInitials(name || 'مستخدم')}
+                          {avatar ? <img src={avatar} alt="avatar" className="w-full h-full object-cover" /> : getInitials(name || (isAr ? 'مستخدم' : 'User'))}
                         </div>
                         <div>
                           <button onClick={() => { const el = fileInputRef.current; el?.click(); }} className="text-sm text-[#2580eb] hover:underline flex items-center gap-1.5">
-                            <Upload size={14} />تغيير الصورة
+                            <Upload size={14} />{isAr ? 'تغيير الصورة' : 'Change photo'}
                           </button>
                         </div>
                       </div>
                       <input type="file" accept="image/*" ref={fileInputRef} onChange={handleAvatarUpload} className="hidden" />
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
-                        <Input label="البريد الإلكتروني" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <Input label={isAr ? 'الاسم' : 'Name'} value={name} onChange={(e) => setName(e.target.value)} />
+                        <Input label={isAr ? 'البريد الإلكتروني' : 'Email'} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                       </div>
-                      <Button variant="primary" size="md" loading={saving} onClick={handleSaveProfile} iconLeft={<Save size={16} />}>حفظ التغييرات</Button>
+                      <Button variant="primary" size="md" loading={saving} onClick={handleSaveProfile} iconLeft={<Save size={16} />}>{isAr ? 'حفظ التغييرات' : 'Save Changes'}</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -197,24 +202,24 @@ export default function SettingsPage() {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Shield size={20} className="text-[#2580eb]" />
-                      <h3 className="font-bold text-slate-900">تغيير كلمة المرور</h3>
+                      <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'تغيير كلمة المرور' : 'Change Password'}</h3>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-5 max-w-md">
                       {passwordError && (
-                        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{passwordError}</div>
+                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">{passwordError}</div>
                       )}
                       {passwordSuccess && (
-                        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">{passwordSuccess}</div>
+                        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-700 dark:text-emerald-400">{passwordSuccess}</div>
                       )}
-                      <Input label="كلمة المرور الحالية" isPassword value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+                      <Input label={isAr ? 'كلمة المرور الحالية' : 'Current Password'} isPassword value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
                       <div>
-                        <Input label="كلمة المرور الجديدة" isPassword value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                        <PasswordStrength password={newPassword} />
+                        <Input label={isAr ? 'كلمة المرور الجديدة' : 'New Password'} isPassword value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                        <PasswordStrength password={newPassword} isAr={isAr} />
                       </div>
-                      <Input label="تأكيد كلمة المرور" isPassword value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} error={confirmPassword && newPassword !== confirmPassword ? 'كلمتا المرور غير متطابقتين' : undefined} />
-                      <Button variant="primary" size="md" loading={saving} onClick={handleSavePassword} disabled={!currentPassword || !newPassword || newPassword !== confirmPassword} iconLeft={<Lock size={16} />}>تحديث كلمة المرور</Button>
+                      <Input label={isAr ? 'تأكيد كلمة المرور' : 'Confirm Password'} isPassword value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} error={confirmPassword && newPassword !== confirmPassword ? (isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match') : undefined} />
+                      <Button variant="primary" size="md" loading={saving} onClick={handleSavePassword} disabled={!currentPassword || !newPassword || newPassword !== confirmPassword} iconLeft={<Lock size={16} />}>{isAr ? 'تحديث كلمة المرور' : 'Update Password'}</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -224,19 +229,19 @@ export default function SettingsPage() {
             {activeTab === 'notifications' && (
               <motion.div key="notifications" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                 <Card>
-                  <CardHeader><h3 className="font-bold text-slate-900">تفضيلات الإشعارات</h3></CardHeader>
+                  <CardHeader><h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'تفضيلات الإشعارات' : 'Notification Preferences'}</h3></CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {([
-                        { key: 'email' as const, label: 'إشعارات البريد الإلكتروني', desc: 'تلقى إشعارات عبر البريد الإلكتروني' },
-                        { key: 'mobile' as const, label: 'إشعارات الجوال', desc: 'تلقى إشعارات فورية على جهازك' },
-                        { key: 'orders' as const, label: 'إشعارات الطلبات', desc: 'تلقى إشعارات عند تحديث حالة طلبك' },
-                        { key: 'offers' as const, label: 'إشعارات العروض', desc: 'تلقى إشعارات العروض الخاصة والخصومات' },
+                        { key: 'email' as const, label: isAr ? 'إشعارات البريد الإلكتروني' : 'Email Notifications', desc: isAr ? 'تلقى إشعارات عبر البريد الإلكتروني' : 'Receive notifications via email' },
+                        { key: 'mobile' as const, label: isAr ? 'إشعارات الجوال' : 'Mobile Notifications', desc: isAr ? 'تلقى إشعارات فورية على جهازك' : 'Receive instant notifications on your device' },
+                        { key: 'orders' as const, label: isAr ? 'إشعارات الطلبات' : 'Order Notifications', desc: isAr ? 'تلقى إشعارات عند تحديث حالة طلبك' : 'Receive notifications when your order status updates' },
+                        { key: 'offers' as const, label: isAr ? 'إشعارات العروض' : 'Offer Notifications', desc: isAr ? 'تلقى إشعارات العروض الخاصة والخصومات' : 'Receive notifications about special offers and discounts' },
                       ]).map((item) => (
-                        <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100/80 transition-colors">
+                        <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100/80 dark:hover:bg-white/10 transition-colors">
                           <div>
-                            <p className="text-sm font-medium text-slate-900">{item.label}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.desc}</p>
                           </div>
                           <ToggleSwitch checked={notifications[item.key]} onChange={(val) => setNotifications((prev) => ({ ...prev, [item.key]: val }))} />
                         </div>
@@ -250,21 +255,21 @@ export default function SettingsPage() {
             {activeTab === 'danger' && (
               <motion.div key="danger" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                 <Card>
-                  <CardHeader><h3 className="font-bold text-red-600">حذف الحساب</h3></CardHeader>
+                  <CardHeader><h3 className="font-bold text-red-600">{isAr ? 'حذف الحساب' : 'Delete Account'}</h3></CardHeader>
                   <CardContent>
-                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 mb-6">
+                    <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 mb-6">
                       <div className="flex items-start gap-3">
                         <AlertTriangle size={20} className="text-red-500 mt-0.5 shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-red-700">تحذير خطير</p>
-                          <p className="text-xs text-red-600 mt-1">حذف حسابك سيمسح جميع بياناتك نهائياً. لا يمكن التراجع عن هذا الإجراء.</p>
+                          <p className="text-sm font-medium text-red-700 dark:text-red-400">{isAr ? 'تحذير خطير' : 'Serious Warning'}</p>
+                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{isAr ? 'حذف حسابك سيمسح جميع بياناتك نهائياً. لا يمكن التراجع عن هذا الإجراء.' : 'Deleting your account will permanently erase all your data. This action cannot be undone.'}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
-                      <p className="text-sm text-amber-700">ل حذف حسابك نهائياً، يرجى التواصل مع الدعم الفني عبر البريد الإلكتروني أو الواتساب.</p>
+                    <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-6">
+                      <p className="text-sm text-amber-700 dark:text-amber-400">{isAr ? 'ل حذف حسابك نهائياً، يرجى التواصل مع الدعم الفني عبر البريد الإلكتروني أو الواتساب.' : 'To permanently delete your account, please contact support via email or WhatsApp.'}</p>
                     </div>
-                    <Button variant="secondary" size="md" onClick={handleDeleteAccount} iconLeft={<Trash2 size={16} />}>تسجيل الخروج</Button>
+                    <Button variant="secondary" size="md" onClick={handleDeleteAccount} iconLeft={<Trash2 size={16} />}>{isAr ? 'تسجيل الخروج' : 'Logout'}</Button>
                   </CardContent>
                 </Card>
               </motion.div>

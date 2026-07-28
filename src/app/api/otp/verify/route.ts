@@ -5,6 +5,7 @@ import { success, error } from "@/lib/api/response";
 import { sendWelcomeEmail } from "@/lib/email/service";
 import { otpLimiter } from "@/lib/rate-limit";
 import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
+import { setRoleCookie } from "@/lib/auth/role-cookie";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       return error("الكود يجب أن يكون 6 أرقام");
     }
 
-    const result = verifyStoredOTP(email, code);
+    const result = await verifyStoredOTP(email, code);
     if (!result.success) {
       return error(result.error || "الكود غير صحيح");
     }
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return success(
+    const response = success(
       {
         user: {
           id: user.id,
@@ -83,6 +84,8 @@ export async function POST(request: NextRequest) {
       },
       "تم التحقق بنجاح"
     );
+
+    return setRoleCookie(response, user.role);
   } catch (err) {
     console.error("[OTP Verify] Error:", err);
     return error("حدث خطأ أثناء التحقق", 500);

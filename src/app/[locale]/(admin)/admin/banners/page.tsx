@@ -22,6 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 
 type BannerPosition = 'hero' | 'sidebar' | 'footer';
 
@@ -41,12 +43,6 @@ interface Banner {
 const inputClass =
   'w-full px-4 py-2.5 text-sm rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30';
 
-const positionLabels: Record<BannerPosition, string> = {
-  hero: 'الرئيسية',
-  sidebar: 'الشريط الجانبي',
-  footer: 'التذييل',
-};
-
 const positionBadgeVariant: Record<BannerPosition, 'primary' | 'success' | 'info'> = {
   hero: 'primary',
   sidebar: 'success',
@@ -58,6 +54,8 @@ const positionGradients: Record<BannerPosition, string> = {
   sidebar: 'from-[#14b8a6]/20 to-[#7c3aed]/20',
   footer: 'from-[#7c3aed]/20 to-[#2580eb]/20',
 };
+
+const PAGE_SIZE = 12;
 
 const emptyForm: Omit<Banner, 'id'> = {
   title: '',
@@ -72,6 +70,9 @@ const emptyForm: Omit<Banner, 'id'> = {
 };
 
 export default function AdminBannersPage() {
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
+
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,6 +80,13 @@ export default function AdminBannersPage() {
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const positionLabels: Record<BannerPosition, string> = {
+    hero: isAr ? 'الرئيسية' : 'Hero',
+    sidebar: isAr ? 'الشريط الجانبي' : 'Sidebar',
+    footer: isAr ? 'التذييل' : 'Footer',
+  };
 
   const fetchBanners = useCallback(async () => {
     try {
@@ -87,7 +95,7 @@ export default function AdminBannersPage() {
       const data = await res.json();
       if (data.success) setBanners(data.data);
     } catch {
-      console.error('Failed to load banners');
+      toast.error(isAr ? 'فشل تحميل البانرات' : 'Failed to load banners');
     } finally {
       setLoading(false);
     }
@@ -98,6 +106,12 @@ export default function AdminBannersPage() {
   const sortedBanners = useMemo(
     () => [...banners].sort((a, b) => a.order - b.order),
     [banners],
+  );
+
+  const totalPages = Math.ceil(sortedBanners.length / PAGE_SIZE);
+  const paginatedData = useMemo(
+    () => sortedBanners.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [sortedBanners, currentPage],
   );
 
   const stats = useMemo(() => {
@@ -157,7 +171,7 @@ export default function AdminBannersPage() {
       }
       setShowModal(false);
     } catch {
-      console.error('Failed to save banner');
+      toast.error(isAr ? 'فشل حفظ البانر' : 'Failed to save banner');
     } finally {
       setSaving(false);
     }
@@ -171,7 +185,7 @@ export default function AdminBannersPage() {
         setBanners((prev) => prev.filter((b) => b.id !== id));
       }
     } catch {
-      console.error('Failed to delete banner');
+      toast.error(isAr ? 'فشل حذف البانر' : 'Failed to delete banner');
     }
     setDeleteConfirm(null);
   };
@@ -257,26 +271,26 @@ export default function AdminBannersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة البانرات"
-        subtitle="إضافة وتعديل وحذف البانرات الإعلانية"
+        title={isAr ? 'إدارة البانرات' : 'Banners Management'}
+        subtitle={isAr ? 'إضافة وتعديل وحذف البانرات الإعلانية' : 'Add, edit, and delete ad banners'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'البانرات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'البانرات' : 'Banners' },
         ]}
         actions={
           <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={openAdd}>
-            إضافة بانر
+            {isAr ? 'إضافة بانر' : 'Add Banner'}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'إجمالي البانرات', value: stats.total, color: '#2580eb' },
-          { label: 'نشط', value: stats.active, color: '#14b8a6' },
-          { label: 'بانرات رئيسية', value: stats.hero, color: '#2580eb' },
-          { label: 'بانرات جانبية', value: stats.sidebar, color: '#14b8a6' },
+          { label: isAr ? 'إجمالي البانرات' : 'Total Banners', value: stats.total, color: '#2580eb' },
+          { label: isAr ? 'نشط' : 'Active', value: stats.active, color: '#14b8a6' },
+          { label: isAr ? 'بانرات رئيسية' : 'Hero Banners', value: stats.hero, color: '#2580eb' },
+          { label: isAr ? 'بانرات جانبية' : 'Sidebar Banners', value: stats.sidebar, color: '#14b8a6' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -305,7 +319,9 @@ export default function AdminBannersPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {sortedBanners.map((banner, i) => (
+        {paginatedData.map((banner, i) => {
+          const sortedIndex = sortedBanners.findIndex((b) => b.id === banner.id);
+          return (
           <motion.div
             key={banner.id}
             initial={{ opacity: 0, y: 20 }}
@@ -363,18 +379,18 @@ export default function AdminBannersPage() {
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/5">
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleMoveUp(i)}
-                      disabled={i === 0}
+                      onClick={() => handleMoveUp(sortedIndex)}
+                      disabled={sortedIndex === 0}
                       className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                      title="تحريك لأعلى"
+                      title={isAr ? 'تحريك لأعلى' : 'Move up'}
                     >
                       <ArrowUp size={14} />
                     </button>
                     <button
-                      onClick={() => handleMoveDown(i)}
-                      disabled={i === sortedBanners.length - 1}
+                      onClick={() => handleMoveDown(sortedIndex)}
+                      disabled={sortedIndex === sortedBanners.length - 1}
                       className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                      title="تحريك لأسفل"
+                      title={isAr ? 'تحريك لأسفل' : 'Move down'}
                     >
                       <ArrowDown size={14} />
                     </button>
@@ -383,7 +399,7 @@ export default function AdminBannersPage() {
                     <button
                       onClick={() => toggleActive(banner.id)}
                       className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 transition-colors"
-                      title={banner.isActive ? 'إلغاء التنشيط' : 'تنشيط'}
+                      title={banner.isActive ? (isAr ? 'إلغاء التنشيط' : 'Deactivate') : (isAr ? 'تنشيط' : 'Activate')}
                     >
                       {banner.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -404,19 +420,44 @@ export default function AdminBannersPage() {
               </CardContent>
             </Card>
           </motion.div>
-        ))}
+          );
+        })}
         {sortedBanners.length === 0 && (
           <div className="col-span-full py-12 text-center text-slate-400">
             <Images size={48} className="mx-auto mb-3 opacity-30" />
-            <p>لا توجد بانرات</p>
+            <p>{isAr ? 'لا توجد بانرات' : 'No banners found'}</p>
           </div>
         )}
       </div>
 
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            {isAr ? 'السابق' : 'Previous'}
+          </Button>
+          <span className="text-sm text-slate-500">
+            {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            {isAr ? 'التالي' : 'Next'}
+          </Button>
+        </div>
+      )}
+
       <Modal open={showModal} onClose={() => setShowModal(false)} size="lg">
         <ModalHeader>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editingBanner ? 'تعديل البانر' : 'إضافة بانر جديد'}
+            {editingBanner ? (isAr ? 'تعديل البانر' : 'Edit Banner') : (isAr ? 'إضافة بانر جديد' : 'Add New Banner')}
           </h2>
         </ModalHeader>
 
@@ -425,19 +466,19 @@ export default function AdminBannersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان (عربي) *
+                  {isAr ? 'العنوان (عربي)' : 'Title (Arabic)'} *
                 </label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className={inputClass}
-                  placeholder="عنوان البانر بالعربي"
+                  placeholder={isAr ? 'عنوان البانر بالعربي' : 'Banner title in Arabic'}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان (إنجليزي) *
+                  {isAr ? 'العنوان (إنجليزي)' : 'Title (English)'} *
                 </label>
                 <input
                   type="text"
@@ -452,19 +493,19 @@ export default function AdminBannersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان الفرعي (عربي)
+                  {isAr ? 'العنوان الفرعي (عربي)' : 'Subtitle (Arabic)'}
                 </label>
                 <input
                   type="text"
                   value={form.subtitle}
                   onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
                   className={inputClass}
-                  placeholder="عنوان فرعي للبانر"
+                  placeholder={isAr ? 'عنوان فرعي للبانر' : 'Banner subtitle'}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان الفرعي (إنجليزي)
+                  {isAr ? 'العنوان الفرعي (إنجليزي)' : 'Subtitle (English)'}
                 </label>
                 <input
                   type="text"
@@ -478,7 +519,7 @@ export default function AdminBannersPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                رابط الصورة
+                {isAr ? 'رابط الصورة' : 'Image URL'}
               </label>
               <input
                 type="url"
@@ -491,7 +532,7 @@ export default function AdminBannersPage() {
                 <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 h-32">
                   <img
                     src={form.image}
-                    alt="معاينة"
+                    alt={isAr ? 'معاينة' : 'Preview'}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -503,7 +544,7 @@ export default function AdminBannersPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                رابط التوجيه
+                {isAr ? 'رابط التوجيه' : 'Redirect Link'}
               </label>
               <input
                 type="text"
@@ -517,21 +558,21 @@ export default function AdminBannersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  الموقع
+                  {isAr ? 'الموقع' : 'Position'}
                 </label>
                 <select
                   value={form.position}
                   onChange={(e) => setForm({ ...form, position: e.target.value as BannerPosition })}
                   className={inputClass}
                 >
-                  <option value="hero">الرئيسية (Hero)</option>
-                  <option value="sidebar">الشريط الجانبي (Sidebar)</option>
-                  <option value="footer">التذييل (Footer)</option>
+                  <option value="hero">{isAr ? 'الرئيسية (Hero)' : 'Hero'}</option>
+                  <option value="sidebar">{isAr ? 'الشريط الجانبي (Sidebar)' : 'Sidebar'}</option>
+                  <option value="footer">{isAr ? 'التذييل (Footer)' : 'Footer'}</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  ترتيب العرض
+                  {isAr ? 'ترتيب العرض' : 'Display Order'}
                 </label>
                 <input
                   type="number"
@@ -543,7 +584,7 @@ export default function AdminBannersPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  الحالة
+                  {isAr ? 'الحالة' : 'Status'}
                 </label>
                 <div className="flex items-center gap-3 h-[42px] px-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                   <button
@@ -564,7 +605,7 @@ export default function AdminBannersPage() {
                     />
                   </button>
                   <span className="text-sm text-slate-700 dark:text-slate-300">
-                    {form.isActive ? 'نشط' : 'غير نشط'}
+                    {form.isActive ? (isAr ? 'نشط' : 'Active') : (isAr ? 'غير نشط' : 'Inactive')}
                   </span>
                 </div>
               </div>
@@ -574,7 +615,7 @@ export default function AdminBannersPage() {
 
         <ModalFooter>
           <Button variant="ghost" onClick={() => setShowModal(false)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="primary"
@@ -582,7 +623,7 @@ export default function AdminBannersPage() {
             disabled={!form.title || !form.titleEn || saving}
             iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
           >
-            {editingBanner ? 'حفظ التعديلات' : 'إضافة البانر'}
+            {editingBanner ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة البانر' : 'Add Banner')}
           </Button>
         </ModalFooter>
       </Modal>
@@ -594,16 +635,16 @@ export default function AdminBannersPage() {
               <Trash2 size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-              حذف البانر
+              {isAr ? 'حذف البانر' : 'Delete Banner'}
             </h3>
             <p className="text-sm text-slate-500">
-              هل أنت متأكد من حذف هذا البانر؟ لا يمكن التراجع عن هذا الإجراء.
+              {isAr ? 'هل أنت متأكد من حذف هذا البانر؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this banner? This action cannot be undone.'}
             </p>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" fullWidth onClick={() => setDeleteConfirm(null)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="danger"
@@ -611,7 +652,7 @@ export default function AdminBannersPage() {
             onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
             iconLeft={<Trash2 size={14} />}
           >
-            حذف
+            {isAr ? 'حذف' : 'Delete'}
           </Button>
         </ModalFooter>
       </Modal>

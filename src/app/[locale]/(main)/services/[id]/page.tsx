@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrencyStore } from '@/store/currency-store';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguageStore } from '@/store/language-store';
 import { formatPrice } from '@/lib/currency';
 import type { ServiceData } from '@/types/service-data';
 
@@ -38,6 +39,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const { currency } = useCurrencyStore();
   const { isAuthenticated } = useAuthStore();
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
 
   const [service, setService] = useState<ServiceData | null | undefined>(undefined);
   const [allServices, setAllServices] = useState<ServiceData[]>([]);
@@ -84,10 +87,10 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
           <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-6">
             <Package size={36} className="text-slate-300" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">الخدمة غير موجودة</h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-6">هذه الخدمة غير متاحة حالياً أو ربما تم حذفها</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'الخدمة غير موجودة' : 'Service not found'}</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">{isAr ? 'هذه الخدمة غير متاحة حالياً أو ربما تم حذفها' : 'This service is currently unavailable or may have been removed'}</p>
           <Link href="/services">
-            <Button iconLeft={<ArrowLeft className="rtl:rotate-180" size={18} />}>العودة للخدمات</Button>
+            <Button iconLeft={<ArrowLeft className="rtl:rotate-180" size={18} />}>{isAr ? 'العودة للخدمات' : 'Back to Services'}</Button>
           </Link>
         </div>
       </div>
@@ -107,11 +110,11 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-20">
           <nav className="flex items-center gap-1.5 text-xs sm:text-sm text-white/70 mb-4 sm:mb-6">
-            <Link href="/" className="hover:text-white transition-colors">الرئيسية</Link>
+            <Link href="/" className="hover:text-white transition-colors">{isAr ? 'الرئيسية' : 'Home'}</Link>
             <ChevronDown size={14} className="rotate-[-90deg]" />
-            <Link href="/services" className="hover:text-white transition-colors">الخدمات</Link>
+            <Link href="/services" className="hover:text-white transition-colors">{isAr ? 'الخدمات' : 'Services'}</Link>
             <ChevronDown size={14} className="rotate-[-90deg]" />
-            <span className="text-white font-medium">{service.name}</span>
+            <span className="text-white font-medium">{isAr ? service.name : service.nameEn}</span>
           </nav>
 
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
@@ -123,18 +126,18 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                 <Badge variant="secondary" size="sm" className="bg-white/20 text-white border-white/30">{service.categoryAr}</Badge>
               </motion.div>
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">{service.name}</motion.h1>
+                className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">{isAr ? service.name : service.nameEn}</motion.h1>
               <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="text-white/80 text-sm sm:text-lg max-w-2xl leading-relaxed">{service.description}</motion.p>
+                className="text-white/80 text-sm sm:text-lg max-w-2xl leading-relaxed">{isAr ? service.description : service.descriptionEn}</motion.p>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="flex flex-wrap items-center gap-2 sm:gap-4 mt-4 sm:mt-6">
                 <div className="flex items-center gap-2 bg-white/20 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm text-xs sm:text-sm">
                   <Clock size={14} className="sm:w-[18px] sm:h-[18px]" />
-                  <span className="font-medium">{service.duration}</span>
+                  <span className="font-medium">{isAr ? service.duration : service.durationEn}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 rounded-xl px-4 py-2 backdrop-blur-sm">
                   <DollarSign size={18} />
-                  <span className="font-medium">{service.priceNote} {formatPrice(service.price, currency)}</span>
+                  <span className="font-medium">{isAr ? service.priceNote : service.priceNoteEn} {formatPrice(service.price, currency)}</span>
                 </div>
               </motion.div>
             </div>
@@ -142,13 +145,13 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
               {isAuthenticated ? (
                 <Link href={`/request/${service.id}`}>
                   <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
-                    اطلب الآن
+                    {isAr ? 'اطلب الآن' : 'Order Now'}
                     <ArrowLeft size={20} className="rtl:rotate-180" />
                   </Button>
                 </Link>
               ) : (
                 <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4" onClick={() => setShowLoginModal(true)}>
-                  اطلب الآن
+                  {isAr ? 'اطلب الآن' : 'Order Now'}
                   <ArrowLeft size={20} className="rtl:rotate-180" />
                 </Button>
               )}
@@ -164,9 +167,9 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             {/* About Section */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <Card glass padding="lg">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">عن الخدمة</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">{isAr ? 'عن الخدمة' : 'About Service'}</h2>
                 <div className="text-slate-600 dark:text-slate-400 leading-relaxed space-y-4">
-                  {service.fullDescription.split('\\n\\n').map((para, i) => (
+                  {(isAr ? service.fullDescription : service.fullDescriptionEn).split('\\n\\n').map((para, i) => (
                     <p key={i}>{para}</p>
                   ))}
                 </div>
@@ -176,9 +179,9 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             {/* Features Grid */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <Card glass padding="lg">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">مميزات الخدمة</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'مميزات الخدمة' : 'Service Features'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {service.features.map((feature, i) => (
+                  {(isAr ? service.features : service.featuresEn).map((feature, i) => (
                     <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }} transition={{ delay: i * 0.05 }}
                       className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/80 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
@@ -195,9 +198,9 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             {/* Steps Section */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <Card glass padding="lg">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">مراحل التنفيذ</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'مراحل التنفيذ' : 'Implementation Steps'}</h2>
                 <div className="space-y-6">
-                  {service.steps.map((step, i) => {
+                  {(isAr ? service.steps : service.stepsEn).map((step, i) => {
                     const StepIcon = iconMap[step.icon] || CheckCircle;
                     return (
                       <motion.div key={i} initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }}
@@ -207,12 +210,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br ${service.gradient} text-white shadow-lg`}>
                             <StepIcon size={20} />
                           </div>
-                          {i < service.steps.length - 1 && (
+                          {i < (isAr ? service.steps : service.stepsEn).length - 1 && (
                             <div className="absolute top-14 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gradient-to-b from-slate-200 to-transparent dark:from-slate-700" />
                           )}
                         </div>
                         <div className="flex-1 pt-1">
-                          <h4 className="font-bold text-slate-900 dark:text-white mb-1">الخطوة {i + 1}: {step.title}</h4>
+                          <h4 className="font-bold text-slate-900 dark:text-white mb-1">{isAr ? 'الخطوة' : 'Step'} {i + 1}: {step.title}</h4>
                           <p className="text-slate-500 dark:text-slate-400 text-sm">{step.description}</p>
                         </div>
                       </motion.div>
@@ -225,9 +228,9 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             {/* Required Documents Section */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <Card glass padding="lg">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">المستندات المطلوبة</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'المستندات المطلوبة' : 'Required Documents'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {service.requiredDocuments.map((doc, i) => (
+                  {(isAr ? service.requiredDocuments : service.requiredDocumentsEn).map((doc, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
                       <div className="w-8 h-8 rounded-lg bg-[#2580eb]/10 flex items-center justify-center shrink-0">
                         <FileText size={16} className="text-[#2580eb]" />
@@ -247,18 +250,21 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     <ClipboardList size={24} className="text-[#2580eb]" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-slate-900 dark:text-white mb-1">كيفية الطلب</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">اضغط على زر &quot;اطلب الآن&quot; لفتح صفحة الطلب حيث يمكنك إدخال بياناتك ورفع المستندات واختيار طريقة الدفع.</p>
+                    <h3 className="font-bold text-slate-900 dark:text-white mb-1">{isAr ? 'كيفية الطلب' : 'How to Order'}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">{isAr
+                      ? 'اضغط على زر "اطلب الآن" لفتح صفحة الطلب حيث يمكنك إدخال بياناتك ورفع المستندات واختيار طريقة الدفع.'
+                      : 'Click the "Order Now" button to open the order page where you can enter your details, upload documents, and choose a payment method.'
+                    }</p>
                   </div>
                   {isAuthenticated ? (
                 <Link href={`/request/${service.id}`}>
                       <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
-                        اطلب الآن
+                        {isAr ? 'اطلب الآن' : 'Order Now'}
                       </Button>
                     </Link>
                   ) : (
                     <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />} onClick={() => setShowLoginModal(true)}>
-                      اطلب الآن
+                      {isAr ? 'اطلب الآن' : 'Order Now'}
                     </Button>
                   )}
                 </div>
@@ -268,9 +274,9 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             {/* FAQ Section */}
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <Card glass padding="lg">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">الأسئلة الشائعة</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'الأسئلة الشائعة' : 'Frequently Asked Questions'}</h2>
                 <div className="space-y-3">
-                  {service.faq.map((item, i) => (
+                  {(isAr ? service.faq : service.faqEn).map((item, i) => (
                     <div key={i} className="border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden">
                       <button
                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -301,7 +307,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             {/* Related Services */}
             {relatedServices.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">خدمات ذات صلة</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'خدمات ذات صلة' : 'Related Services'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {relatedServices.map((rel) => {
                     const RelIcon = iconMap[rel.icon] || Star;
@@ -314,11 +320,11 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                               <RelIcon size={20} style={{ color: relColor }} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">{rel.name}</h4>
-                              <p className="text-xs text-slate-500">{rel.duration}</p>
+                              <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">{isAr ? rel.name : rel.nameEn}</h4>
+                              <p className="text-xs text-slate-500">{isAr ? rel.duration : rel.durationEn}</p>
                             </div>
                           </div>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs line-clamp-2 mb-3">{rel.description}</p>
+                          <p className="text-slate-500 dark:text-slate-400 text-xs line-clamp-2 mb-3">{isAr ? rel.description : rel.descriptionEn}</p>
                           <Badge variant="success" size="sm">{formatPrice(rel.price, currency)}</Badge>
                         </Card>
                       </Link>
@@ -334,38 +340,38 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             <div className="sticky top-24 space-y-6">
               <Card glass padding="lg">
                 <div className="text-center mb-6">
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{service.priceNote}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{isAr ? service.priceNote : service.priceNoteEn}</p>
                   <div className="text-3xl font-bold gradient-text mb-1">{formatPrice(service.price, currency)}</div>
-                  <p className="text-slate-400 text-xs">شامل ضريبة القيمة المضافة</p>
+                  <p className="text-slate-400 text-xs">{isAr ? 'شامل ضريبة القيمة المضافة' : 'VAT included'}</p>
                 </div>
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
                     <Clock size={18} className="text-[#2580eb] shrink-0" />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">مدة التنفيذ: <strong>{service.duration}</strong></span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{isAr ? 'مدة التنفيذ:' : 'Duration:'} <strong>{isAr ? service.duration : service.durationEn}</strong></span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
                     <Shield size={18} className="text-emerald-500 shrink-0" />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">ضمان استرداد المبلغ</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{isAr ? 'ضمان استرداد المبلغ' : 'Money-back guarantee'}</span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
                     <CreditCard size={18} className="text-[#7c3aed] shrink-0" />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">دفع آمن ومشفر</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{isAr ? 'دفع آمن ومشفر' : 'Secure and encrypted payment'}</span>
                   </div>
                 </div>
                 {isAuthenticated ? (
                   <Link href={`/request/${service.id}`} className="block">
                     <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
-                      اطلب الآن
+                      {isAr ? 'اطلب الآن' : 'Order Now'}
                     </Button>
                   </Link>
                 ) : (
                   <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />} onClick={() => setShowLoginModal(true)}>
-                    اطلب الآن
+                    {isAr ? 'اطلب الآن' : 'Order Now'}
                   </Button>
                 )}
                 <div className="mt-4 text-center">
                   <Link href="/track-order" className="text-sm text-[#2580eb] hover:underline">
-                    هل لديك طلب سابق؟ تتبعه هنا
+                    {isAr ? 'هل لديك طلب سابق؟ تتبعه هنا' : 'Have a previous order? Track it here'}
                   </Link>
                 </div>
               </Card>
@@ -376,8 +382,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     <Headphones size={20} className="text-[#2580eb]" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm">تحتاج مساعدة؟</p>
-                    <p className="text-slate-500 text-xs">تواصل معنا على مدار الساعة</p>
+                    <p className="font-bold text-slate-900 dark:text-white text-sm">{isAr ? 'تحتاج مساعدة؟' : 'Need help?'}</p>
+                    <p className="text-slate-500 text-xs">{isAr ? 'تواصل معنا على مدار الساعة' : 'Contact us 24/7'}</p>
                   </div>
                 </div>
               </Card>
@@ -413,19 +419,22 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-16 h-16 rounded-2xl bg-[#2580eb]/10 flex items-center justify-center mx-auto mb-6">
                   <Lock size={28} className="text-[#2580eb]" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">يجب تسجيل الدخول أولًا</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'يجب تسجيل الدخول أولًا' : 'Login Required'}</h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 leading-relaxed">
-                  لإكمال طلب الخدمة، يرجى تسجيل الدخول أو إنشاء حساب جديد
+                  {isAr
+                    ? 'لإكمال طلب الخدمة، يرجى تسجيل الدخول أو إنشاء حساب جديد'
+                    : 'To complete the service request, please login or create a new account'
+                  }
                 </p>
                 <div className="flex gap-3">
                   <Link href={`/login?redirect=/request/${service.id}`} className="flex-1">
                     <Button fullWidth variant="primary">
-                      تسجيل الدخول
+                      {isAr ? 'تسجيل الدخول' : 'Login'}
                     </Button>
                   </Link>
                   <Link href={`/register`} className="flex-1">
                     <Button fullWidth variant="secondary">
-                      إنشاء حساب
+                      {isAr ? 'إنشاء حساب' : 'Create Account'}
                     </Button>
                   </Link>
                 </div>

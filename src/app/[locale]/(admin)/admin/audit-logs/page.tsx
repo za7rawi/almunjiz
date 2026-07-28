@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
+import { useLanguageStore } from '@/store/language-store';
+import { toast } from '@/components/ui/toast';
 
 interface AuditLog {
   id: string;
@@ -21,43 +23,43 @@ interface AuditLog {
 
 type ResourceFilter = 'all' | 'orders' | 'payments' | 'invoices' | 'users' | 'gateways';
 
-const actionLabels: Record<string, { label: string; color: string }> = {
-  'order.created': { label: 'إنشاء طلب', color: 'bg-blue-100 text-blue-700' },
-  'order.status_changed': { label: 'تغيير حالة', color: 'bg-amber-100 text-amber-700' },
-  'order.note_added': { label: 'إضافة ملاحظة', color: 'bg-purple-100 text-purple-700' },
-  'order.file_uploaded': { label: 'رفع ملف', color: 'bg-indigo-100 text-indigo-700' },
-  'order.email_sent': { label: 'إرسال بريد', color: 'bg-cyan-100 text-cyan-700' },
-  'payment.created': { label: 'إنشاء دفع', color: 'bg-emerald-100 text-emerald-700' },
-  'payment.completed': { label: 'اكتمال الدفع', color: 'bg-emerald-100 text-emerald-700' },
-  'payment.verified': { label: 'تحقق من الدفع', color: 'bg-emerald-100 text-emerald-700' },
-  'payment.failed': { label: 'فشل الدفع', color: 'bg-red-100 text-red-700' },
-  'payment.refunded': { label: 'استرداد', color: 'bg-orange-100 text-orange-700' },
-  'invoice.created': { label: 'إنشاء فاتورة', color: 'bg-sky-100 text-sky-700' },
-  'invoice.paid': { label: 'دفع فاتورة', color: 'bg-emerald-100 text-emerald-700' },
-  'user.registered': { label: 'تسجيل مستخدم', color: 'bg-teal-100 text-teal-700' },
-  'user.login': { label: 'تسجيل دخول', color: 'bg-slate-100 text-slate-700' },
-  'gateway.created': { label: 'إنشاء بوابة', color: 'bg-violet-100 text-violet-700' },
-  'gateway.updated': { label: 'تحديث بوابة', color: 'bg-violet-100 text-violet-700' },
-  'gateway.deleted': { label: 'حذف بوابة', color: 'bg-red-100 text-red-700' },
-  'gateway.tested': { label: 'اختبار بوابة', color: 'bg-cyan-100 text-cyan-700' },
-  'webhook.received': { label: 'استلام Webhook', color: 'bg-slate-100 text-slate-700' },
-};
+const getActionLabels = (isAr: boolean): Record<string, { label: string; color: string }> => ({
+  'order.created': { label: isAr ? 'إنشاء طلب' : 'Create Order', color: 'bg-blue-100 text-blue-700' },
+  'order.status_changed': { label: isAr ? 'تغيير حالة' : 'Status Change', color: 'bg-amber-100 text-amber-700' },
+  'order.note_added': { label: isAr ? 'إضافة ملاحظة' : 'Add Note', color: 'bg-purple-100 text-purple-700' },
+  'order.file_uploaded': { label: isAr ? 'رفع ملف' : 'Upload File', color: 'bg-indigo-100 text-indigo-700' },
+  'order.email_sent': { label: isAr ? 'إرسال بريد' : 'Send Email', color: 'bg-cyan-100 text-cyan-700' },
+  'payment.created': { label: isAr ? 'إنشاء دفع' : 'Create Payment', color: 'bg-emerald-100 text-emerald-700' },
+  'payment.completed': { label: isAr ? 'اكتمال الدفع' : 'Payment Completed', color: 'bg-emerald-100 text-emerald-700' },
+  'payment.verified': { label: isAr ? 'تحقق من الدفع' : 'Payment Verified', color: 'bg-emerald-100 text-emerald-700' },
+  'payment.failed': { label: isAr ? 'فشل الدفع' : 'Payment Failed', color: 'bg-red-100 text-red-700' },
+  'payment.refunded': { label: isAr ? 'استرداد' : 'Refunded', color: 'bg-orange-100 text-orange-700' },
+  'invoice.created': { label: isAr ? 'إنشاء فاتورة' : 'Create Invoice', color: 'bg-sky-100 text-sky-700' },
+  'invoice.paid': { label: isAr ? 'دفع فاتورة' : 'Invoice Paid', color: 'bg-emerald-100 text-emerald-700' },
+  'user.registered': { label: isAr ? 'تسجيل مستخدم' : 'User Registered', color: 'bg-teal-100 text-teal-700' },
+  'user.login': { label: isAr ? 'تسجيل دخول' : 'User Login', color: 'bg-slate-100 text-slate-700' },
+  'gateway.created': { label: isAr ? 'إنشاء بوابة' : 'Create Gateway', color: 'bg-violet-100 text-violet-700' },
+  'gateway.updated': { label: isAr ? 'تحديث بوابة' : 'Update Gateway', color: 'bg-violet-100 text-violet-700' },
+  'gateway.deleted': { label: isAr ? 'حذف بوابة' : 'Delete Gateway', color: 'bg-red-100 text-red-700' },
+  'gateway.tested': { label: isAr ? 'اختبار بوابة' : 'Test Gateway', color: 'bg-cyan-100 text-cyan-700' },
+  'webhook.received': { label: isAr ? 'استلام Webhook' : 'Webhook Received', color: 'bg-slate-100 text-slate-700' },
+});
 
-const resourceLabels: Record<string, string> = {
-  orders: 'طلب',
-  payments: 'دفع',
-  invoices: 'فاتورة',
-  users: 'مستخدم',
-  gateways: 'بوابة',
-};
+const getResourceLabels = (isAr: boolean): Record<string, string> => ({
+  orders: isAr ? 'طلب' : 'Order',
+  payments: isAr ? 'دفع' : 'Payment',
+  invoices: isAr ? 'فاتورة' : 'Invoice',
+  users: isAr ? 'مستخدم' : 'User',
+  gateways: isAr ? 'بوابة' : 'Gateway',
+});
 
-const filterTabs: { id: ResourceFilter; label: string }[] = [
-  { id: 'all', label: 'الكل' },
-  { id: 'orders', label: 'الطلبات' },
-  { id: 'payments', label: 'المدفوعات' },
-  { id: 'invoices', label: 'الفواتير' },
-  { id: 'users', label: 'المستخدمين' },
-  { id: 'gateways', label: 'الأبواب' },
+const getFilterTabs = (isAr: boolean): { id: ResourceFilter; label: string }[] => [
+  { id: 'all', label: isAr ? 'الكل' : 'All' },
+  { id: 'orders', label: isAr ? 'الطلبات' : 'Orders' },
+  { id: 'payments', label: isAr ? 'المدفوعات' : 'Payments' },
+  { id: 'invoices', label: isAr ? 'الفواتير' : 'Invoices' },
+  { id: 'users', label: isAr ? 'المستخدمين' : 'Users' },
+  { id: 'gateways', label: isAr ? 'الأبواب' : 'Gateways' },
 ];
 
 const PAGE_SIZE = 50;
@@ -68,6 +70,12 @@ export default function AuditLogsPage() {
   const [activeFilter, setActiveFilter] = useState<ResourceFilter>('all');
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
+
+  const actionLabels = getActionLabels(isAr);
+  const resourceLabels = getResourceLabels(isAr);
+  const filterTabs = getFilterTabs(isAr);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -88,6 +96,7 @@ export default function AuditLogsPage() {
         setLogs(mapped);
       }
     } catch {
+      toast.error(isAr ? 'فشل تحميل السجلات' : 'Failed to load audit logs');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -116,31 +125,35 @@ export default function AuditLogsPage() {
   const todayPayments = todayLogs.filter((l) => l.resource === 'payment' || l.action?.startsWith('payment.')).length;
 
   const statCards = [
-    { label: 'إجمالي السجلات', value: logs.length, icon: Activity, color: '#2580eb' },
-    { label: 'سجلات اليوم', value: todayLogs.length, icon: Clock, color: '#14b8a6' },
-    { label: 'طلبات اليوم', value: todayOrders, icon: Package, color: '#7c3aed' },
-    { label: 'مدفوعات اليوم', value: todayPayments, icon: CreditCard, color: '#f59e0b' },
+    { label: isAr ? 'إجمالي السجلات' : 'Total Logs', value: logs.length, icon: Activity, color: '#2580eb' },
+    { label: isAr ? 'سجلات اليوم' : "Today's Logs", value: todayLogs.length, icon: Clock, color: '#14b8a6' },
+    { label: isAr ? 'طلبات اليوم' : "Today's Orders", value: todayOrders, icon: Package, color: '#7c3aed' },
+    { label: isAr ? 'مدفوعات اليوم' : "Today's Payments", value: todayPayments, icon: CreditCard, color: '#f59e0b' },
   ];
 
-  const formatArabicDate = (dateStr: string) => {
+  const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' }) +
-      ' ' + d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+    if (isAr) {
+      return d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' }) +
+        ' ' + d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
+      ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="سجل النشاطات"
-        subtitle="تتبع جميع العمليات في النظام"
+        title={isAr ? 'سجل النشاطات' : 'Audit Logs'}
+        subtitle={isAr ? 'تتبع جميع العمليات في النظام' : 'Track all operations in the system'}
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'سجل النشاطات' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'سجل النشاطات' : 'Audit Logs' },
         ]}
         actions={
           <Button variant="ghost" size="sm" onClick={fetchLogs} disabled={refreshing}>
             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            <span className="me-2">تحديث</span>
+            <span className="me-2">{isAr ? 'تحديث' : 'Refresh'}</span>
           </Button>
         }
       />
@@ -158,7 +171,7 @@ export default function AuditLogsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{stat.value.toLocaleString('ar-SA')}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{stat.value.toLocaleString(isAr ? 'ar-SA' : 'en-US')}</p>
                   </div>
                   <div
                     className="w-11 h-11 rounded-xl flex items-center justify-center"
@@ -202,11 +215,11 @@ export default function AuditLogsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
-                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">التاريخ والوقت</th>
-                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">العملية</th>
-                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">المستخدم</th>
-                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden md:table-cell">المورد</th>
-                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden lg:table-cell">التفاصيل</th>
+                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'التاريخ والوقت' : 'Date & Time'}</th>
+                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'العملية' : 'Action'}</th>
+                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'المستخدم' : 'User'}</th>
+                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden md:table-cell">{isAr ? 'المورد' : 'Resource'}</th>
+                    <th className="text-start py-3 px-4 text-slate-500 dark:text-slate-400 font-medium hidden lg:table-cell">{isAr ? 'التفاصيل' : 'Details'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -219,7 +232,7 @@ export default function AuditLogsPage() {
                       className="border-b border-slate-50 dark:border-white/5 last:border-0 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                     >
                       <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
-                        {formatArabicDate(log.createdAt)}
+                        {formatDate(log.createdAt)}
                       </td>
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${actionLabels[log.action]?.color || 'bg-slate-100 text-slate-700'}`}>
@@ -229,10 +242,10 @@ export default function AuditLogsPage() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                            {log.userName ? log.userName.charAt(0) : 'ن'}
+                            {log.userName ? log.userName.charAt(0) : (isAr ? 'ن' : 'S')}
                           </div>
                           <span className="text-slate-900 dark:text-white text-xs font-medium">
-                            {log.userName || 'النظام'}
+                            {log.userName || (isAr ? 'النظام' : 'System')}
                           </span>
                         </div>
                       </td>
@@ -252,7 +265,7 @@ export default function AuditLogsPage() {
                         {log.metadata && Object.keys(log.metadata).length > 0 ? (
                           <details className="group">
                             <summary className="text-xs text-[#2580eb] cursor-pointer hover:underline select-none">
-                              عرض التفاصيل
+                              {isAr ? 'عرض التفاصيل' : 'View Details'}
                             </summary>
                             <div className="mt-2 p-2 rounded-lg bg-slate-50 dark:bg-white/5 text-[10px] font-mono text-slate-500 dark:text-slate-400 max-w-xs overflow-x-auto">
                               <pre className="whitespace-pre-wrap">
@@ -272,7 +285,7 @@ export default function AuditLogsPage() {
             {displayed.length === 0 && (
               <div className="py-12 text-center text-slate-400">
                 <Activity size={48} className="mx-auto mb-3 opacity-30" />
-                <p>لا توجد سجلات نشاط</p>
+                <p>{isAr ? 'لا توجد سجلات نشاط' : 'No activity logs found'}</p>
               </div>
             )}
           </CardContent>
@@ -285,7 +298,7 @@ export default function AuditLogsPage() {
             variant="ghost"
             onClick={() => setPage((p) => p + 1)}
           >
-            تحميل المزيد ({filtered.length - displayed.length} سجل)
+            {isAr ? `تحميل المزيد (${filtered.length - displayed.length} سجل)` : `Load More (${filtered.length - displayed.length} logs)`}
           </Button>
         </div>
       )}

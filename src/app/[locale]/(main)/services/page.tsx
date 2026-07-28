@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Search, Clock, ShoppingCart, ArrowLeft, Star,
+  Search, Clock, ShoppingCart, ArrowLeft, ArrowRight, Star,
   Globe, FileText, Car, Plane, Building2, Headphones,
   GraduationCap, Shield, Briefcase, Hotel, Laptop,
   MessageSquare, Home, FileSignature, SearchX, Zap, Heart,
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useCurrencyStore } from '@/store/currency-store';
+import { useLanguageStore } from '@/store/language-store';
 import { formatPrice } from '@/lib/currency';
 import type { ServiceData } from '@/types/service-data';
 
@@ -36,21 +37,23 @@ const categoryColors: Record<string, string> = {
 };
 
 const categories = [
-  { id: 'all', label: 'الكل', icon: null },
-  { id: 'VISAS', label: 'التأشيرات', icon: Globe },
-  { id: 'CONTRACTS', label: 'العقود', icon: FileText },
-  { id: 'VEHICLES', label: 'المركبات', icon: Car },
-  { id: 'TRAVEL', label: 'السفر', icon: Plane },
-  { id: 'BUSINESS', label: 'قطاع الأعمال', icon: Briefcase },
-  { id: 'GOVERNMENT', label: 'الخدمات الحكومية', icon: Shield },
-  { id: 'ELECTRONIC', label: 'الخدمات الإلكترونية', icon: Laptop },
-  { id: 'UNIVERSITIES', label: 'الجامعات', icon: GraduationCap },
-  { id: 'CONSULTATIONS', label: 'الاستشارات', icon: MessageSquare },
-  { id: 'OTHER', label: 'خدمات متنوعة', icon: Star },
+  { id: 'all', label: 'الكل', labelEn: 'All', icon: null },
+  { id: 'VISAS', label: 'التأشيرات', labelEn: 'Visas', icon: Globe },
+  { id: 'CONTRACTS', label: 'العقود', labelEn: 'Contracts', icon: FileText },
+  { id: 'VEHICLES', label: 'المركبات', labelEn: 'Vehicles', icon: Car },
+  { id: 'TRAVEL', label: 'السفر', labelEn: 'Travel', icon: Plane },
+  { id: 'BUSINESS', label: 'قطاع الأعمال', labelEn: 'Business', icon: Briefcase },
+  { id: 'GOVERNMENT', label: 'الخدمات الحكومية', labelEn: 'Government', icon: Shield },
+  { id: 'ELECTRONIC', label: 'الخدمات الإلكترونية', labelEn: 'Electronic', icon: Laptop },
+  { id: 'UNIVERSITIES', label: 'الجامعات', labelEn: 'Universities', icon: GraduationCap },
+  { id: 'CONSULTATIONS', label: 'الاستشارات', labelEn: 'Consultations', icon: MessageSquare },
+  { id: 'OTHER', label: 'خدمات متنوعة', labelEn: 'Other', icon: Star },
 ];
 
 function ServiceCard({ service, index }: { service: ServiceData; index: number }) {
   const { currency } = useCurrencyStore();
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
   const Icon = iconMap[service.icon] || Star;
   const color = categoryColors[service.category] || '#2580eb';
 
@@ -67,7 +70,7 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
             <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
               <Badge variant="warning" size="sm" className="bg-amber-400 text-amber-900 border-amber-300 text-[10px]">
                 <Zap size={10} />
-                الأكثر طلباً
+                {isAr ? 'الأكثر طلباً' : 'Most Popular'}
               </Badge>
             </div>
           )}
@@ -96,8 +99,8 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
               <p className="text-sm sm:text-lg font-bold gradient-text">{formatPrice(service.price, currency)}</p>
             </div>
             <Link href={`/services/${service.id}`}>
-              <Button variant="secondary" size="sm" iconLeft={<ArrowLeft size={14} />} className="text-xs sm:text-sm">
-                التفاصيل
+              <Button variant="secondary" size="sm" iconLeft={isAr ? <ArrowLeft size={14} /> : <ArrowRight size={14} />} className="text-xs sm:text-sm">
+                {isAr ? 'التفاصيل' : 'Details'}
               </Button>
             </Link>
           </div>
@@ -112,6 +115,8 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
 
   useEffect(() => {
     async function fetchServices() {
@@ -155,15 +160,19 @@ export default function ServicesPage() {
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">خدماتنا المتكاملة</h1>
-            <p className="text-white/80 text-sm sm:text-lg mb-6 sm:mb-8">تصفح خدماتنا المتنوعة واختر ما يناسبك. نقدم حلولاً احترافية متكاملة لاحتياجاتك.</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">
+              {isAr ? 'خدماتنا المتكاملة' : 'Our Comprehensive Services'}
+            </h1>
+            <p className="text-white/80 text-sm sm:text-lg mb-6 sm:mb-8">
+              {isAr ? 'تصفح خدماتنا المتنوعة واختر ما يناسبك. نقدم حلولاً احترافية متكاملة لاحتياجاتك.' : 'Browse our diverse services and choose what suits you. We provide professional integrated solutions for your needs.'}
+            </p>
             <div className="relative max-w-lg mx-auto">
               <Search size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن خدمة بالاسم أو الوصف..."
+                placeholder={isAr ? 'ابحث عن خدمة بالاسم أو الوصف...' : 'Search for a service by name or description...'}
                 className="w-full pr-12 pl-4 py-3 sm:py-4 rounded-2xl border-0 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-xl"
               />
             </div>
@@ -182,7 +191,9 @@ export default function ServicesPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
               <div className="flex items-center gap-3 mb-6">
                 <Heart size={20} className="text-red-500" />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">الخدمات الأكثر طلباً</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  {isAr ? 'الخدمات الأكثر طلباً' : 'Most Popular Services'}
+                </h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {popularServices.map((service, i) => (
@@ -205,7 +216,7 @@ export default function ServicesPage() {
                 }`}
               >
                 {cat.icon && <cat.icon size={14} />}
-                {cat.label}
+                {isAr ? cat.label : cat.labelEn}
               </button>
             ))}
           </div>
@@ -213,7 +224,15 @@ export default function ServicesPage() {
           {/* Results Count */}
           <div className="flex items-center justify-between mb-6">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              عرض <span className="font-bold text-slate-900 dark:text-white">{filtered.length}</span> من {servicesData.filter((s) => s.isActive).length} خدمة
+              {isAr ? (
+                <>
+                  عرض <span className="font-bold text-slate-900 dark:text-white">{filtered.length}</span> من {servicesData.filter((s) => s.isActive).length} خدمة
+                </>
+              ) : (
+                <>
+                  Showing <span className="font-bold text-slate-900 dark:text-white">{filtered.length}</span> of {servicesData.filter((s) => s.isActive).length} services
+                </>
+              )}
             </p>
           </div>
 
@@ -228,12 +247,16 @@ export default function ServicesPage() {
           {filtered.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20">
               <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
-                <SearchX size={36} className="text-slate-300" />
+                <SearchX size={36} className="text-slate-300 dark:text-slate-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">لا توجد نتائج</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">جرّب تغيير كلمة البحث أو الفئة</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                {isAr ? 'لا توجد نتائج' : 'No Results Found'}
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                {isAr ? 'جرّب تغيير كلمة البحث أو الفئة' : 'Try changing the search term or category'}
+              </p>
               <Button variant="secondary" onClick={() => { setSearchQuery(''); setActiveCategory('all'); }}>
-                مسح الفلتر
+                {isAr ? 'مسح الفلتر' : 'Clear Filter'}
               </Button>
             </motion.div>
           )}

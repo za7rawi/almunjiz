@@ -187,7 +187,7 @@ export default function PaymentSuccessPage() {
   if (loading) {
     return (
       <div
-        className="min-h-screen bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30 pt-24 pb-16"
+        className="min-h-screen bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-24 pb-16"
         dir={dir}
       >
         <div className="mx-auto max-w-2xl px-4 flex flex-col items-center justify-center">
@@ -206,7 +206,7 @@ export default function PaymentSuccessPage() {
   if (!order && !loading) {
     return (
       <div
-        className="min-h-screen bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30 pt-24 pb-16"
+        className="min-h-screen bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-24 pb-16"
         dir={dir}
       >
         <div className="mx-auto max-w-2xl px-4 flex flex-col items-center">
@@ -214,7 +214,7 @@ export default function PaymentSuccessPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-rose-100 shadow-xl shadow-red-500/10"
+            className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 shadow-xl shadow-red-500/10"
           >
             <FileText className="h-10 w-10 text-red-500" />
           </motion.div>
@@ -327,7 +327,7 @@ export default function PaymentSuccessPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-8 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 px-5 py-3 text-sm text-blue-600 shadow-sm"
+              className="mb-8 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800/30 px-5 py-3 text-sm text-blue-600 dark:text-blue-400 shadow-sm"
             >
               <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               <span className="font-medium">{isAr ? 'جارٍ التحقق من الدفع...' : 'Verifying payment...'}</span>
@@ -338,7 +338,7 @@ export default function PaymentSuccessPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-8 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 px-5 py-3 text-sm text-emerald-600 shadow-sm"
+              className="mb-8 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-100 dark:border-emerald-800/30 px-5 py-3 text-sm text-emerald-600 dark:text-emerald-400 shadow-sm"
             >
               <ShieldCheck className="h-5 w-5" />
               <span className="font-medium">{isAr ? 'تم التحقق من الدفع بنجاح' : 'Payment verified successfully'}</span>
@@ -349,7 +349,7 @@ export default function PaymentSuccessPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-8 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 px-5 py-3 text-sm text-amber-600 shadow-sm"
+              className="mb-8 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-100 dark:border-amber-800/30 px-5 py-3 text-sm text-amber-600 dark:text-amber-400 shadow-sm"
             >
               <Clock className="h-5 w-5" />
               <span className="font-medium">{isAr ? 'لم يتم التحقق بعد - يرجى الاتصال بالدعم' : 'Verification pending - please contact support'}</span>

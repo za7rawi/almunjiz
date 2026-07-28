@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
           amount: Number(amount),
           discount: Number(discount),
           tax: 0,
-          total: Number(total || amount),
+          total: Number(total ?? amount),
           currency,
           paymentStatus: 'PENDING',
           customerName,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
           subtotal: Number(amount),
           tax: 0,
           discount: Number(discount),
-          total: Number(total || amount),
+          total: Number(total ?? amount),
           status: 'PENDING',
         },
       });
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       name: customerName,
       orderNumber,
       serviceName: service.name,
-      amount: String(Number(total || amount)),
+      amount: String(Number(total ?? amount)),
       currency,
     }).catch((err) => console.error("[Orders] Failed to send order email:", err));
 
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       email: customerEmail,
       name: customerName,
       invoiceNumber,
-      amount: String(Number(total || amount)),
+      amount: String(Number(total ?? amount)),
       currency,
       orderNumber,
     }).catch((err) => console.error("[Orders] Failed to send invoice email:", err));
@@ -212,8 +212,8 @@ export async function POST(request: NextRequest) {
           userId: admin.id,
           title: 'طلب جديد',
           titleEn: 'New Order',
-          message: `طلب جديد من ${customerName} - ${service.name} (${Number(total || amount)} ر.س)`,
-          messageEn: `New order from ${customerName} - ${service.name} (${Number(total || amount)} SAR)`,
+          message: `طلب جديد من ${customerName} - ${service.name} (${Number(total ?? amount)} ر.س)`,
+          messageEn: `New order from ${customerName} - ${service.name} (${Number(total ?? amount)} SAR)`,
           type: 'ORDER',
           link: `/admin/orders`,
         },

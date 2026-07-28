@@ -25,24 +25,24 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-const orderStatusConfig: Record<string, { label: string; variant: 'primary' | 'success' | 'warning' | 'danger' | 'info'; color: string }> = {
-  PENDING: { label: 'قيد الانتظار', variant: 'warning', color: '#f59e0b' },
-  UNDER_REVIEW: { label: 'قيد المراجعة', variant: 'info', color: '#0ea5e9' },
-  WAITING_CLIENT: { label: 'بانتظار العميل', variant: 'warning', color: '#f59e0b' },
-  IN_PROGRESS: { label: 'جار التنفيذ', variant: 'primary', color: '#2580eb' },
-  COMPLETED: { label: 'مكتمل', variant: 'success', color: '#10b981' },
-  DELIVERED: { label: 'تم التسليم', variant: 'success', color: '#10b981' },
-  CANCELLED: { label: 'ملغي', variant: 'danger', color: '#ef4444' },
+const orderStatusConfig: Record<string, { labelAr: string; labelEn: string; variant: 'primary' | 'success' | 'warning' | 'danger' | 'info'; color: string }> = {
+  PENDING: { labelAr: 'قيد الانتظار', labelEn: 'Pending', variant: 'warning', color: '#f59e0b' },
+  UNDER_REVIEW: { labelAr: 'قيد المراجعة', labelEn: 'Under Review', variant: 'info', color: '#0ea5e9' },
+  WAITING_CLIENT: { labelAr: 'بانتظار العميل', labelEn: 'Waiting for Client', variant: 'warning', color: '#f59e0b' },
+  IN_PROGRESS: { labelAr: 'جار التنفيذ', labelEn: 'In Progress', variant: 'primary', color: '#2580eb' },
+  COMPLETED: { labelAr: 'مكتمل', labelEn: 'Completed', variant: 'success', color: '#10b981' },
+  DELIVERED: { labelAr: 'تم التسليم', labelEn: 'Delivered', variant: 'success', color: '#10b981' },
+  CANCELLED: { labelAr: 'ملغي', labelEn: 'Cancelled', variant: 'danger', color: '#ef4444' },
 };
 
-const paymentStatusConfig: Record<string, { label: string; variant: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-  PENDING: { label: 'بانتظار الدفع', variant: 'warning' },
-  PROCESSING: { label: 'جار المعالجة', variant: 'info' },
-  PAID: { label: 'مدفوع', variant: 'success' },
-  FAILED: { label: 'فشل', variant: 'danger' },
-  COMPLETED: { label: 'مكتمل', variant: 'success' },
-  REFUNDED: { label: 'مسترد', variant: 'warning' },
-  CANCELLED: { label: 'ملغي', variant: 'danger' },
+const paymentStatusConfig: Record<string, { labelAr: string; labelEn: string; variant: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
+  PENDING: { labelAr: 'بانتظار الدفع', labelEn: 'Pending Payment', variant: 'warning' },
+  PROCESSING: { labelAr: 'جار المعالجة', labelEn: 'Processing', variant: 'info' },
+  PAID: { labelAr: 'مدفوع', labelEn: 'Paid', variant: 'success' },
+  FAILED: { labelAr: 'فشل', labelEn: 'Failed', variant: 'danger' },
+  COMPLETED: { labelAr: 'مكتمل', labelEn: 'Completed', variant: 'success' },
+  REFUNDED: { labelAr: 'مسترد', labelEn: 'Refunded', variant: 'warning' },
+  CANCELLED: { labelAr: 'ملغي', labelEn: 'Cancelled', variant: 'danger' },
 };
 
 interface TimelineEntry {
@@ -124,8 +124,8 @@ export default function TrackOrderPage() {
     }
   }, []);
 
-  const sc = foundOrder ? orderStatusConfig[foundOrder.status] || { label: foundOrder.status, variant: 'info' as const, color: '#94a3b8' } : null;
-  const pc = foundOrder?.paymentStatus ? paymentStatusConfig[foundOrder.paymentStatus] || { label: foundOrder.paymentStatus, variant: 'info' as const } : null;
+  const sc = foundOrder ? orderStatusConfig[foundOrder.status] || { labelAr: foundOrder.status, labelEn: foundOrder.status, variant: 'info' as const, color: '#94a3b8' } : null;
+  const pc = foundOrder?.paymentStatus ? paymentStatusConfig[foundOrder.paymentStatus] || { labelAr: foundOrder.paymentStatus, labelEn: foundOrder.paymentStatus, variant: 'info' as const } : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/5 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -205,8 +205,8 @@ export default function TrackOrderPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap ps-10 sm:ps-0">
-                    {sc && <Badge variant={sc.variant} size="md" dot>{sc.label}</Badge>}
-                    {pc && <Badge variant={pc.variant} size="md" dot>{pc.label}</Badge>}
+                    {sc && <Badge variant={sc.variant} size="md" dot>{isAr ? sc.labelAr : sc.labelEn}</Badge>}
+                    {pc && <Badge variant={pc.variant} size="md" dot>{isAr ? pc.labelAr : pc.labelEn}</Badge>}
                   </div>
                 </div>
               </Card>

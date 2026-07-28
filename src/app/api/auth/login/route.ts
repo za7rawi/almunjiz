@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api/response";
 import { sendWelcomeEmail } from "@/lib/email/service";
 import { authLimiter } from "@/lib/rate-limit";
+import { setRoleCookie } from "@/lib/auth/role-cookie";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const token = crypto.randomUUID();
 
-    return success({
+    const response = success({
       user: {
         id: user.id,
         name: user.name,
@@ -67,6 +68,8 @@ export async function POST(request: NextRequest) {
       },
       token,
     });
+
+    return setRoleCookie(response, user.role);
   } catch {
     return error("حدث خطأ أثناء تسجيل الدخول", 500);
   }

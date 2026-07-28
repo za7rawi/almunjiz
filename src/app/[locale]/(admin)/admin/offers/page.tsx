@@ -13,6 +13,7 @@ import {
   Calendar,
   Hash,
   Loader2,
+  Search,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
+import { useLanguageStore } from '@/store/language-store';
 
 type DiscountType = 'percentage' | 'fixed';
 
@@ -67,10 +70,15 @@ export default function AdminOffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [form, setForm] = useState<OfferFormData>(emptyForm);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 12;
+  const { language } = useLanguageStore();
+  const isAr = language === 'ar';
 
   const fetchOffers = useCallback(async () => {
     try {
@@ -79,13 +87,29 @@ export default function AdminOffersPage() {
       const data = await res.json();
       if (data.success) setOffers(data.data);
     } catch {
-      console.error('Failed to load offers');
+      toast.error(isAr ? 'فشل تحميل العروض' : 'Failed to load offers');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { fetchOffers(); }, [fetchOffers]);
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
+
+  const filtered = useMemo(() => {
+    if (!searchQuery) return offers;
+    const q = searchQuery.toLowerCase();
+    return offers.filter(
+      (o) =>
+        o.title.toLowerCase().includes(q) ||
+        o.titleEn.toLowerCase().includes(q) ||
+        o.code.toLowerCase().includes(q)
+    );
+  }, [offers, searchQuery]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const stats = useMemo(() => {
     const active = offers.filter((o) => o.isActive).length;
@@ -147,7 +171,7 @@ export default function AdminOffersPage() {
       }
       setShowModal(false);
     } catch {
-      console.error('Failed to save offer');
+      toast.error(isAr ? 'فشل حفظ العرض' : 'Failed to save offer');
     } finally {
       setSaving(false);
     }
@@ -161,7 +185,7 @@ export default function AdminOffersPage() {
         setOffers((prev) => prev.filter((o) => o.id !== id));
       }
     } catch {
-      console.error('Failed to delete offer');
+      toast.error(isAr ? 'فشل حذف العرض' : 'Failed to delete offer');
     }
     setDeleteConfirm(null);
   };
@@ -183,7 +207,7 @@ export default function AdminOffersPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Intl.DateTimeFormat('ar-SA', {
+    return new Intl.DateTimeFormat(isAr ? 'ar-SA' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -206,26 +230,26 @@ export default function AdminOffersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="إدارة العروض"
-        subtitle="إضافة وتعديل وحذف العروض والخصومات"
+        title={isAr ? 'إدارة العروض' : 'Offer Management'}
+        subtitle={isAr ? 'إضافة وتعديل وحذف العروض والخصومات' : 'Add, edit, and delete offers and discounts'}
         gradient
         breadcrumbs={[
-          { label: 'لوحة التحكم', href: '/admin' },
-          { label: 'العروض' },
+          { label: isAr ? 'لوحة التحكم' : 'Dashboard', href: '/admin' },
+          { label: isAr ? 'العروض' : 'Offers' },
         ]}
         actions={
           <Button variant="primary" size="sm" iconLeft={<Plus size={16} />} onClick={openAdd}>
-            إضافة عرض
+            {isAr ? 'إضافة عرض' : 'Add Offer'}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'إجمالي العروض', value: stats.total, color: '#2580eb', icon: Tag },
-          { label: 'نشطة', value: stats.active, color: '#14b8a6', icon: Eye },
-          { label: 'منتهية', value: stats.expired, color: '#7c3aed', icon: EyeOff },
-          { label: 'إجمالي الاستخدامات', value: stats.totalUsed, color: '#f59e0b', icon: Hash },
+          { label: isAr ? 'إجمالي العروض' : 'Total Offers', value: stats.total, color: '#2580eb', icon: Tag },
+          { label: isAr ? 'نشطة' : 'Active', value: stats.active, color: '#14b8a6', icon: Eye },
+          { label: isAr ? 'منتهية' : 'Expired', value: stats.expired, color: '#7c3aed', icon: EyeOff },
+          { label: isAr ? 'إجمالي الاستخدامات' : 'Total Uses', value: stats.totalUsed, color: '#f59e0b', icon: Hash },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -253,8 +277,19 @@ export default function AdminOffersPage() {
         ))}
       </div>
 
+      <div className="relative max-w-md">
+        <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+          placeholder={isAr ? 'بحث في العروض...' : 'Search offers...'}
+          className={cn(inputClass, 'pr-10')}
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {offers.map((offer, i) => {
+        {paginatedData.map((offer, i) => {
           const usagePercent = getUsagePercent(offer);
           const isExpired = new Date(offer.endDate) < new Date();
 
@@ -269,16 +304,16 @@ export default function AdminOffersPage() {
                 <div className="h-28 bg-gradient-to-br from-[#2580eb]/10 via-[#14b8a6]/10 to-[#7c3aed]/10 flex items-center justify-center relative">
                   <div className="text-center">
                     <p className="text-3xl font-black text-[#2580eb]">
-                      {offer.discountType === 'percentage' ? `${offer.discount}%` : `${offer.discount} ر.س`}
+                      {offer.discountType === 'percentage' ? `${offer.discount}%` : `${offer.discount} ${isAr ? 'ر.س' : 'SAR'}`}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      {offer.discountType === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت'}
+                      {offer.discountType === 'percentage' ? (isAr ? 'نسبة مئوية' : 'Percentage') : (isAr ? 'مبلغ ثابت' : 'Fixed Amount')}
                     </p>
                   </div>
                   <div className="absolute top-3 right-3">
                     <button onClick={() => toggleOfferActive(offer.id)}>
                       <Badge variant={offer.isActive ? 'success' : isExpired ? 'danger' : 'warning'} size="sm" dot>
-                        {offer.isActive ? 'نشط' : isExpired ? 'منتهي' : 'معطل'}
+                        {offer.isActive ? (isAr ? 'نشط' : 'Active') : isExpired ? (isAr ? 'منتهي' : 'Expired') : (isAr ? 'معطل' : 'Disabled')}
                       </Badge>
                     </button>
                   </div>
@@ -305,7 +340,7 @@ export default function AdminOffersPage() {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                       <Percent size={12} />
-                      <span>{offer.usedCount} / {offer.maxUses} استخدام</span>
+                      <span>{offer.usedCount} / {offer.maxUses} {isAr ? 'استخدام' : 'uses'}</span>
                     </div>
                     <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                       <div
@@ -326,7 +361,7 @@ export default function AdminOffersPage() {
                     <button
                       onClick={() => toggleOfferActive(offer.id)}
                       className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 transition-colors"
-                      title={offer.isActive ? 'إلغاء التنشيط' : 'تنشيط'}
+                      title={offer.isActive ? (isAr ? 'إلغاء التنشيط' : 'Deactivate') : (isAr ? 'تنشيط' : 'Activate')}
                     >
                       {offer.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -348,18 +383,42 @@ export default function AdminOffersPage() {
             </motion.div>
           );
         })}
-        {offers.length === 0 && (
+        {filtered.length === 0 && (
           <div className="col-span-full py-12 text-center text-slate-400">
             <Tag size={48} className="mx-auto mb-3 opacity-30" />
-            <p>لا توجد عروض</p>
+            <p>{isAr ? 'لا توجد عروض' : 'No offers'}</p>
           </div>
         )}
       </div>
 
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            {isAr ? 'السابق' : 'Previous'}
+          </Button>
+          <span className="text-sm text-slate-500 px-3">
+            {isAr ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            {isAr ? 'التالي' : 'Next'}
+          </Button>
+        </div>
+      )}
+
       <Modal open={showModal} onClose={() => setShowModal(false)} size="lg">
         <ModalHeader>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editingOffer ? 'تعديل العرض' : 'إضافة عرض جديد'}
+            {editingOffer ? (isAr ? 'تعديل العرض' : 'Edit Offer') : (isAr ? 'إضافة عرض جديد' : 'Add New Offer')}
           </h2>
         </ModalHeader>
         <ModalBody>
@@ -367,19 +426,19 @@ export default function AdminOffersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان (عربي) *
+                  {isAr ? 'العنوان (عربي) *' : 'Title (Arabic) *'}
                 </label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className={inputClass}
-                  placeholder="عنوان العرض بالعربي"
+                  placeholder={isAr ? 'عنوان العرض بالعربي' : 'Offer title in Arabic'}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  العنوان (إنجليزي) *
+                  {isAr ? 'العنوان (إنجليزي) *' : 'Title (English) *'}
                 </label>
                 <input
                   type="text"
@@ -393,19 +452,19 @@ export default function AdminOffersPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                الوصف (عربي)
+                {isAr ? 'الوصف (عربي)' : 'Description (Arabic)'}
               </label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={2}
                 className={cn(inputClass, 'resize-none')}
-                placeholder="وصف العرض"
+                placeholder={isAr ? 'وصف العرض' : 'Offer description in Arabic'}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                الوصف (إنجليزي)
+                {isAr ? 'الوصف (إنجليزي)' : 'Description (English)'}
               </label>
               <textarea
                 value={form.descriptionEn}
@@ -419,20 +478,20 @@ export default function AdminOffersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  نوع الخصم
+                  {isAr ? 'نوع الخصم' : 'Discount Type'}
                 </label>
                 <select
                   value={form.discountType}
                   onChange={(e) => setForm({ ...form, discountType: e.target.value as DiscountType })}
                   className={inputClass}
                 >
-                  <option value="percentage">نسبة مئوية (%)</option>
-                  <option value="fixed">مبلغ ثابت (ر.س)</option>
+                  <option value="percentage">{isAr ? 'نسبة مئوية (%)' : 'Percentage (%)'}</option>
+                  <option value="fixed">{isAr ? 'مبلغ ثابت (ر.س)' : 'Fixed Amount (SAR)'}</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  قيمة الخصم *
+                  {isAr ? 'قيمة الخصم *' : 'Discount Value *'}
                 </label>
                 <input
                   type="number"
@@ -448,7 +507,7 @@ export default function AdminOffersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  كود الخصم *
+                  {isAr ? 'كود الخصم *' : 'Discount Code *'}
                 </label>
                 <input
                   type="text"
@@ -460,7 +519,7 @@ export default function AdminOffersPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  الحد الأقصى للاستخدامات
+                  {isAr ? 'الحد الأقصى للاستخدامات' : 'Max Uses'}
                 </label>
                 <input
                   type="number"
@@ -476,7 +535,7 @@ export default function AdminOffersPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  تاريخ البدء
+                  {isAr ? 'تاريخ البدء' : 'Start Date'}
                 </label>
                 <input
                   type="date"
@@ -487,7 +546,7 @@ export default function AdminOffersPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  تاريخ الانتهاء
+                  {isAr ? 'تاريخ الانتهاء' : 'End Date'}
                 </label>
                 <input
                   type="date"
@@ -500,8 +559,8 @@ export default function AdminOffersPage() {
 
             <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5">
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">تفعيل العرض</p>
-                <p className="text-xs text-slate-500">عرض العرض للمستخدمين</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">{isAr ? 'تفعيل العرض' : 'Activate Offer'}</p>
+                <p className="text-xs text-slate-500">{isAr ? 'عرض العرض للمستخدمين' : 'Show offer to users'}</p>
               </div>
               <button
                 onClick={() => setForm({ ...form, isActive: !form.isActive })}
@@ -522,7 +581,7 @@ export default function AdminOffersPage() {
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onClick={() => setShowModal(false)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="primary"
@@ -530,7 +589,7 @@ export default function AdminOffersPage() {
             disabled={!form.title || !form.titleEn || !form.code || saving}
             iconLeft={saving ? <Loader2 size={16} className="animate-spin" /> : undefined}
           >
-            {editingOffer ? 'حفظ التعديلات' : 'إضافة العرض'}
+            {editingOffer ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة العرض' : 'Add Offer')}
           </Button>
         </ModalFooter>
       </Modal>
@@ -542,16 +601,16 @@ export default function AdminOffersPage() {
               <Trash2 size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-              حذف العرض
+              {isAr ? 'حذف العرض' : 'Delete Offer'}
             </h3>
             <p className="text-sm text-slate-500">
-              هل أنت متأكد من حذف هذا العرض؟ لا يمكن التراجع عن هذا الإجراء.
+              {isAr ? 'هل أنت متأكد من حذف هذا العرض؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this offer? This action cannot be undone.'}
             </p>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" fullWidth onClick={() => setDeleteConfirm(null)}>
-            إلغاء
+            {isAr ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button
             variant="danger"
@@ -559,7 +618,7 @@ export default function AdminOffersPage() {
             onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
             iconLeft={<Trash2 size={14} />}
           >
-            حذف
+            {isAr ? 'حذف' : 'Delete'}
           </Button>
         </ModalFooter>
       </Modal>
