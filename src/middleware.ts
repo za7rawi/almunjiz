@@ -36,7 +36,7 @@ function isStaticAsset(pathname: string): boolean {
 
 function isAdminRoute(pathname: string): boolean {
   const adminPatterns = ['/admin/'];
-  return adminPatterns.some((p) => pathname.includes(p));
+  return adminPatterns.some((p) => pathname.includes(p)) || pathname.endsWith('/admin');
 }
 
 function isDashboardRoute(pathname: string): boolean {
@@ -44,7 +44,7 @@ function isDashboardRoute(pathname: string): boolean {
 }
 
 function isAdminLogin(pathname: string): boolean {
-  return pathname.includes('/admin/login');
+  return pathname.includes('/admin/login') || pathname.endsWith('/admin/login');
 }
 
 async function hmacSign(message: string, secret: string): Promise<string> {
