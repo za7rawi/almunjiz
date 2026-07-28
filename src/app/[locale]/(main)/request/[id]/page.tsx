@@ -191,7 +191,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
         }
       }
     }
-  }, [isAuthenticated, user, router, id]);
+  }, [_hydrated, isAuthenticated, user, router, id]);
 
   useEffect(() => {
     if (!service || !isAuthenticated || redirecting) return;
