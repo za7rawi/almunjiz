@@ -14,12 +14,13 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user, _hydrated } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const isMobile = useIsMobile()
   const { dir } = useDirection()
   const mounted = useIsClient()
+  const ready = mounted && _hydrated
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const prevPathnameRef = useRef(pathname)
 
@@ -31,10 +32,10 @@ export default function DashboardLayout({
   })
 
   useEffect(() => {
-    if (mounted && !isAuthenticated) {
+    if (ready && !isAuthenticated) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
     }
-  }, [mounted, isAuthenticated, router])
+  }, [ready, isAuthenticated, router])
 
   const prevUserIdRef = useRef<string | undefined>(undefined)
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function DashboardLayout({
     prevUserIdRef.current = user?.id
   }, [mounted, user?.id])
 
-  if (!mounted) {
+  if (!ready) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">
         <motion.div

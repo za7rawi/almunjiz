@@ -17,6 +17,8 @@ export interface User {
 interface AuthStore {
   user: User | null;
   isAuthenticated: boolean;
+  _hydrated: boolean;
+  _setHydrated: () => void;
   login: (user: User) => void;
   loginEmail: (email: string, password: string) => Promise<{ success: boolean; message: string; redirect?: string }>;
   register: (data: { name: string; email: string; password: string }) => Promise<{ success: boolean; message: string }>;
@@ -47,6 +49,8 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      _hydrated: false,
+      _setHydrated: () => set({ _hydrated: true }),
 
       login: (user) => {
         clearUserProgressData(user.id);
@@ -169,6 +173,9 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'almunjiz-auth',
+      onRehydrateStorage: () => () => {
+        useAuthStore.getState()._setHydrated();
+      },
     },
   ),
 )

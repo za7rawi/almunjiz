@@ -14,18 +14,19 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, _hydrated } = useAuthStore();
   const mounted = useIsClient();
   const [unreadCount, setUnreadCount] = useState(0);
+  const ready = mounted && _hydrated;
 
   const isLoginPage = pathname.endsWith("/admin/login") || pathname.endsWith("/admin/login/");
   const isAdmin = user?.email === 'admin@gmail.com' || user?.role === 'admin';
 
   useEffect(() => {
-    if (mounted && !isLoginPage && (!isAuthenticated || !isAdmin)) {
+    if (ready && !isLoginPage && (!isAuthenticated || !isAdmin)) {
       router.replace("/ar/admin/login");
     }
-  }, [mounted, isAuthenticated, isLoginPage, isAdmin, router]);
+  }, [ready, isAuthenticated, isLoginPage, isAdmin, router]);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin && !isLoginPage) {
@@ -45,7 +46,7 @@ export default function AdminLayout({
     }
   }, [isAuthenticated, isAdmin, isLoginPage]);
 
-  if (!mounted) {
+  if (!ready) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="w-10 h-10 border-3 border-[#2580eb]/30 border-t-[#2580eb] rounded-full animate-spin" />

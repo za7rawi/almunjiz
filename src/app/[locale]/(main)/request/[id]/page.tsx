@@ -97,7 +97,7 @@ const stepVariants = {
 export default function RequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, _hydrated } = useAuthStore();
   const { currency } = useCurrencyStore();
   const { saveProgress, getProgress, clearProgress } = useRequestProgressStore();
   const { language } = useLanguageStore();
@@ -153,9 +153,9 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
   });
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (_hydrated && !isAuthenticated) {
       router.replace(`/login?redirect=/request/${id}`);
-    } else {
+    } else if (_hydrated) {
       setRedirecting(false);
       if (user) {
         setFormData((prev) => ({

@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   ArrowRight,
   CheckCircle,
@@ -12,14 +12,8 @@ import {
   Package,
   Loader2,
   Clock,
-  Download,
-  ExternalLink,
-  FileIcon,
-  Image as ImageIcon,
   CreditCard,
   RotateCcw,
-  X,
-  Eye,
   FolderOpen,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
@@ -28,22 +22,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { printInvoice } from '@/lib/print-invoice'
 import { useLanguageStore } from '@/store/language-store'
-
-function isImageFile(mt: string): boolean {
-  return mt?.startsWith('image/') || false
-}
-
-function isPdfFile(mt: string): boolean {
-  return mt === 'application/pdf'
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
+import { FileAttachmentCard } from '@/components/ui/file-attachment-card'
 
 function getStatusConfig(isAr: boolean): Record<string, { label: string; variant: 'warning' | 'primary' | 'success' | 'info' | 'danger' | 'secondary' }> {
   return {
@@ -111,7 +90,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const router = useRouter()
   const [order, setOrder] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const { language } = useLanguageStore()
   const isAr = language === 'ar'
 
@@ -333,106 +311,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <p className="text-sm text-slate-400 dark:text-slate-500">{isAr ? 'لا توجد ملفات مرفقة' : 'No attachments'}</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {fileAttachments.map((file) => {
-                    const mime = file.mimeType || ''
-                    if (isImageFile(mime)) {
-                      return (
-                        <motion.div
-                          key={file.id}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="group relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:shadow-md transition-shadow cursor-pointer"
-                          onClick={() => setLightboxUrl(`/api/files/${file.id}?inline=true`)}
-                        >
-                          <div className="aspect-square bg-slate-100 dark:bg-slate-700">
-                            <img
-                              src={`/api/files/${file.id}?inline=true`}
-                              alt={file.fileName}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                          <div className="p-2">
-                            <p className="text-xs text-slate-700 dark:text-slate-300 truncate font-medium">{file.fileName}</p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{formatFileSize(file.fileSize)}</p>
-                          </div>
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-slate-800/90 rounded-full p-2">
-                              <Eye size={18} className="text-[#2580eb]" />
-                            </div>
-                          </div>
-                        </motion.div>
-                      )
-                    }
-
-                    if (isPdfFile(mime)) {
-                      return (
-                        <motion.div
-                          key={file.id}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-                              <FileText size={20} className="text-red-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm text-slate-700 dark:text-slate-300 truncate font-medium">{file.fileName}</p>
-                              <p className="text-[11px] text-slate-400 dark:text-slate-500">{formatFileSize(file.fileSize)}</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <a
-                              href={`/api/files/${file.id}?inline=true`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-[#2580eb] bg-[#2580eb]/10 rounded-lg hover:bg-[#2580eb]/20 transition-colors"
-                            >
-                              <ExternalLink size={12} /> {isAr ? 'عرض' : 'View'}
-                            </a>
-                            <a
-                              href={`/api/files/${file.id}`}
-                              download={file.fileName}
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-[#14b8a6] bg-[#14b8a6]/10 rounded-lg hover:bg-[#14b8a6]/20 transition-colors"
-                            >
-                              <Download size={12} /> {isAr ? 'تحميل' : 'Download'}
-                            </a>
-                          </div>
-                        </motion.div>
-                      )
-                    }
-
-                    return (
-                      <motion.div
-                        key={file.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
-                            <FileIcon size={20} className="text-slate-400 dark:text-slate-500" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm text-slate-700 dark:text-slate-300 truncate font-medium">{file.fileName}</p>
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500">{formatFileSize(file.fileSize)}</p>
-                          </div>
-                        </div>
-                        <a
-                          href={`/api/files/${file.id}`}
-                          download={file.fileName}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-[#7c3aed] bg-[#7c3aed]/10 rounded-lg hover:bg-[#7c3aed]/20 transition-colors"
-                        >
-                          <Download size={12} /> {isAr ? 'تحميل' : 'Download'}
-                        </a>
-                      </motion.div>
-                    )
-                  })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {fileAttachments.map((file) => (
+                    <FileAttachmentCard key={file.id} file={file} isAr={isAr} />
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -578,44 +460,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      <AnimatePresence>
-        {lightboxUrl && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-            onClick={() => setLightboxUrl(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="relative max-w-4xl max-h-[90vh] w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button variant="secondary" size="sm" onClick={() => setLightboxUrl(null)} className="absolute -top-3 -end-3 z-10 rounded-full w-10 h-10 p-0">
-                <X size={20} />
-              </Button>
-              <img
-                src={lightboxUrl}
-                alt={isAr ? 'معاينة' : 'Preview'}
-                className="w-full h-full object-contain rounded-xl"
-              />
-              <div className="flex justify-center mt-3">
-                <a
-                  href={lightboxUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 dark:bg-slate-800/90 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-                >
-                  <ExternalLink size={14} /> {isAr ? 'فتح في تبويب جديد' : 'Open in new tab'}
-                </a>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   )
 }

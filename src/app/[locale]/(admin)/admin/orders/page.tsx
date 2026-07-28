@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Package, Search, Eye, X, User, Calendar, DollarSign, FileText, Loader2,
   Phone, Mail, CreditCard, Hash, MessageSquare, Paperclip, Download,
-  Image as ImageIcon, ExternalLink, ZoomIn, ZoomOut, File as FileIcon,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,15 +16,7 @@ import { printInvoice } from '@/lib/print-invoice';
 import type { ApiOrder } from '@/types/api-order';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
-
-function isImageFile(mt: string): boolean { return mt?.startsWith('image/') || false; }
-function isPdfFile(mt: string): boolean { return mt === 'application/pdf'; }
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
+import { FileAttachmentCard } from '@/components/ui/file-attachment-card';
 
 type OrderStatus = 'ALL' | 'PENDING' | 'UNDER_REVIEW' | 'WAITING_CLIENT' | 'IN_PROGRESS' | 'COMPLETED' | 'DELIVERED' | 'CANCELLED';
 
@@ -57,7 +48,6 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<ApiOrder | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [internalNotes, setInternalNotes] = useState('');
-  const [lightboxFile, setLightboxFile] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 15;
   const isAr = language === 'ar';
@@ -381,7 +371,7 @@ export default function OrdersPage() {
                 </div>
               )}
 
-              {selectedOrder.attachments && selectedOrder.attachments.length > 0 && (
+              {selectedOrder.attachments && selectedOrder.attachments.length > 0 && !selectedOrder.fileAttachments?.length && (
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20">
                   <Paperclip size={18} className="text-purple-500 mt-0.5" />
                   <div>
@@ -415,39 +405,7 @@ export default function OrdersPage() {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {selectedOrder.fileAttachments.map((file) => (
-                      <div key={file.id} className="border border-slate-200 dark:border-white/10 rounded-xl p-3 hover:border-[#2580eb]/30 transition-colors dark:bg-white/5">
-                        {isImageFile(file.mimeType || file.fileType) ? (
-                          <div className="relative group cursor-pointer mb-2" onClick={() => setLightboxFile(`/api/files/${file.id}?inline=true`)}>
-                            <img src={`/api/files/${file.id}?inline=true`} alt={file.fileName} className="w-full h-32 object-cover rounded-lg" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center">
-                              <ZoomIn size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                          </div>
-                        ) : isPdfFile(file.mimeType || file.fileType) ? (
-                          <div className="flex items-center gap-3 mb-2 p-2 bg-red-50 dark:bg-red-500/10 rounded-lg">
-                            <FileText size={24} className="text-red-500 shrink-0" />
-                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{file.fileName}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 mb-2 p-2 bg-slate-50 dark:bg-white/5 rounded-lg">
-                            <FileIcon size={24} className="text-amber-500 shrink-0" />
-                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{file.fileName}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-slate-400">{formatFileSize(file.fileSize)}</span>
-                          <div className="flex items-center gap-1">
-                            {isPdfFile(file.mimeType || file.fileType) && (
-                              <a href={`/api/files/${file.id}?inline=true`} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-500/20 text-blue-500">
-                                <ExternalLink size={12} />
-                              </a>
-                            )}
-                            <a href={`/api/files/${file.id}`} download={file.fileName} className="p-1 rounded hover:bg-[#2580eb]/10 dark:hover:bg-[#2580eb]/20 text-[#2580eb]">
-                              <Download size={12} />
-                            </a>
-                          </div>
-                        </div>
-                      </div>
+                      <FileAttachmentCard key={file.id} file={file} isAr={isAr} />
                     ))}
                   </div>
                 </div>
@@ -475,22 +433,6 @@ export default function OrdersPage() {
           )}
         </ModalFooter>
       </Modal>
-
-      {lightboxFile && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setLightboxFile(null)}>
-          <div className="relative max-w-4xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setLightboxFile(null)} className="absolute -top-10 right-0 text-white hover:text-slate-300">
-              <X size={24} />
-            </button>
-            <img src={lightboxFile} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg" />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              <a href={lightboxFile} download className="px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg text-white text-xs hover:bg-white/30 flex items-center gap-1">
-                <Download size={14} /> {isAr ? 'تحميل' : 'Download'}
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
