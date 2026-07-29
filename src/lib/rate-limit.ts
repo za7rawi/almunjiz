@@ -13,15 +13,14 @@ class RateLimiter {
   private windowMs: number;
   private max: number;
   private store = new Map<string, RequestEntry>();
-  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(windowMs: number, max: number) {
     this.windowMs = windowMs;
     this.max = max;
-    this.cleanupTimer = setInterval(() => this.cleanup(), windowMs);
   }
 
   check(key: string): RateLimitResult {
+    this.cleanup();
     const now = Date.now();
     const entry = this.store.get(key);
 
@@ -56,10 +55,7 @@ class RateLimiter {
   }
 
   destroy() {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = null;
-    }
+    this.store.clear();
   }
 }
 

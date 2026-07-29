@@ -49,8 +49,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadDir = join(process.cwd(), "data", "uploads");
-    await mkdir(uploadDir, { recursive: true });
+    let uploadDir: string | null = null;
+    try {
+      uploadDir = join(process.cwd(), "data", "uploads");
+      await mkdir(uploadDir, { recursive: true });
+    } catch {
+      uploadDir = null;
+    }
 
     const uploadedFiles: {
       id: string;
@@ -113,11 +118,16 @@ export async function POST(request: NextRequest) {
 
       const safeExt = ext.replace(/[^a-z0-9]/g, "");
       const storedName = `${randomUUID()}.${safeExt}`;
-      const filepath = join(uploadDir, storedName);
-
-      await writeFile(filepath, buffer);
-
       const fileUrl = `/data/uploads/${storedName}`;
+
+      if (uploadDir) {
+        try {
+          const filepath = join(uploadDir, storedName);
+          await writeFile(filepath, buffer);
+        } catch {
+          console.warn("[Upload] Could not write file to disk (read-only filesystem?)");
+        }
+      }
 
       const record = await prisma.fileAttachment.create({
         data: {
