@@ -74,7 +74,7 @@ const itemVariants = {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const redirectTo = searchParams.get('redirect') || '/services';
   const { loginEmail, loginWithGoogle } = useAuthStore();
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
@@ -99,11 +99,19 @@ export default function LoginPage() {
           email: '',
         });
         if (result.success) {
-          signIn('credentials', {
+          const target = result.redirect === '/admin' ? '/admin' : redirectTo;
+          const signInResult = await signIn('credentials', {
             email: result.email,
             password: result.token,
-            callbackUrl: result.redirect === '/admin' ? '/admin' : redirectTo,
+            redirect: false,
           });
+          if (signInResult?.error) {
+            setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول' : 'Failed to create login session' });
+            useAuthStore.setState({ user: null, isAuthenticated: false });
+            setGoogleLoading(false);
+            return;
+          }
+          window.location.href = target;
         } else {
           setErrors({ general: result.message || (isAr ? 'فشل تسجيل الدخول بـ Google' : 'Google sign-in failed') });
           setGoogleLoading(false);
@@ -117,6 +125,32 @@ export default function LoginPage() {
   );
 
   useEffect(() => {
+    const googleEmail = searchParams.get('googleEmail');
+    const googleToken = searchParams.get('googleToken');
+    if (googleEmail && googleToken) {
+      setGoogleLoading(true);
+      (async () => {
+        try {
+          const signInResult = await signIn('credentials', {
+            email: googleEmail,
+            password: googleToken,
+            redirect: false,
+          });
+          if (signInResult?.error) {
+            setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول' : 'Failed to create login session' });
+            setGoogleLoading(false);
+            return;
+          }
+          const redir = searchParams.get('redirect') || '/services';
+          window.location.href = redir;
+        } catch {
+          setErrors({ general: isAr ? 'حدث خطأ أثناء تسجيل الدخول' : 'Login error' });
+          setGoogleLoading(false);
+        }
+      })();
+      return;
+    }
+
     const errorParam = searchParams.get('error');
     if (errorParam) {
       const errorMessages: Record<string, string> = {

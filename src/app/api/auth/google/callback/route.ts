@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { encode } from "next-auth/jwt";
+import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
 import { sendWelcomeEmail } from "@/lib/email/service";
-import { hmacSign } from "@/lib/auth/role-cookie";
+import { setRoleCookieOnRedirect } from "@/lib/auth/role-cookie";
 
 async function exchangeCodeForTokens(code: string, redirectUri: string) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  const redirectPath = rawRedirect.startsWith('/') && !rawRedirect.includes('://') ? rawRedirect : '/dashboard';
+  const redirectPath = rawRedirect.startsWith('/') && !rawRedirect.includes('://') ? rawRedirect : '/services';
 
   try {
     const redirectUri = `${baseUrl}/api/auth/google/callback`;
@@ -139,47 +139,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const sessionToken = await encode({
-      secret: process.env.NEXTAUTH_SECRET || "fallback-secret",
-      token: {
-        name: user.name,
-        email: user.email,
-        picture: user.avatar || null,
-        sub: user.id,
-        id: user.id,
-        role: user.role,
-        avatar: user.avatar,
-      },
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    const token = createVerificationToken(user.email, "google");
+    const loginUrl = new URL(`/${locale}/login`, baseUrl);
+    loginUrl.searchParams.set("googleToken", token);
+    loginUrl.searchParams.set("googleEmail", user.email);
+    loginUrl.searchParams.set("redirect", redirectPath);
 
-    const jwtSecret = process.env.NEXTAUTH_SECRET || "fallback-secret";
-    const roleSignature = await hmacSign(user.role, jwtSecret);
-    const roleCookieValue = `${user.role}|${roleSignature}`;
-
-    const redirectUrl = new URL(`/${locale}${redirectPath}`, baseUrl).toString();
-    const response = NextResponse.redirect(redirectUrl);
-
-    response.cookies.set({
-      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
-      value: sessionToken,
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60,
-    });
-
-    response.cookies.set("almunjiz-role", roleCookieValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60,
-      path: "/",
-    });
-
-    response.cookies.delete("google_oauth_state");
-    return response;
+    const roleResponse = await setRoleCookieOnRedirect(loginUrl.toString(), user.role);
+    roleResponse.cookies.delete("google_oauth_state");
+    return roleResponse;
   } catch (err) {
     console.error("[Google OAuth] Callback error:", err);
     const response = NextResponse.redirect(
