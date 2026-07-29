@@ -16,9 +16,9 @@ import {
   Loader2,
   KeyRound,
 } from 'lucide-react';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuthStore, type User } from '@/store/auth-store';
 import { useLanguageStore } from '@/store/language-store';
 
 declare global {
@@ -137,6 +137,22 @@ export default function LoginPage() {
             setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول بـ Google' : 'Failed to create Google login session' });
             return;
           }
+
+          const session = await getSession();
+          if (session?.user) {
+            const su = session.user as Record<string, unknown>;
+            const user: User = {
+              id: su.id as string,
+              name: (su.name as string) || '',
+              email: (su.email as string) || '',
+              role: ((su.role as string)?.toLowerCase?.() as User['role']) || 'customer',
+              avatar: (su.avatar as string) || null,
+              provider: 'google',
+              createdAt: new Date().toISOString(),
+            };
+            useAuthStore.getState().login(user);
+          }
+
           const redir = searchParams.get('redirect') || '/dashboard';
           router.push(redir);
         } catch {
