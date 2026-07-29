@@ -371,21 +371,29 @@ export default function OrdersPage() {
                 </div>
               )}
 
-              {selectedOrder.attachments && selectedOrder.attachments.length > 0 && !selectedOrder.fileAttachments?.length && (
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20">
-                  <Paperclip size={18} className="text-purple-500 mt-0.5" />
-                  <div>
-                    <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">{language === 'ar' ? 'الملفات المرفقة' : 'Attachments'} ({selectedOrder.attachments.length})</p>
+              {(selectedOrder.fileAttachments && selectedOrder.fileAttachments.length > 0) || (selectedOrder.attachments && selectedOrder.attachments.length > 0) ? (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Paperclip size={16} /> {isAr ? 'الملفات المرفقة' : 'Attached Files'} ({(selectedOrder.fileAttachments?.length || 0) + (selectedOrder.attachments?.length || 0)})
+                  </h4>
+                  {selectedOrder.fileAttachments && selectedOrder.fileAttachments.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedOrder.fileAttachments.map((file) => (
+                        <FileAttachmentCard key={file.id} file={file} isAr={isAr} />
+                      ))}
+                    </div>
+                  )}
+                  {selectedOrder.attachments && selectedOrder.attachments.length > 0 && !selectedOrder.fileAttachments?.length && (
                     <div className="flex flex-wrap gap-2">
                       {selectedOrder.attachments.map((file: string, idx: number) => (
-                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-white/10 border border-purple-200 dark:border-purple-500/20 text-xs text-purple-700 dark:text-purple-300">
+                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-slate-400">
                           <Paperclip size={10} /> {file}
                         </span>
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{language === 'ar' ? 'ملاحظات داخلية (للإدارة فقط)' : 'Internal Notes (Admin Only)'}</label>
@@ -397,19 +405,6 @@ export default function OrdersPage() {
                   className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30 resize-none"
                 />
               </div>
-
-              {selectedOrder.fileAttachments && selectedOrder.fileAttachments.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Paperclip size={16} /> {isAr ? 'الملفات المرفقة' : 'Attached Files'} ({selectedOrder.fileAttachments.length})
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedOrder.fileAttachments.map((file) => (
-                      <FileAttachmentCard key={file.id} file={file} isAr={isAr} />
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{language === 'ar' ? 'تحديث الحالة' : 'Update Status'}</label>
