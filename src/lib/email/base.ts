@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
+import { SITE_URL } from "@/config";
 const LOGO_URL = `${SITE_URL}/logo.jpg`;
 const YEAR = new Date().getFullYear();
 

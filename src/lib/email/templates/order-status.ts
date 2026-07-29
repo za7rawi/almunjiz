@@ -8,8 +8,7 @@ import {
   ctaButton,
   divider,
 } from "../base";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
+import { SITE_URL } from "@/config";
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "#f59e0b",

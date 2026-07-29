@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SITE_URL } from "@/config";
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   const safeRedirect = redirect.startsWith('/') && !redirect.includes('://') ? redirect : '/services';
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
+  const baseUrl = SITE_URL;
   const redirectUri = `${baseUrl}/api/auth/google/callback`;
 
   const stateToken = crypto.randomUUID();

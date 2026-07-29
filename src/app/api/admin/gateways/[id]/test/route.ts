@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SITE_URL } from '@/config';
 import { prisma } from '@/lib/prisma';
 import { createPaymentProvider } from '@/lib/payment-providers';
 import type { CreatePaymentParams, PaymentProvider } from '@/lib/payment-providers';
@@ -81,7 +82,7 @@ async function testGateway(gateway: {
   }
 
   // Step 2: Create Test Payment (SAR 1.00)
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://munjiz.store';
+  const siteUrl = SITE_URL;
   const testOrderId = `test-${Date.now().toString(36)}`;
 
   const paymentParams: CreatePaymentParams = {

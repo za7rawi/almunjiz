@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
 import { sendWelcomeEmail } from "@/lib/email/service";
 import { setRoleCookieOnRedirect } from "@/lib/auth/role-cookie";
+import { SITE_URL } from "@/config";
 
 async function exchangeCodeForTokens(code: string, redirectUri: string) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error");
   const storedState = request.cookies.get("google_oauth_state")?.value;
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
+  const baseUrl = SITE_URL;
   const acceptLanguage = request.headers.get("accept-language") || "";
   const locale = acceptLanguage.startsWith("en") ? "en" : "ar";
 

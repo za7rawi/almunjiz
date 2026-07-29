@@ -5,6 +5,7 @@ import type { CreatePaymentParams } from '@/lib/payment-providers';
 import { generateIdempotencyKey } from '@/lib/encryption';
 import { writeAuditLog } from '@/lib/audit-log';
 import { requireAuth } from '@/lib/admin-auth';
+import { SITE_URL } from '@/config';
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://munjiz.store';
+    const siteUrl = SITE_URL;
     const callbackUrl = `${siteUrl}/payment/callback?orderId=${orderId}&gatewayId=${gatewayId}`;
     const webhookUrl = `${siteUrl}/api/webhooks/${gateway.slug}`;
 

@@ -7,8 +7,7 @@ import {
   ctaButton,
   divider,
 } from "../base";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://munjiz.store";
+import { SITE_URL } from "@/config";
 
 export function orderCreatedTemplate(opts: {
   customerName: string;

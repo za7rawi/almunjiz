@@ -38,20 +38,55 @@ export async function GET(request: NextRequest) {
           ];
     }
 
-    const [orders, total] = await Promise.all([
-      prisma.order.findMany({
-        where,
-        include: { service: true, gateway: true, payments: true, invoice: true, timeline: { orderBy: { createdAt: 'desc' } }, fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } } },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.order.count({ where }),
-    ]);
+    const rawOrders = await prisma.order.findMany({
+      where,
+      include: { service: true, gateway: true, payments: true, invoice: true, timeline: { orderBy: { createdAt: 'desc' } }, fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const total = await prisma.order.count({ where });
+
+    const ordersNeedingOrphans = rawOrders.filter(
+      (o) => o.fileAttachments.length === 0 && (o.attachments as string[])?.length > 0 && o.userId
+    );
+
+    let enrichedOrders = rawOrders;
+
+    if (ordersNeedingOrphans.length > 0) {
+      const orphanedFiles = await prisma.fileAttachment.findMany({
+        where: { userId: { in: ordersNeedingOrphans.map((o) => o.userId) }, orderId: null },
+        select: { id: true, userId: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true },
+      });
+
+      const resolveLinks: Promise<any>[] = [];
+
+      enrichedOrders = rawOrders.map((order) => {
+        if (order.fileAttachments.length > 0 || !(order.attachments as string[])?.length || !order.userId) {
+          return order;
+        }
+        const matching = orphanedFiles.filter(
+          (f) => f.userId === order.userId && (order.attachments as string[]).includes(f.fileName)
+        );
+        if (matching.length > 0) {
+          resolveLinks.push(
+            prisma.fileAttachment.updateMany({
+              where: { id: { in: matching.map((f) => f.id) } },
+              data: { orderId: order.id },
+            })
+          );
+          return { ...order, fileAttachments: matching };
+        }
+        return order;
+      });
+
+      await Promise.all(resolveLinks);
+    }
 
     return NextResponse.json({
       success: true,
-      data: orders.map((o) => ({
+      data: enrichedOrders.map((o) => ({
         ...o,
         amount: Number(o.amount),
         discount: Number(o.discount),
