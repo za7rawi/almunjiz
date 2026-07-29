@@ -303,6 +303,21 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
     if (!service) return;
     setLoading(true);
     try {
+      let fileAttachmentIds: string[] = [];
+
+      if (uploadedFiles.length > 0) {
+        const uploadFormData = new FormData();
+        uploadedFiles.forEach((f) => uploadFormData.append('files', f.file));
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success && uploadData.data) {
+          fileAttachmentIds = uploadData.data.map((f: { id: string }) => f.id);
+        }
+      }
+
       const orderRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -319,6 +334,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
           notes: formData.notes,
           attachments: uploadedFiles.map((f) => f.name),
           promoCode: promoResult?.valid ? promoCode : undefined,
+          fileAttachmentIds,
         }),
       });
 

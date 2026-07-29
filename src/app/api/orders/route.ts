@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
       notes,
       attachments = [],
       promoCode,
+      fileAttachmentIds = [],
     } = body;
 
     if (!serviceId || !customerName || !customerEmail) {
@@ -161,6 +162,13 @@ export async function POST(request: NextRequest) {
           status: 'PENDING',
         },
       });
+
+      if (fileAttachmentIds.length > 0) {
+        await tx.fileAttachment.updateMany({
+          where: { id: { in: fileAttachmentIds }, userId },
+          data: { orderId: createdOrder.id },
+        });
+      }
 
       return { createdOrder, invoice };
     });
