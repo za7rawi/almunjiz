@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
           fileType: file.type,
           mimeType: file.type,
           fileSize: file.size,
+          data: buffer,
         },
       });
 

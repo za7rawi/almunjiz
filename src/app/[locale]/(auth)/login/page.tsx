@@ -109,7 +109,7 @@ export default function LoginPage() {
             useAuthStore.setState({ user: null, isAuthenticated: false });
             return;
           }
-          router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
+          window.location.href = result.redirect === '/admin' ? '/admin' : redirectTo;
         } else {
           setErrors({ general: result.message || (isAr ? 'فشل تسجيل الدخول بـ Google' : 'Google sign-in failed') });
         }
@@ -154,7 +154,7 @@ export default function LoginPage() {
           }
 
           const redir = searchParams.get('redirect') || '/dashboard';
-          router.push(redir);
+          window.location.href = redir;
         } catch {
           setErrors({ general: isAr ? 'حدث خطأ أثناء تسجيل الدخول بـ Google' : 'An error occurred during Google sign-in' });
         } finally {
@@ -273,7 +273,7 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      router.push(result.redirect === '/admin' ? '/admin' : redirectTo);
+      window.location.href = result.redirect === '/admin' ? '/admin' : redirectTo;
     } else {
       setErrors({ general: result.message });
     }

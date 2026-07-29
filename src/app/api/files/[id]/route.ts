@@ -57,18 +57,21 @@ export async function GET(
       );
     }
 
-    const filename = file.storedName || file.fileUrl.split("/").pop() || "file";
-    const filepath = join(process.cwd(), file.fileUrl);
+    let fileBuffer: Buffer | null = null;
 
-    let fileBuffer: Buffer;
-    try {
-      const bytes = await readFile(filepath);
-      fileBuffer = Buffer.from(bytes);
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "الملف غير موجود على الخادم" },
-        { status: 404 }
-      );
+    if (file.data) {
+      fileBuffer = Buffer.from(file.data);
+    } else {
+      const filepath = join(process.cwd(), file.fileUrl);
+      try {
+        const bytes = await readFile(filepath);
+        fileBuffer = Buffer.from(bytes);
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "الملف غير موجود على الخادم" },
+          { status: 404 }
+        );
+      }
     }
 
     const contentType = file.mimeType || file.fileType || "application/octet-stream";

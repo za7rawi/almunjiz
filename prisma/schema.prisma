@@ -598,6 +598,7 @@ model FileAttachment {
   fileType      String
   mimeType      String?
   fileSize      Int
+  data          Bytes?
   uploadedAt    DateTime @default(now())
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)

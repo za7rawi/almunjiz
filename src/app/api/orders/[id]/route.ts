@@ -42,7 +42,7 @@ export async function GET(
         invoice: true,
         payments: true,
         timeline: { orderBy: { createdAt: "asc" } },
-        fileAttachments: true,
+        fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
       },
     });
 
@@ -204,7 +204,7 @@ export async function PUT(
         invoice: true,
         payments: true,
         timeline: { orderBy: { createdAt: "asc" } },
-        fileAttachments: true,
+        fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
       },
     });
 
