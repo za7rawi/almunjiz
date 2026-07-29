@@ -269,6 +269,27 @@ export default function CheckoutPage() {
     setLoading(true);
     setError('');
     try {
+      const pendingFiles = uploadedFiles.filter((f) => !f.uploaded && f.file);
+      let fileAttachmentIds: string[] = [];
+
+      if (pendingFiles.length > 0) {
+        setFileUploading(true);
+        const fd = new FormData();
+        pendingFiles.forEach((f) => fd.append('files', f.file));
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: fd });
+        const uploadData = await uploadRes.json();
+        if (!uploadData.success) throw new Error(uploadData.message || 'Failed to upload files');
+        fileAttachmentIds = uploadData.data.map((f: { id: string }) => f.id);
+        setUploadedFiles((prev) =>
+          prev.map((f) => {
+            const serverFile = uploadData.data.find((sf: { name: string; id: string }) => sf.name === f.name);
+            if (serverFile) return { ...f, uploaded: true, serverFileId: serverFile.id, progress: 100 };
+            return f;
+          })
+        );
+        setFileUploading(false);
+      }
+
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,12 +305,13 @@ export default function CheckoutPage() {
           customerPhone: `${formData.phoneCode}${formData.phone}`,
           notes: '',
           attachments: uploadedFiles.map((f) => f.name),
+          fileAttachmentIds,
           promoCode: promoResult?.valid ? promoCode : undefined,
         }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to create order');
-      const order: OrderData = {
+      setOrderData({
         id: data.data.id,
         orderNumber: data.data.orderNumber,
         invoiceNumber: data.data.invoiceNumber,
@@ -300,16 +322,13 @@ export default function CheckoutPage() {
         status: data.data.status,
         paymentStatus: data.data.paymentStatus,
         createdAt: data.data.createdAt,
-      };
-      setOrderData(order);
+      });
       setStep('order_created');
-      if (uploadedFiles.length > 0) {
-        uploadFilesToServer(order.id);
-      }
     } catch (err) {
-                      setError(err instanceof Error ? err.message : (isAr ? 'حدث خطأ أثناء إنشاء الطلب' : 'Error creating order'));
+      setError(err instanceof Error ? err.message : (isAr ? 'حدث خطأ أثناء إنشاء الطلب' : 'Error creating order'));
     } finally {
       setLoading(false);
+      setFileUploading(false);
     }
   };
 

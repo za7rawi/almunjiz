@@ -16,9 +16,9 @@ import {
   Loader2,
   KeyRound,
 } from 'lucide-react';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore, type User } from '@/store/auth-store';
+import { useAuthStore } from '@/store/auth-store';
 import { useLanguageStore } from '@/store/language-store';
 
 declare global {
@@ -99,70 +99,24 @@ export default function LoginPage() {
           email: '',
         });
         if (result.success) {
-          const signInResult = await signIn('credentials', {
+          signIn('credentials', {
             email: result.email,
             password: result.token,
-            redirect: false,
+            callbackUrl: result.redirect === '/admin' ? '/admin' : redirectTo,
           });
-          if (signInResult?.error) {
-            setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Failed to create login session. Please try again' });
-            useAuthStore.setState({ user: null, isAuthenticated: false });
-            return;
-          }
-          window.location.href = result.redirect === '/admin' ? '/admin' : redirectTo;
         } else {
           setErrors({ general: result.message || (isAr ? 'فشل تسجيل الدخول بـ Google' : 'Google sign-in failed') });
+          setGoogleLoading(false);
         }
       } catch {
         setErrors({ general: isAr ? 'حدث خطأ أثناء التواصل مع Google' : 'An error occurred communicating with Google' });
+        setGoogleLoading(false);
       }
-      setGoogleLoading(false);
     },
-    [loginWithGoogle, router, redirectTo, isAr]
+    [loginWithGoogle, redirectTo, isAr]
   );
 
   useEffect(() => {
-    const googleEmail = searchParams.get('googleEmail');
-    const googleToken = searchParams.get('googleToken');
-    if (googleEmail && googleToken) {
-      setGoogleLoading(true);
-      (async () => {
-        try {
-          const signInResult = await signIn('credentials', {
-            email: googleEmail,
-            password: googleToken,
-            redirect: false,
-          });
-          if (signInResult?.error) {
-            setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول بـ Google' : 'Failed to create Google login session' });
-            return;
-          }
-
-          const session = await getSession();
-          if (session?.user) {
-            const su = session.user as Record<string, unknown>;
-            const user: User = {
-              id: su.id as string,
-              name: (su.name as string) || '',
-              email: (su.email as string) || '',
-              role: ((su.role as string)?.toLowerCase?.() as User['role']) || 'customer',
-              avatar: (su.avatar as string) || null,
-              provider: 'google',
-              createdAt: new Date().toISOString(),
-            };
-            useAuthStore.getState().login(user);
-          }
-
-          const redir = searchParams.get('redirect') || '/dashboard';
-          window.location.href = redir;
-        } catch {
-          setErrors({ general: isAr ? 'حدث خطأ أثناء تسجيل الدخول بـ Google' : 'An error occurred during Google sign-in' });
-        } finally {
-          setGoogleLoading(false);
-        }
-      })();
-    }
-
     const errorParam = searchParams.get('error');
     if (errorParam) {
       const errorMessages: Record<string, string> = {
@@ -171,10 +125,11 @@ export default function LoginPage() {
         google_profile: isAr ? 'لم يتم استلام بيانات الملف الشخصي من Google' : 'No profile data received from Google',
         google_config: isAr ? 'تسجيل الدخول بـ Google غير مُعد حالياً' : 'Google sign-in is not configured yet',
         google_error: isAr ? 'حدث خطأ أثناء تسجيل الدخول بـ Google' : 'An error occurred during Google sign-in',
+        CredentialsSignin: isAr ? 'فشل التحقق من الجلسة' : 'Session verification failed',
       };
       setErrors({ general: errorMessages[errorParam] || (isAr ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred') });
     }
-  }, [searchParams, router, isAr]);
+  }, [searchParams, isAr]);
 
   useEffect(() => {
     const script = document.createElement('script');

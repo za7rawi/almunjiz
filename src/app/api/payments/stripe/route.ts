@@ -28,11 +28,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
-      return Response.json({
-        clientSecret: 'demo_secret_' + Date.now(),
-        paymentIntentId: 'demo_pi_' + Date.now(),
-        demo: true,
-      });
+      return Response.json(
+        { error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables.' },
+        { status: 500 },
+      );
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -55,7 +54,6 @@ export async function POST(request: NextRequest) {
     return Response.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      demo: false,
     });
   } catch (error) {
     console.error('Stripe payment error:', error);

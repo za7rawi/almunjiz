@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const ROLE_COOKIE_NAME = "almunjiz-role";
 const ROLE_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
-async function hmacSign(data: string, secret: string): Promise<string> {
+export async function hmacSign(data: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
