@@ -1,6 +1,7 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { success, error } from "@/lib/api/response";
+import { error } from "@/lib/api/response";
 import { sendWelcomeEmail } from "@/lib/email/service";
 import { authLimiter } from "@/lib/rate-limit";
 import { setRoleCookie } from "@/lib/auth/role-cookie";
@@ -56,20 +57,24 @@ export async function POST(request: NextRequest) {
 
     const token = crypto.randomUUID();
 
-    const response = success({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role.toLowerCase(),
-        avatar: user.avatar || "",
-        createdAt: user.createdAt.toISOString(),
+    return setRoleCookie(
+      {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role.toLowerCase(),
+            avatar: user.avatar || "",
+            createdAt: user.createdAt.toISOString(),
+          },
+          token,
+        },
       },
-      token,
-    });
-
-    return setRoleCookie(response, user.role);
+      user.role
+    );
   } catch {
     return error("حدث خطأ أثناء تسجيل الدخول", 500);
   }

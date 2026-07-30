@@ -1,33 +1,23 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 
 const ROLE_COOKIE_NAME = "almunjiz-role";
 const ROLE_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
-export async function hmacSign(data: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+export function hmacSign(data: string, secret: string): string {
+  return crypto.createHmac("sha256", secret).update(data).digest("hex");
 }
 
-export async function setRoleCookie(
-  response: Response,
-  role: string
-): Promise<NextResponse> {
+export function setRoleCookie(
+  body: Record<string, unknown>,
+  role: string,
+  status = 200
+): NextResponse {
   const secret = process.env.NEXTAUTH_SECRET || "";
-  const signature = await hmacSign(role, secret);
+  const signature = hmacSign(role, secret);
   const cookieValue = `${role}|${signature}`;
 
-  const body = await response.json();
-  const nextResponse = NextResponse.json(body, { status: response.status });
+  const nextResponse = NextResponse.json(body, { status });
 
   nextResponse.cookies.set(ROLE_COOKIE_NAME, cookieValue, {
     httpOnly: true,
@@ -40,12 +30,12 @@ export async function setRoleCookie(
   return nextResponse;
 }
 
-export async function setRoleCookieOnRedirect(
+export function setRoleCookieOnRedirect(
   redirectUrl: string,
   role: string
-): Promise<NextResponse> {
+): NextResponse {
   const secret = process.env.NEXTAUTH_SECRET || "";
-  const signature = await hmacSign(role, secret);
+  const signature = hmacSign(role, secret);
   const cookieValue = `${role}|${signature}`;
 
   const nextResponse = NextResponse.redirect(redirectUrl);

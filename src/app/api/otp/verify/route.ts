@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyStoredOTP } from "@/lib/otp";
 import { prisma } from "@/lib/prisma";
-import { success, error } from "@/lib/api/response";
+import { error } from "@/lib/api/response";
 import { sendWelcomeEmail } from "@/lib/email/service";
 import { otpLimiter } from "@/lib/rate-limit";
 import { createVerificationToken } from "@/app/api/auth/[...nextauth]/route";
@@ -69,23 +69,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = success(
+    return setRoleCookie(
       {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role.toLowerCase(),
-          avatar: user.avatar || "",
-          createdAt: user.createdAt.toISOString(),
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role.toLowerCase(),
+            avatar: user.avatar || "",
+            createdAt: user.createdAt.toISOString(),
+          },
+          token,
         },
-        token,
+        message: "تم التحقق بنجاح",
       },
-      "تم التحقق بنجاح"
+      user.role
     );
-
-    return setRoleCookie(response, user.role);
   } catch (err) {
     console.error("[OTP Verify] Error:", err);
     return error("حدث خطأ أثناء التحقق", 500);

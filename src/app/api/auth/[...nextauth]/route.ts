@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -5,8 +6,7 @@ import { AuthService } from "@/services/auth.service";
 import { prisma } from "@/lib/prisma";
 
 function hmacSign(data: string, secret: string): string {
-  const crypto = require('crypto');
-  return crypto.createHmac('sha256', secret).update(data).digest('hex');
+  return crypto.createHmac("sha256", secret).update(data).digest("hex");
 }
 
 export function createVerificationToken(email: string, type: 'otp'): string {
