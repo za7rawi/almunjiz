@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       nameEn: svc.nameEn,
       description: svc.description,
       descriptionEn: svc.descriptionEn,
+      icon: svc.icon,
       category: svc.category,
       categoryAr: svc.categoryAr || svc.category,
       price: Number(svc.price),
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
       duration: svc.duration || '',
       durationEn: svc.durationEn || svc.duration || '',
       isPopular: svc.isPopular,
+      isActive: svc.isActive,
       image: svc.image || null,
       gradient: svc.gradient || '',
     }));
