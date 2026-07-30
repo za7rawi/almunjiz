@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrencyStore } from '@/store/currency-store';
 import { useLanguageStore } from '@/store/language-store';
 import { formatPrice } from '@/lib/currency';
@@ -65,7 +66,7 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
       className="flex"
     >
       <Card glass padding="none" className="h-full w-full overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
-        <div className={`relative ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} p-3 sm:p-5 text-white ${service.image ? 'min-h-[140px] sm:min-h-[160px]' : ''}`}>
+        <div className={`relative ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} text-white aspect-square p-3 sm:p-5`}>
           {service.image && (
             <img src={service.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
           )}
@@ -185,8 +186,19 @@ export default function ServicesPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-12 h-12 border-4 border-[#2580eb] border-t-transparent rounded-full animate-spin" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+                <Skeleton className="aspect-square w-full" />
+                <div className="p-3 sm:p-5 space-y-3">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">

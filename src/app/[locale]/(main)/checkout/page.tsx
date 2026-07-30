@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
 import { useCurrencyStore } from '@/store/currency-store';
@@ -375,11 +376,22 @@ export default function CheckoutPage() {
 
   if (serviceLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-20">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-3 border-[#2580eb] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'جارٍ تحميل بيانات الخدمة...' : 'Loading service data...'}</p>
-        </motion.div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
+        <div className="max-w-4xl mx-auto px-4 py-8 pt-24">
+          <Skeleton className="h-10 w-64 mb-8" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

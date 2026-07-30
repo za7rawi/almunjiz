@@ -6,9 +6,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const showAll = searchParams.get('all') === 'true';
+    const serviceId = searchParams.get('serviceId');
+
+    const where: Record<string, unknown> = {};
+    if (!showAll) where.isApproved = true;
+    if (serviceId) where.serviceId = serviceId;
 
     const reviews = await prisma.review.findMany({
-      ...(showAll ? {} : { where: { isApproved: true } }),
+      where,
       include: {
         user: { select: { id: true, name: true, email: true, avatar: true } },
         service: { select: { id: true, name: true, nameEn: true, slug: true } },

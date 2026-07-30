@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrencyStore } from '@/store/currency-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useLanguageStore } from '@/store/language-store';
@@ -34,6 +35,96 @@ const categoryColors: Record<string, string> = {
   ELECTRONIC: '#3B82F6', UNIVERSITIES: '#8B5CF6', CONSULTATIONS: '#F97316',
   OTHER: '#6366F1',
 };
+
+interface ReviewData {
+  id: string;
+  rating: number;
+  comment: string | null;
+  isApproved: boolean;
+  createdAt: string;
+  user: { id: string; name: string | null; avatar: string | null };
+}
+
+function ReviewsSection({ serviceId, isAr }: { serviceId: string; isAr: boolean }) {
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/cms/reviews?serviceId=${serviceId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) setReviews(data.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [serviceId]);
+
+  if (loading) {
+    return (
+      <Card glass padding="lg">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+      <Card glass padding="lg">
+        <div className="flex items-center gap-3 mb-6">
+          <MessageSquare size={22} className="text-[#2580eb]" />
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{isAr ? 'التعليقات' : 'Reviews'}</h2>
+          <Badge variant="info" size="sm" className="mr-auto">{reviews.length}</Badge>
+        </div>
+
+        {reviews.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-4">
+              <MessageSquare size={28} className="text-slate-300 dark:text-slate-600" />
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 text-base font-medium">
+              {isAr ? 'لا توجد تعليقات حتى الآن' : 'No reviews yet'}
+            </p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
+              {isAr ? 'كن أول من يقيّم هذه الخدمة' : 'Be the first to review this service'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {reviews.map((review) => (
+              <div key={review.id} className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-[#2580eb]/10 flex items-center justify-center text-[#2580eb] font-bold text-sm">
+                    {review.user.name?.[0] || '?'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900 dark:text-white text-sm">{review.user.name || (isAr ? 'مستخدم' : 'User')}</p>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          size={12}
+                          className={i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-300 dark:text-slate-600'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-400">{new Date(review.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</span>
+                </div>
+                {review.comment && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{review.comment}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </motion.div>
+  );
+}
 
 export default function ServiceDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
   const { id } = use(params);
@@ -74,8 +165,23 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
 
   if (service === undefined) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#2580eb] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="relative overflow-hidden bg-slate-200 dark:bg-slate-800 min-h-[300px] sm:min-h-[350px] lg:min-h-[400px]">
+          <Skeleton className="absolute inset-0 w-full h-full" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-60 w-full" />
+            </div>
+            <div className="space-y-6">
+              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -105,7 +211,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Hero Section */}
-      <div className={`relative overflow-hidden ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} text-white`}>
+      <div className={`relative overflow-hidden ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} text-white min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] flex items-center`}>
         {service.image && (
           <img src={service.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
         )}
@@ -147,17 +253,19 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
               {isAuthenticated ? (
-                <Link href={`/request/${service.id}`}>
+                <Link href={`/checkout?service=${service.id}`}>
                   <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
                     {isAr ? 'اطلب الآن' : 'Order Now'}
                     <ArrowLeft size={20} className="rtl:rotate-180" />
                   </Button>
                 </Link>
               ) : (
-                <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4" onClick={() => setShowLoginModal(true)}>
-                  {isAr ? 'اطلب الآن' : 'Order Now'}
-                  <ArrowLeft size={20} className="rtl:rotate-180" />
-                </Button>
+                <Link href={`/checkout?service=${service.id}`}>
+                  <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
+                    {isAr ? 'اطلب الآن' : 'Order Now'}
+                    <ArrowLeft size={20} className="rtl:rotate-180" />
+                  </Button>
+                </Link>
               )}
             </motion.div>
           </div>
@@ -261,15 +369,17 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     }</p>
                   </div>
                   {isAuthenticated ? (
-                <Link href={`/request/${service.id}`}>
+                <Link href={`/checkout?service=${service.id}`}>
                       <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
                         {isAr ? 'اطلب الآن' : 'Order Now'}
                       </Button>
                     </Link>
                   ) : (
-                    <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />} onClick={() => setShowLoginModal(true)}>
-                      {isAr ? 'اطلب الآن' : 'Order Now'}
-                    </Button>
+                    <Link href={`/checkout?service=${service.id}`}>
+                      <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                        {isAr ? 'اطلب الآن' : 'Order Now'}
+                      </Button>
+                    </Link>
                   )}
                 </div>
               </Card>
@@ -363,15 +473,17 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
                 {isAuthenticated ? (
-                  <Link href={`/request/${service.id}`} className="block">
+                  <Link href={`/checkout?service=${service.id}`} className="block">
                     <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
                       {isAr ? 'اطلب الآن' : 'Order Now'}
                     </Button>
                   </Link>
                 ) : (
-                  <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />} onClick={() => setShowLoginModal(true)}>
-                    {isAr ? 'اطلب الآن' : 'Order Now'}
-                  </Button>
+                  <Link href={`/checkout?service=${service.id}`} className="block">
+                    <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
+                      {isAr ? 'اطلب الآن' : 'Order Now'}
+                    </Button>
+                  </Link>
                 )}
                 <div className="mt-4 text-center">
                   <Link href="/track-order" className="text-sm text-[#2580eb] hover:underline">
@@ -394,6 +506,11 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <ReviewsSection serviceId={service.id} isAr={isAr} />
       </div>
 
       <AnimatePresence>
