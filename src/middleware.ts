@@ -92,7 +92,8 @@ export async function middleware(request: NextRequest) {
 
   if (!pathnameHasLocale) {
     const locale = getLocaleFromHeaders(request);
-    const newUrl = new URL(`/${locale}${pathname}`, request.url);
+    const newUrl = new URL(request.url);
+    newUrl.pathname = `/${locale}${pathname}`;
     return NextResponse.redirect(newUrl);
   }
 
