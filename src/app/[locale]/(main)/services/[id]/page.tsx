@@ -268,7 +268,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   </Button>
                 </Link>
               ) : (
-                <Link href={`/checkout?service=${service.id}`}>
+                <Link href={`/login?redirect=${encodeURIComponent(`/checkout?service=${service.id}`)}`}>
                   <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
                     {isAr ? 'اطلب الآن' : 'Order Now'}
                     <ArrowLeft size={20} className="rtl:rotate-180" />
@@ -381,7 +381,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                       </Button>
                     </Link>
                   ) : (
-                    <Link href={`/checkout?service=${service.id}`}>
+                    <Link href={`/login?redirect=${encodeURIComponent(`/checkout?service=${service.id}`)}`}>
                       <Button variant="primary" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
                         {isAr ? 'اطلب الآن' : 'Order Now'}
                       </Button>
@@ -481,7 +481,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     </Button>
                   </Link>
                 ) : (
-                  <Link href={`/checkout?service=${service.id}`} className="block">
+                  <Link href={`/login?redirect=${encodeURIComponent(`/checkout?service=${service.id}`)}`} className="block">
                     <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>
                       {isAr ? 'اطلب الآن' : 'Order Now'}
                     </Button>

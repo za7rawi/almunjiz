@@ -120,7 +120,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const serviceId = searchParams.get('service');
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, _hydrated } = useAuthStore();
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
   const { dir } = useDirection();
@@ -141,7 +141,16 @@ function CheckoutContent() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isDragOver, setIsDragOver] = useState(false);
   const [fileUploading, setFileUploading] = useState(false);
+  const [redirecting, setRedirecting] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (_hydrated && !isAuthenticated) {
+      router.replace(`/login?redirect=${encodeURIComponent(`/checkout?service=${serviceId || ''}`)}`);
+    } else if (_hydrated) {
+      setRedirecting(false);
+    }
+  }, [_hydrated, isAuthenticated, router, serviceId]);
 
   const [formData, setFormData] = useState<CustomerForm>(() => ({
     name: user?.name || '',
@@ -398,6 +407,17 @@ function CheckoutContent() {
       setLoading(false);
     }
   };
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
+        <div className="text-center">
+          <Loader2 size={36} className="animate-spin text-[#2580eb] mx-auto mb-4" />
+          <p className="text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'جارٍ التحقق من تسجيل الدخول...' : 'Verifying login...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (serviceLoading) {
     return (
