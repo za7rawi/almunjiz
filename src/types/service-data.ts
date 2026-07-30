@@ -26,5 +26,6 @@ export interface ServiceData {
   requiredDocumentsEn: string[];
   isPopular: boolean;
   isActive: boolean;
+  image: string | null;
   gradient: string;
 }

@@ -48,6 +48,7 @@ export async function GET(
       isPopular: service.isPopular,
       isActive: service.isActive,
       sortOrder: service.sortOrder,
+      image: service.image || null,
       gradient: service.gradient || '',
     };
 

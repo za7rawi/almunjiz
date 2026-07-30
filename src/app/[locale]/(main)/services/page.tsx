@@ -65,7 +65,11 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
       className="flex"
     >
       <Card glass padding="none" className="h-full w-full overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
-        <div className={`relative bg-gradient-to-br ${service.gradient} p-3 sm:p-5 text-white`}>
+        <div className={`relative ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} p-3 sm:p-5 text-white ${service.image ? 'min-h-[140px] sm:min-h-[160px]' : ''}`}>
+          {service.image && (
+            <img src={service.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+          )}
+          <div className={`absolute inset-0 ${service.image ? 'bg-gradient-to-t from-black/70 via-black/30 to-black/10' : ''}`} />
           {service.isPopular && (
             <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
               <Badge variant="warning" size="sm" className="bg-amber-400 text-amber-900 border-amber-300 text-[10px]">

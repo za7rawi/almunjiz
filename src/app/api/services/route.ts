@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       isPopular: svc.isPopular,
       isActive: svc.isActive,
       sortOrder: svc.sortOrder,
+      image: svc.image || null,
       gradient: svc.gradient || '',
     }));
 

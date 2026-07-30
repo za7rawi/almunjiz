@@ -105,8 +105,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Hero Section */}
-      <div className={`relative overflow-hidden bg-gradient-to-br ${service.gradient} text-white`}>
-        <div className="absolute inset-0 bg-black/10" />
+      <div className={`relative overflow-hidden ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} text-white`}>
+        {service.image && (
+          <img src={service.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        )}
+        {service.image && <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />}
+        {!service.image && <div className="absolute inset-0 bg-black/10" />}
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-20">
           <nav className="flex items-center gap-1.5 text-xs sm:text-sm text-white/70 mb-4 sm:mb-6">

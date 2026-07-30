@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -16,6 +16,8 @@ import {
   Power,
   GripVertical,
   Loader2,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,6 +56,7 @@ interface ServiceData {
   isPopular: boolean;
   isActive: boolean;
   gradient: string;
+  image: string | null;
 }
 
 const categories = [
@@ -99,6 +102,7 @@ const emptyService: ServiceData = {
   isPopular: false,
   isActive: true,
   gradient: 'from-[#2580eb] via-[#3b8cf6] to-[#60a5fa]',
+  image: null,
 };
 
 const inputClass = cn(
@@ -296,6 +300,8 @@ export default function AdminServicesPage() {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<ServiceData | null>(null);
@@ -354,6 +360,29 @@ export default function AdminServicesPage() {
     setForm({ ...service });
     setActiveTab('basic');
     setShowModal(true);
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const json = await res.json();
+      if (json.success) {
+        setForm((prev: ServiceData) => ({ ...prev, image: json.data.url }));
+        toast.success(isAr ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully');
+      } else {
+        toast.error(json.error || (isAr ? 'فشل رفع الصورة' : 'Upload failed'));
+      }
+    } catch {
+      toast.error(isAr ? 'فشل رفع الصورة' : 'Upload failed');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSave = async () => {
@@ -828,6 +857,51 @@ export default function AdminServicesPage() {
                           className={inputClass}
                           placeholder="from-[#2580eb] via-[#3b8cf6] to-[#60a5fa]"
                         />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                          {isAr ? 'صورة الخدمة' : 'Service Image'}
+                        </label>
+                        {form.image && (
+                          <div className="relative mb-2 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10">
+                            <img src={form.image} alt="" className="w-full h-40 object-cover" />
+                            <button
+                              onClick={() => setForm((prev: ServiceData) => ({ ...prev, image: null }))}
+                              className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-600 transition-colors"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleUpload}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-xl border-2 border-dashed border-slate-300 dark:border-white/20 text-slate-500 dark:text-slate-400 hover:border-[#2580eb] hover:text-[#2580eb] transition-colors disabled:opacity-50"
+                          >
+                            {uploading ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Upload size={16} />
+                            )}
+                            {uploading ? (isAr ? 'جاري الرفع...' : 'Uploading...') : (isAr ? 'اختيار صورة من الجهاز' : 'Choose from device')}
+                          </button>
+                          <input
+                            type="text"
+                            value={form.image || ''}
+                            onChange={(e) => setForm((prev: ServiceData) => ({ ...prev, image: e.target.value || null }))}
+                            className={inputClass + ' flex-1'}
+                            placeholder={isAr ? 'أو الصق رابط صورة' : 'Or paste image URL'}
+                          />
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
