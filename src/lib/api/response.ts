@@ -1,9 +1,22 @@
-export function success(data: unknown, message?: string) {
-  return Response.json({ success: true, data, message });
+export function success(data: unknown, message?: string, init?: ResponseInit) {
+  return Response.json({ success: true, data, message }, {
+    ...init,
+    headers: {
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      ...(init?.headers || {}),
+    },
+  });
 }
 
-export function error(message: string, status = 400) {
-  return Response.json({ success: false, error: message }, { status });
+export function error(message: string, status = 400, init?: ResponseInit) {
+  return Response.json({ success: false, error: message }, {
+    status,
+    ...init,
+    headers: {
+      'Cache-Control': 'no-store',
+      ...(init?.headers || {}),
+    },
+  });
 }
 
 export function unauthorized(message = "غير مصرح") {

@@ -10,8 +10,11 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const search = searchParams.get('search');
 
+    const where: Record<string, unknown> = { isActive: true };
+    if (category) where.category = category;
+
     const dbServices = await prisma.service.findMany({
-      where: { isActive: true },
+      where,
       orderBy: { sortOrder: 'asc' },
     });
 
@@ -49,10 +52,6 @@ export async function GET(request: NextRequest) {
     }));
 
     let filtered = enriched;
-
-    if (category) {
-      filtered = filtered.filter((s) => s.category === category);
-    }
 
     if (search) {
       const q = search.toLowerCase();

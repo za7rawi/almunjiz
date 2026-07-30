@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -86,7 +86,37 @@ const inputNormal = cn(inputBase, "border-slate-200 dark:border-slate-600 bg-whi
 const inputError = cn(inputBase, "border-red-300 bg-red-50/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-red-400 focus:ring-4 focus:ring-red-500/10");
 const inputLtr = cn(inputNormal, "text-left font-mono", "direction: ltr");
 
+function CheckoutSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
+      <div className="max-w-4xl mx-auto px-4 py-8 pt-24">
+        <Skeleton className="h-10 w-64 mb-8" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutSkeleton />}>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
+
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const serviceId = searchParams.get('service');
   const router = useRouter();
@@ -122,15 +152,10 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (serviceId) {
-      fetch('/api/services?limit=100')
+      fetch(`/api/services/${serviceId}`)
         .then((r) => r.json())
         .then((data) => {
-          if (data.success && data.data) {
-            const items = data.data.data || data.data;
-            const list = Array.isArray(items) ? items : [];
-            const found = list.find((s: ServiceData) => s.id === serviceId);
-            if (found) setService(found);
-          }
+          if (data.success) setService(data.data);
         })
         .catch(() => {})
         .finally(() => setServiceLoading(false));
