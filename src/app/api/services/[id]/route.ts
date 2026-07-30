@@ -33,8 +33,6 @@ export async function GET(
         priceNoteEn: service.priceNoteEn || 'Starting from',
         duration: service.duration || '',
         durationEn: service.durationEn || service.duration || '',
-        image: service.image || null,
-        gradient: service.gradient || '',
         requiredDocuments: service.requiredDocuments,
       });
     }

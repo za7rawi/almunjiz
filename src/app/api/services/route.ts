@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
       nameEn: svc.nameEn,
       description: svc.description,
       descriptionEn: svc.descriptionEn,
-      icon: svc.icon,
       category: svc.category,
       categoryAr: svc.categoryAr || svc.category,
       price: Number(svc.price),
