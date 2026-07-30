@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { put } from '@vercel/blob';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -20,13 +21,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'حجم الملف يتجاوز 5 ميغابايت' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString('base64');
-    const dataUrl = `data:${file.type};base64,${base64}`;
+    const timestamp = Date.now();
+    const ext = file.name.split('.').pop() || 'png';
+    const pathname = `services/${timestamp}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+    const blob = await put(pathname, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
     return NextResponse.json({
       success: true,
-      data: { url: dataUrl },
+      data: { url: blob.url },
     });
   } catch (e) {
     console.error('Upload error:', e);
