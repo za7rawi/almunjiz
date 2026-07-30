@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
       },
       user.role
     );
-  } catch {
+  } catch (e) {
+    console.error("[Login] Auth login error:", e instanceof Error ? e.message : e, e instanceof Error ? e.stack : "");
     return error("حدث خطأ أثناء تسجيل الدخول", 500);
   }
 }
