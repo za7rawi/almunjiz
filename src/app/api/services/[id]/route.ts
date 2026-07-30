@@ -64,7 +64,6 @@ export async function GET(
       requiredDocuments: service.requiredDocuments,
       requiredDocumentsEn: service.requiredDocumentsEn.length > 0 ? service.requiredDocumentsEn : service.requiredDocuments,
       isPopular: service.isPopular,
-      image: service.image || null,
       gradient: service.gradient || '',
     };
 

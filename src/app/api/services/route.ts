@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
       durationEn: svc.durationEn || svc.duration || '',
       isPopular: svc.isPopular,
       isActive: svc.isActive,
-      image: svc.image || null,
       gradient: svc.gradient || '',
     }));
 
