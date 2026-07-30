@@ -73,6 +73,14 @@ export async function GET(
       );
     }
 
+    if (file.fileUrl.startsWith('https://')) {
+      const contentDisposition = inline ? `inline; filename="${encodeURIComponent(file.fileName)}"` : `attachment; filename="${encodeURIComponent(file.fileName)}"`;
+      return NextResponse.redirect(file.fileUrl, {
+        status: 302,
+        headers: { "Content-Disposition": contentDisposition },
+      });
+    }
+
     let fileBuffer: Buffer | null = null;
 
     if (file.data) {
@@ -81,7 +89,7 @@ export async function GET(
       const filepath = resolveStoredFilePath(file.fileUrl, file.storedName);
       if (!filepath) {
         return NextResponse.json(
-          { success: false, error: "Ø§Ù„Ù…Ù„Ù ØºÙŠØ± Ù…ØªØ§Ø­ Ù„Ù„ØªØ­Ù…ÙŠÙ„" },
+          { success: false, error: "الملف غير متاح للتحميل" },
           { status: 404 }
         );
       }

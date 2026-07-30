@@ -850,6 +850,15 @@ function CheckoutContent() {
           >
             {isAr ? 'طباعة الفاتورة' : 'Print Invoice'}
           </Button>
+          <Link href={`/dashboard/invoices`}>
+            <Button
+              variant="secondary"
+              className="px-6 py-3 rounded-xl font-medium"
+              iconLeft={<FileText size={18} />}
+            >
+              {isAr ? 'عرض الفاتورة' : 'View Invoice'}
+            </Button>
+          </Link>
           <Link href="/">
             <Button
               variant="primary"

@@ -34,6 +34,7 @@ export async function GET(
         duration: service.duration || '',
         durationEn: service.durationEn || service.duration || '',
         requiredDocuments: service.requiredDocuments,
+        image: service.image || null,
       });
     }
 
@@ -65,6 +66,7 @@ export async function GET(
       requiredDocumentsEn: service.requiredDocumentsEn.length > 0 ? service.requiredDocumentsEn : service.requiredDocuments,
       isPopular: service.isPopular,
       gradient: service.gradient || '',
+      image: service.image || null,
     };
 
     return success(enriched);

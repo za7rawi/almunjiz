@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       isPopular: svc.isPopular,
       isActive: svc.isActive,
       gradient: svc.gradient || '',
+      image: svc.image || null,
     }));
 
     let filtered = enriched;
