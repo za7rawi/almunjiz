@@ -112,10 +112,10 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
       .then((r) => r.json())
       .then((data) => { if (data.success && data.data) { const items = data.data.data || data.data; setServicesData(Array.isArray(items) ? items : []); } })
       .catch(() => {});
-    fetch('/api/admin/gateways')
+    fetch('/api/gateways')
       .then((r) => r.json())
       .then((data) => {
-        if (data.success) setActiveGateways(data.data.filter((g: GatewayData) => g.isActive));
+        if (data.success) setActiveGateways(data.data);
       })
       .catch(() => {})
       .finally(() => setGatewaysLoading(false));

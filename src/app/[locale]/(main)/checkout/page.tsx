@@ -136,10 +136,10 @@ export default function CheckoutPage() {
     } else {
       setServiceLoading(false);
     }
-    fetch('/api/admin/gateways')
+    fetch('/api/gateways')
       .then((r) => r.json())
       .then((data) => {
-        if (data.success) setActiveGateways(data.data.filter((g: { isActive: boolean }) => g.isActive));
+        if (data.success) setActiveGateways(data.data);
       })
       .catch(() => {});
   }, [serviceId]);

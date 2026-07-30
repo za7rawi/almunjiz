@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { OrderService } from "@/services/order.service";
 import { sendOrderStatusEmail, sendOrderCompletedEmail } from "@/lib/email/service";
 import { writeAuditLog } from "@/lib/audit-log";
+import { fileAttachmentSelect, recoverFileAttachmentsForOrder } from "@/lib/file-attachments";
 
 export async function GET(
   request: NextRequest,
@@ -42,7 +43,7 @@ export async function GET(
         invoice: true,
         payments: true,
         timeline: { orderBy: { createdAt: "asc" } },
-        fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
+        fileAttachments: { select: fileAttachmentSelect },
       },
     });
 
@@ -74,30 +75,32 @@ export async function GET(
       );
     }
 
+    const orderWithAttachments = await recoverFileAttachmentsForOrder(order);
+
     const serialized = {
-      ...order,
-      amount: order.amount?.toString() ?? null,
-      discount: order.discount?.toString() ?? null,
-      tax: order.tax?.toString() ?? null,
-      total: order.total?.toString() ?? null,
-      createdAt: order.createdAt?.toISOString() ?? null,
-      updatedAt: order.updatedAt?.toISOString() ?? null,
-      estimatedDelivery: order.estimatedDelivery?.toISOString() ?? null,
-      timeline: order.timeline.map((t) => ({
+      ...orderWithAttachments,
+      amount: orderWithAttachments.amount?.toString() ?? null,
+      discount: orderWithAttachments.discount?.toString() ?? null,
+      tax: orderWithAttachments.tax?.toString() ?? null,
+      total: orderWithAttachments.total?.toString() ?? null,
+      createdAt: orderWithAttachments.createdAt?.toISOString() ?? null,
+      updatedAt: orderWithAttachments.updatedAt?.toISOString() ?? null,
+      estimatedDelivery: orderWithAttachments.estimatedDelivery?.toISOString() ?? null,
+      timeline: orderWithAttachments.timeline.map((t) => ({
         ...t,
         createdAt: t.createdAt?.toISOString() ?? null,
       })),
-      invoice: order.invoice
+      invoice: orderWithAttachments.invoice
         ? {
-            ...order.invoice,
-            subtotal: order.invoice.subtotal?.toString() ?? null,
-            tax: order.invoice.tax?.toString() ?? null,
-            total: order.invoice.total?.toString() ?? null,
-            discount: order.invoice.discount?.toString() ?? null,
-            createdAt: order.invoice.createdAt?.toISOString() ?? null,
+            ...orderWithAttachments.invoice,
+            subtotal: orderWithAttachments.invoice.subtotal?.toString() ?? null,
+            tax: orderWithAttachments.invoice.tax?.toString() ?? null,
+            total: orderWithAttachments.invoice.total?.toString() ?? null,
+            discount: orderWithAttachments.invoice.discount?.toString() ?? null,
+            createdAt: orderWithAttachments.invoice.createdAt?.toISOString() ?? null,
           }
         : null,
-      payments: order.payments.map((p) => ({
+      payments: orderWithAttachments.payments.map((p) => ({
         ...p,
         amount: p.amount?.toString() ?? null,
         createdAt: p.createdAt?.toISOString() ?? null,
@@ -204,35 +207,39 @@ export async function PUT(
         invoice: true,
         payments: true,
         timeline: { orderBy: { createdAt: "asc" } },
-        fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
+        fileAttachments: { select: fileAttachmentSelect },
       },
     });
 
-    const serializedUpdated = updatedOrder
+    const updatedOrderWithAttachments = updatedOrder
+      ? await recoverFileAttachmentsForOrder(updatedOrder)
+      : null;
+
+    const serializedUpdated = updatedOrderWithAttachments
       ? {
-          ...updatedOrder,
-          amount: updatedOrder.amount?.toString() ?? null,
-          discount: updatedOrder.discount?.toString() ?? null,
-          tax: updatedOrder.tax?.toString() ?? null,
-          total: updatedOrder.total?.toString() ?? null,
-          createdAt: updatedOrder.createdAt?.toISOString() ?? null,
-          updatedAt: updatedOrder.updatedAt?.toISOString() ?? null,
-          estimatedDelivery: updatedOrder.estimatedDelivery?.toISOString() ?? null,
-          timeline: updatedOrder.timeline.map((t) => ({
+          ...updatedOrderWithAttachments,
+          amount: updatedOrderWithAttachments.amount?.toString() ?? null,
+          discount: updatedOrderWithAttachments.discount?.toString() ?? null,
+          tax: updatedOrderWithAttachments.tax?.toString() ?? null,
+          total: updatedOrderWithAttachments.total?.toString() ?? null,
+          createdAt: updatedOrderWithAttachments.createdAt?.toISOString() ?? null,
+          updatedAt: updatedOrderWithAttachments.updatedAt?.toISOString() ?? null,
+          estimatedDelivery: updatedOrderWithAttachments.estimatedDelivery?.toISOString() ?? null,
+          timeline: updatedOrderWithAttachments.timeline.map((t) => ({
             ...t,
             createdAt: t.createdAt?.toISOString() ?? null,
           })),
-          invoice: updatedOrder.invoice
+          invoice: updatedOrderWithAttachments.invoice
             ? {
-                ...updatedOrder.invoice,
-                subtotal: updatedOrder.invoice.subtotal?.toString() ?? null,
-                tax: updatedOrder.invoice.tax?.toString() ?? null,
-                total: updatedOrder.invoice.total?.toString() ?? null,
-                discount: updatedOrder.invoice.discount?.toString() ?? null,
-                createdAt: updatedOrder.invoice.createdAt?.toISOString() ?? null,
+                ...updatedOrderWithAttachments.invoice,
+                subtotal: updatedOrderWithAttachments.invoice.subtotal?.toString() ?? null,
+                tax: updatedOrderWithAttachments.invoice.tax?.toString() ?? null,
+                total: updatedOrderWithAttachments.invoice.total?.toString() ?? null,
+                discount: updatedOrderWithAttachments.invoice.discount?.toString() ?? null,
+                createdAt: updatedOrderWithAttachments.invoice.createdAt?.toISOString() ?? null,
               }
             : null,
-          payments: updatedOrder.payments.map((p) => ({
+          payments: updatedOrderWithAttachments.payments.map((p) => ({
             ...p,
             amount: p.amount?.toString() ?? null,
             createdAt: p.createdAt?.toISOString() ?? null,

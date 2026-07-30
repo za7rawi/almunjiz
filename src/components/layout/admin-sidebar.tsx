@@ -71,11 +71,12 @@ interface AdminSidebarProps {
   adminName?: string;
   adminEmail?: string;
   adminAvatar?: string | null;
+  mobileOpen?: boolean;
+  onMobileToggle?: (open: boolean) => void;
 }
 
-export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almunjiz.com', adminAvatar }: AdminSidebarProps) {
+export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almunjiz.com', adminAvatar, mobileOpen = false, onMobileToggle }: AdminSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { language } = useLanguageStore();
@@ -96,7 +97,7 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
       <div className="flex items-center justify-between p-4 border-b border-white/10">
         <Link
           href="/admin"
-          onClick={() => isMobile && setMobileOpen(false)}
+          onClick={() => isMobile && onMobileToggle?.(false)}
           className={cn(
             'transition-all duration-300',
             collapsed && !isMobile ? 'mx-auto' : '',
@@ -130,7 +131,7 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setMobileOpen(false)}
+            onClick={() => onMobileToggle?.(false)}
             className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
           >
             <X size={18} />
@@ -145,7 +146,7 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => isMobile && setMobileOpen(false)}
+              onClick={() => isMobile && onMobileToggle?.(false)}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative',
                 isActive
@@ -239,7 +240,7 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setMobileOpen(true)}
+          onClick={() => onMobileToggle?.(true)}
           className="fixed top-4 z-40 p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700"
           style={{ [isRtl ? 'right' : 'left']: '16px' }}
         >
@@ -254,7 +255,7 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-                onClick={() => setMobileOpen(false)}
+                onClick={() => onMobileToggle?.(false)}
               />
               <motion.aside
                 initial={{ x: isRtl ? '100%' : '-100%' }}

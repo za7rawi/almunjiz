@@ -37,6 +37,7 @@ async function seedServicesFromData() {
       faqEn: s.faqEn || s.faq || [],
       requiredDocuments: s.requiredDocuments || [],
       requiredDocumentsEn: s.requiredDocumentsEn || s.requiredDocuments || [],
+      image: s.image || null,
       gradient: s.gradient || null,
       sortOrder: servicesData.indexOf(s),
     };

@@ -6,6 +6,7 @@ import { sendOrderCreatedEmail, sendInvoiceEmail } from '@/lib/email/service';
 import { generateOrderNumber, generateInvoiceNumber } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/audit-log';
 import { apiLimiter } from '@/lib/rate-limit';
+import { fileAttachmentSelect, recoverFileAttachmentsForOrder, recoverFileAttachmentsForOrders } from '@/lib/file-attachments';
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,41 +49,7 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.order.count({ where });
 
-    const ordersNeedingOrphans = rawOrders.filter(
-      (o) => o.fileAttachments.length === 0 && (o.attachments as string[])?.length > 0 && o.userId
-    );
-
-    let enrichedOrders = rawOrders;
-
-    if (ordersNeedingOrphans.length > 0) {
-      const orphanedFiles = await prisma.fileAttachment.findMany({
-        where: { userId: { in: ordersNeedingOrphans.map((o) => o.userId) }, orderId: null },
-        select: { id: true, userId: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true },
-      });
-
-      const resolveLinks: Promise<any>[] = [];
-
-      enrichedOrders = rawOrders.map((order) => {
-        if (order.fileAttachments.length > 0 || !(order.attachments as string[])?.length || !order.userId) {
-          return order;
-        }
-        const matching = orphanedFiles.filter(
-          (f) => f.userId === order.userId && (order.attachments as string[]).includes(f.fileName)
-        );
-        if (matching.length > 0) {
-          resolveLinks.push(
-            prisma.fileAttachment.updateMany({
-              where: { id: { in: matching.map((f) => f.id) } },
-              data: { orderId: order.id },
-            })
-          );
-          return { ...order, fileAttachments: matching };
-        }
-        return order;
-      });
-
-      await Promise.all(resolveLinks);
-    }
+    const enrichedOrders = await recoverFileAttachmentsForOrders(rawOrders);
 
     return NextResponse.json({
       success: true,
@@ -215,9 +182,13 @@ export async function POST(request: NextRequest) {
         invoice: true,
         payments: true,
         timeline: true,
-        fileAttachments: true,
+        fileAttachments: { select: fileAttachmentSelect },
       },
     });
+
+    const orderWithAttachments = order
+      ? await recoverFileAttachmentsForOrder(order)
+      : null;
 
     await writeAuditLog({
       action: 'order.created',
@@ -266,13 +237,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        ...order,
-        amount: Number(order?.amount),
-        discount: Number(order?.discount),
-        tax: Number(order?.tax),
-        total: Number(order?.total),
-        createdAt: order?.createdAt?.toISOString(),
-        updatedAt: order?.updatedAt?.toISOString(),
+        ...orderWithAttachments,
+        amount: Number(orderWithAttachments?.amount),
+        discount: Number(orderWithAttachments?.discount),
+        tax: Number(orderWithAttachments?.tax),
+        total: Number(orderWithAttachments?.total),
+        createdAt: orderWithAttachments?.createdAt?.toISOString(),
+        updatedAt: orderWithAttachments?.updatedAt?.toISOString(),
         invoiceNumber: invoice.invoiceNumber,
       },
     }, { status: 201 });

@@ -3,7 +3,23 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
-import { join } from "path";
+import { basename, join } from "path";
+
+function resolveStoredFilePath(fileUrl: string, storedName?: string | null) {
+  const normalizedUrl = fileUrl.replace(/\\/g, "/");
+  const fileName = storedName || basename(normalizedUrl);
+  if (!fileName || fileName === "." || fileName === "..") return null;
+
+  if (normalizedUrl.includes("/data/uploads/") || normalizedUrl.startsWith("data/uploads/")) {
+    return join(process.cwd(), "data", "uploads", fileName);
+  }
+
+  if (normalizedUrl.includes("/uploads/") || normalizedUrl.startsWith("uploads/")) {
+    return join(process.cwd(), "public", "uploads", fileName);
+  }
+
+  return null;
+}
 
 export async function GET(
   request: NextRequest,
@@ -62,7 +78,14 @@ export async function GET(
     if (file.data) {
       fileBuffer = Buffer.from(file.data);
     } else {
-      const filepath = join(process.cwd(), file.fileUrl);
+      const filepath = resolveStoredFilePath(file.fileUrl, file.storedName);
+      if (!filepath) {
+        return NextResponse.json(
+          { success: false, error: "Ø§Ù„Ù…Ù„Ù ØºÙŠØ± Ù…ØªØ§Ø­ Ù„Ù„ØªØ­Ù…ÙŠÙ„" },
+          { status: 404 }
+        );
+      }
+
       try {
         const bytes = await readFile(filepath);
         fileBuffer = Buffer.from(bytes);

@@ -39,6 +39,22 @@ const paymentStatusConfig: Record<string, { label: string; labelEn: string; vari
   CANCELLED: { label: 'ملغي', labelEn: 'Cancelled', variant: 'danger' },
 };
 
+function normalizeAttachmentName(name: string) {
+  return name.trim().toLowerCase();
+}
+
+function getUnresolvedAttachments(order: ApiOrder) {
+  if (order.unresolvedAttachments) return order.unresolvedAttachments;
+
+  const resolvedNames = new Set(
+    (order.fileAttachments ?? []).map((file) => normalizeAttachmentName(file.fileName))
+  );
+
+  return (order.attachments ?? []).filter(
+    (name) => !resolvedNames.has(normalizeAttachmentName(name))
+  );
+}
+
 export default function OrdersPage() {
   const { language } = useLanguageStore();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
@@ -96,6 +112,9 @@ export default function OrdersPage() {
 
   const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE);
   const paginatedData = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const selectedUnresolvedAttachments = selectedOrder ? getUnresolvedAttachments(selectedOrder) : [];
+  const selectedAttachmentCount =
+    (selectedOrder?.fileAttachments?.length ?? 0) + selectedUnresolvedAttachments.length;
 
   const handleUpdateStatus = async (status: string) => {
     if (!selectedOrder) return;
@@ -371,10 +390,10 @@ export default function OrdersPage() {
                 </div>
               )}
 
-              {(selectedOrder.fileAttachments && selectedOrder.fileAttachments.length > 0) || (selectedOrder.attachments && selectedOrder.attachments.length > 0) ? (
+              {selectedAttachmentCount > 0 ? (
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Paperclip size={16} /> {isAr ? 'الملفات المرفقة' : 'Attached Files'} ({(selectedOrder.fileAttachments?.length || 0) + (selectedOrder.attachments?.length || 0)})
+                    <Paperclip size={16} /> {isAr ? 'الملفات المرفقة' : 'Attached Files'} ({selectedAttachmentCount})
                   </h4>
                   {selectedOrder.fileAttachments && selectedOrder.fileAttachments.length > 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -383,13 +402,18 @@ export default function OrdersPage() {
                       ))}
                     </div>
                   )}
-                  {selectedOrder.attachments && selectedOrder.attachments.length > 0 && !selectedOrder.fileAttachments?.length && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedOrder.attachments.map((file: string, idx: number) => (
-                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-slate-400">
-                          <Paperclip size={10} /> {file}
-                        </span>
-                      ))}
+                  {selectedUnresolvedAttachments.length > 0 && (
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 p-3">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-2">
+                        {isAr ? 'أسماء ملفات قديمة غير قابلة للاسترجاع' : 'Legacy file names without recoverable file data'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedUnresolvedAttachments.map((file: string, idx: number) => (
+                          <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-white/10 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-700 dark:text-amber-300">
+                            <Paperclip size={10} /> {file}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

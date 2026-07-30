@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { trackLimiter } from "@/lib/rate-limit";
+import { fileAttachmentSelect, recoverFileAttachmentsForOrder } from "@/lib/file-attachments";
 
 export async function GET(
   request: NextRequest,
@@ -25,7 +26,7 @@ export async function GET(
         service: { select: { id: true, name: true, nameEn: true, slug: true } },
         invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
         timeline: { orderBy: { createdAt: "asc" } },
-        fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
+        fileAttachments: { select: fileAttachmentSelect },
       },
     });
 
@@ -36,7 +37,7 @@ export async function GET(
           service: { select: { id: true, name: true, nameEn: true, slug: true } },
           invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
           timeline: { orderBy: { createdAt: "asc" } },
-          fileAttachments: { select: { id: true, fileName: true, fileUrl: true, fileType: true, mimeType: true, fileSize: true, uploadedAt: true } },
+          fileAttachments: { select: fileAttachmentSelect },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -54,30 +55,33 @@ export async function GET(
       );
     }
 
+    const orderWithAttachments = await recoverFileAttachmentsForOrder(order);
+
     return NextResponse.json({
       success: true,
       data: {
-        orderNumber: order.orderNumber,
-        status: order.status,
-        paymentStatus: order.paymentStatus,
-        customerName: order.customerName,
-        service: order.service,
-        baseAmount: Number(order.amount),
-        discount: Number(order.discount),
-        tax: Number(order.tax),
-        total: Number(order.total),
-        paymentMethod: order.paymentMethod,
-        invoice: order.invoice,
-        timeline: order.timeline.map((t) => ({
+        orderNumber: orderWithAttachments.orderNumber,
+        status: orderWithAttachments.status,
+        paymentStatus: orderWithAttachments.paymentStatus,
+        customerName: orderWithAttachments.customerName,
+        service: orderWithAttachments.service,
+        baseAmount: Number(orderWithAttachments.amount),
+        discount: Number(orderWithAttachments.discount),
+        tax: Number(orderWithAttachments.tax),
+        total: Number(orderWithAttachments.total),
+        paymentMethod: orderWithAttachments.paymentMethod,
+        invoice: orderWithAttachments.invoice,
+        timeline: orderWithAttachments.timeline.map((t) => ({
           id: t.id,
           status: t.status,
           description: t.description,
           createdAt: t.createdAt,
         })),
-        fileAttachments: order.fileAttachments,
-        createdAt: order.createdAt,
-        estimatedDelivery: order.estimatedDelivery,
-        deliveredAt: order.deliveredAt,
+        fileAttachments: orderWithAttachments.fileAttachments,
+        unresolvedAttachments: orderWithAttachments.unresolvedAttachments,
+        createdAt: orderWithAttachments.createdAt,
+        estimatedDelivery: orderWithAttachments.estimatedDelivery,
+        deliveredAt: orderWithAttachments.deliveredAt,
       },
       message: "تم جلب معلومات الطلب بنجاح / Order info fetched successfully",
       error: null,

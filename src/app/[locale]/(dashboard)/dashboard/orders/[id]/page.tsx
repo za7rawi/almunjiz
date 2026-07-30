@@ -140,6 +140,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const serviceName = (order.service as { name: string } | undefined)?.name || '-'
   const timeline = (order.timeline as { id?: string; status: string; description: string; createdAt: string }[] | undefined) || []
   const fileAttachments = (order.fileAttachments as { id: string; fileName: string; fileUrl: string; fileType: string; mimeType?: string; fileSize: number; uploadedAt: string }[]) || []
+  const unresolvedAttachments = (order.unresolvedAttachments as string[] | undefined) || []
+  const attachmentCount = fileAttachments.length + unresolvedAttachments.length
   const payments = (order.payments as { id: string; method: string; status: string; amount: number; transactionId?: string; createdAt: string }[]) || []
   const orderPaymentStatus = (order.paymentStatus as string) || 'PENDING'
 
@@ -305,16 +307,34 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'المرفقات' : 'Attachments'}</h3>
             </CardHeader>
             <CardContent>
-              {fileAttachments.length === 0 ? (
+              {attachmentCount === 0 ? (
                 <div className="text-center py-8">
                   <FolderOpen size={40} className="mx-auto text-slate-300 mb-2" />
                   <p className="text-sm text-slate-400 dark:text-slate-500">{isAr ? 'لا توجد ملفات مرفقة' : 'No attachments'}</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {fileAttachments.map((file) => (
-                    <FileAttachmentCard key={file.id} file={file} isAr={isAr} />
-                  ))}
+                <div className="space-y-3">
+                  {fileAttachments.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {fileAttachments.map((file) => (
+                        <FileAttachmentCard key={file.id} file={file} isAr={isAr} />
+                      ))}
+                    </div>
+                  )}
+                  {unresolvedAttachments.length > 0 && (
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 p-3">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-2">
+                        {isAr ? 'أسماء ملفات قديمة غير قابلة للاسترجاع' : 'Legacy file names without recoverable file data'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {unresolvedAttachments.map((file, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-white/10 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-700 dark:text-amber-300">
+                            <FolderOpen size={10} /> {file}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

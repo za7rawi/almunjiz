@@ -16,6 +16,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const { isAuthenticated, user, _hydrated } = useAuthStore();
   const mounted = useIsClient();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const ready = mounted && _hydrated;
 
@@ -46,6 +47,15 @@ export default function AdminLayout({
     }
   }, [isAuthenticated, isAdmin, isLoginPage]);
 
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -64,11 +74,17 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <AdminSidebar adminName={user?.name || 'مدير'} adminEmail={user?.email || 'admin@almunjiz.com'} />
+      <AdminSidebar
+        adminName={user?.name || 'مدير'}
+        adminEmail={user?.email || 'admin@almunjiz.com'}
+        mobileOpen={mobileOpen}
+        onMobileToggle={setMobileOpen}
+      />
       <div className="transition-all duration-300 lg:mr-[260px]">
         <DashboardHeader
           userName={user?.name || "المدير"}
           notificationCount={unreadCount}
+          onMenuToggle={() => setMobileOpen(true)}
         />
         <main className="p-4 md:p-6 lg:p-8">{children}</main>
       </div>

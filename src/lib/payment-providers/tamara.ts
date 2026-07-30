@@ -28,7 +28,7 @@ export class TamaraProvider extends PaymentProvider {
   get name() { return 'Tamara'; }
   get slug() { return 'tamara'; }
   protected get sandboxUrl() { return 'https://sandbox.tamara.co/api/v2'; }
-  protected get productionUrl() { return 'api.tamara.co/api/v2'; }
+  protected get productionUrl() { return 'https://api.tamara.co/api/v2'; }
 
   protected get headers() {
     return {

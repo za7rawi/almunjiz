@@ -81,6 +81,7 @@ interface OrderData {
   invoice?: { id?: string; invoiceNumber?: string };
   timeline?: TimelineEntry[];
   fileAttachments?: FileAttachment[];
+  unresolvedAttachments?: string[];
 }
 
 export default function TrackOrderPage() {
@@ -320,7 +321,7 @@ export default function TrackOrderPage() {
               )}
 
               {/* Files Card */}
-              {foundOrder.fileAttachments && foundOrder.fileAttachments.length > 0 && (
+              {((foundOrder.fileAttachments?.length ?? 0) + (foundOrder.unresolvedAttachments?.length ?? 0)) > 0 && (
                 <Card glass className="p-6">
                   <h4 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-[#7c3aed]/10 text-[#7c3aed]">
@@ -328,6 +329,7 @@ export default function TrackOrderPage() {
                     </div>
                     {isAr ? 'الملفات المرفقة' : 'Attached Files'}
                   </h4>
+                  {foundOrder.fileAttachments && foundOrder.fileAttachments.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {foundOrder.fileAttachments.map((file) => (
                       <div key={file.id} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
@@ -371,6 +373,21 @@ export default function TrackOrderPage() {
                       </div>
                     ))}
                   </div>
+                  )}
+                  {foundOrder.unresolvedAttachments && foundOrder.unresolvedAttachments.length > 0 && (
+                    <div className="mt-3 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 p-3">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-2">
+                        {isAr ? 'أسماء ملفات قديمة غير قابلة للاسترجاع' : 'Legacy file names without recoverable file data'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {foundOrder.unresolvedAttachments.map((file, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-white/10 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-700 dark:text-amber-300">
+                            <File size={10} /> {file}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </Card>
               )}
             </motion.div>

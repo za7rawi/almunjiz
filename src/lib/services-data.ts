@@ -27,6 +27,7 @@ export interface ServiceData {
   isPopular: boolean;
   isActive: boolean;
   gradient: string;
+  image: string;
 }
 
 export const servicesData: ServiceData[] = [
@@ -81,6 +82,7 @@ export const servicesData: ServiceData[] = [
     isPopular: true,
     isActive: true,
     gradient: 'from-[#2580eb] via-[#3b8cf6] to-[#60a5fa]',
+    image: 'https://images.unsplash.com/photo-1741795881248-fcc1d1a88b76?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'visa-business',
@@ -131,6 +133,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#2580eb] via-[#1d4ed8] to-[#3b82f6]',
+    image: 'https://images.unsplash.com/photo-1769739576456-0aefcff3f4b9?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'visa-transit',
@@ -175,6 +178,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#2580eb] via-[#60a5fa] to-[#93c5fd]',
+    image: 'https://images.unsplash.com/photo-1771510446703-dee68be843e2?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'visa-residency',
@@ -223,6 +227,7 @@ export const servicesData: ServiceData[] = [
     isPopular: true,
     isActive: true,
     gradient: 'from-[#2580eb] via-[#818cf8] to-[#a78bfa]',
+    image: 'https://images.unsplash.com/photo-1758519288480-1489c17b1519?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'contract-work',
@@ -267,6 +272,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#14b8a6] via-[#2dd4bf] to-[#5eead4]',
+    image: 'https://images.unsplash.com/photo-1758519288480-1489c17b1519?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'contract-rental',
@@ -313,6 +319,7 @@ export const servicesData: ServiceData[] = [
     isPopular: true,
     isActive: true,
     gradient: 'from-[#14b8a6] via-[#06b6d4] to-[#22d3ee]',
+    image: 'https://images.unsplash.com/photo-1743017524261-f026c51acf7d?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'vehicle-transfer',
@@ -361,6 +368,7 @@ export const servicesData: ServiceData[] = [
     isPopular: true,
     isActive: true,
     gradient: 'from-[#7c3aed] via-[#8b5cf6] to-[#a78bfa]',
+    image: 'https://images.unsplash.com/photo-1778274888793-73e3abbfdef1?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'vehicle-deregister',
@@ -405,6 +413,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#7c3aed] via-[#c084fc] to-[#e879f9]',
+    image: 'https://images.unsplash.com/photo-1751847610182-1a7123484c41?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'violations-payment',
@@ -453,6 +462,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#ef4444] via-[#f97316] to-[#f59e0b]',
+    image: 'https://images.unsplash.com/photo-1770240217266-357561bce2c8?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'travel-booking',
@@ -501,6 +511,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#f59e0b] via-[#f97316] to-[#ef4444]',
+    image: 'https://images.unsplash.com/photo-1771510446703-dee68be843e2?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'hotel-booking',
@@ -547,6 +558,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#f59e0b] via-[#eab308] to-[#facc15]',
+    image: 'https://images.unsplash.com/photo-1777180249046-abf7d640e0d9?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'business-services',
@@ -597,6 +609,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#10b981] via-[#059669] to-[#047857]',
+    image: 'https://images.unsplash.com/photo-1769739576456-0aefcff3f4b9?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'government-services',
@@ -645,6 +658,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#ef4444] via-[#dc2626] to-[#b91c1c]',
+    image: 'https://images.unsplash.com/photo-1751367674327-21d8c2115f34?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'electronic-services',
@@ -691,6 +705,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#3b82f6] via-[#6366f1] to-[#8b5cf6]',
+    image: 'https://images.unsplash.com/photo-1778146476147-5f8d4bd03c79?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'university-jordan',
@@ -741,6 +756,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#8b5cf6] via-[#7c3aed] to-[#6d28d9]',
+    image: 'https://images.unsplash.com/photo-1775623914556-ea360b3a5bf3?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'university-egypt',
@@ -791,6 +807,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#8b5cf6] via-[#a855f7] to-[#d946ef]',
+    image: 'https://images.unsplash.com/photo-1775623914556-ea360b3a5bf3?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'e-consulting',
@@ -841,6 +858,7 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
+    image: 'https://images.unsplash.com/photo-1751257983922-a627088d4c21?w=400&h=400&fit=crop&q=80&auto=format',
   },
   {
     id: 'misc-services',
@@ -889,5 +907,6 @@ export const servicesData: ServiceData[] = [
     isPopular: false,
     isActive: true,
     gradient: 'from-[#6366f1] via-[#4f46e5] to-[#4338ca]',
+    image: 'https://images.unsplash.com/photo-1755681430420-6f675fb7862a?w=400&h=400&fit=crop&q=80&auto=format',
   },
 ];

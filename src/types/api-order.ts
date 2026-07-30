@@ -13,6 +13,7 @@ export interface ApiOrder {
   notes: string;
   internalNotes?: string;
   attachments: string[];
+  unresolvedAttachments?: string[];
   paymentStatus: string;
   paymentMethod?: string;
   transactionId?: string;

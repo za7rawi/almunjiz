@@ -21,7 +21,6 @@ interface AuthStore {
   login: (user: User) => void;
   loginEmail: (email: string, password: string) => Promise<{ success: boolean; message: string; redirect?: string }>;
   register: (data: { name: string; email: string; password: string }) => Promise<{ success: boolean; message: string }>;
-  loginWithGoogle: (data: { idToken: string; name: string; email: string; avatar?: string }) => Promise<{ success: boolean; message: string; redirect: string; email: string; token: string }>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
   isAdmin: () => boolean;
@@ -114,39 +113,6 @@ export const useAuthStore = create<AuthStore>()(
           return { success: false, message: json.error || 'حدث خطأ أثناء إنشاء الحساب' };
         } catch {
           return { success: false, message: 'حدث خطأ أثناء الاتصال بالخادم' };
-        }
-      },
-
-      loginWithGoogle: async (data) => {
-        try {
-          const res = await fetch('/api/auth/google', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken: data.idToken }),
-          });
-          const json = await res.json();
-
-          if (json.success && json.user) {
-            const u = json.user;
-            const user: User = {
-              id: u.id,
-              name: u.name,
-              email: u.email,
-              phone: u.phone,
-              role: mapRole(u.role),
-              avatar: data.avatar || u.avatar || null,
-              provider: 'google',
-              createdAt: u.createdAt ?? new Date().toISOString(),
-            };
-            clearUserProgressData(user.id);
-            set({ user, isAuthenticated: true });
-            const isAdmin = user.role === 'admin' || user.role === 'manager';
-            return { success: true, message: json.message || 'تم تسجيل الدخول بنجاح', redirect: isAdmin ? '/admin' : '/dashboard', email: u.email, token: json.token };
-          }
-
-          return { success: false, message: json.message || 'فشل تسجيل الدخول بـ Google', redirect: '', email: '', token: '' };
-        } catch {
-          return { success: false, message: 'حدث خطأ أثناء التواصل مع Google', redirect: '', email: '', token: '' };
         }
       },
 
