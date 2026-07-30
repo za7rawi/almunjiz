@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   User, Mail, Phone, Upload, X, CreditCard,
   CheckCircle2, Shield, Tag, FileText, File,
@@ -126,7 +126,7 @@ function CheckoutContent() {
   const { dir } = useDirection();
   const { currency } = useCurrencyStore();
 
-  const [service, setService] = useState<ServiceData | null>(null);
+  const [service, setService] = useState<Partial<ServiceData> | null>(null);
   const [serviceLoading, setServiceLoading] = useState(true);
   const [activeGateways, setActiveGateways] = useState<Array<{ id: string; name: string; slug: string; displayName?: string; displayNameEn?: string; isActive: boolean; isDefault: boolean; supportsApplePay?: boolean; supportsGooglePay?: boolean; supportsInstallments?: boolean; logo?: string }>>([]);
 
@@ -152,7 +152,7 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (serviceId) {
-      fetch(`/api/services/${serviceId}`)
+      fetch(`/api/services/${serviceId}?brief=true`)
         .then((r) => r.json())
         .then((data) => {
           if (data.success) setService(data.data);
@@ -424,7 +424,7 @@ function CheckoutContent() {
   if (!service) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-20">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <div>
           <Card className="max-w-md w-full mx-4 p-10 text-center dark:bg-slate-800">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center mx-auto mb-5">
               <X size={36} className="text-red-400" />
@@ -435,7 +435,7 @@ function CheckoutContent() {
               <Button variant="primary" className="rounded-xl px-8">{isAr ? 'العودة للخدمات' : 'Back to Services'}</Button>
             </Link>
           </Card>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -447,7 +447,7 @@ function CheckoutContent() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
         {/* ── Breadcrumb & Header ── */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
+        <div className="mb-8">
           <nav className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 mb-5">
             <Link href="/services" className="hover:text-[#2580eb] transition-colors">{isAr ? 'الخدمات' : 'Services'}</Link>
             <span>/</span>
@@ -461,10 +461,10 @@ function CheckoutContent() {
               <p className="text-slate-500 dark:text-slate-400 mt-1.5 text-sm sm:text-base">{isAr ? 'أكمل بياناتك واختر طريقة الدفع' : 'Complete your details and choose a payment method'}</p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* ── Progress Steps ── */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="mb-8">
+        <div className="mb-8">
           <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-center justify-between max-w-lg mx-auto">
               {[
@@ -498,10 +498,10 @@ function CheckoutContent() {
                     {i < 2 && (
                       <div className="flex-1 mx-2 sm:mx-3 mb-6">
                         <div className="h-0.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                          <motion.div
-                            initial={{ width: '0%' }}
-                            animate={{ width: s.done ? '100%' : '0%' }}
-                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                          <div
+
+
+
                             className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
                           />
                         </div>
@@ -512,13 +512,13 @@ function CheckoutContent() {
               })}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8" dir={dir}>
           <div className="lg:col-span-2 space-y-5">
 
             {/* ── Service Details ── */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <div>
               <Card className="p-5 sm:p-7">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 flex items-center justify-center">
@@ -551,10 +551,10 @@ function CheckoutContent() {
                   </div>
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* ── Customer Information ── */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <div>
               <Card className="p-5 sm:p-7">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 flex items-center justify-center">
@@ -587,9 +587,9 @@ function CheckoutContent() {
                       />
                     </div>
                     {formErrors.name && (
-                      <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                      <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
                         <AlertCircle size={12} /> {formErrors.name}
-                      </motion.p>
+                      </p>
                     )}
                   </div>
 
@@ -615,9 +615,9 @@ function CheckoutContent() {
                         />
                       </div>
                       {formErrors.email && (
-                        <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                        <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
                           <AlertCircle size={12} /> {formErrors.email}
-                        </motion.p>
+                        </p>
                       )}
                     </div>
                     <div>
@@ -651,19 +651,19 @@ function CheckoutContent() {
                         </div>
                       </div>
                       {formErrors.phone && (
-                        <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                        <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
                           <AlertCircle size={12} /> {formErrors.phone}
-                        </motion.p>
+                        </p>
                       )}
                     </div>
                   </div>
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* ── File Upload ── */}
             {step === 'info' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <div>
                 <Card className="p-5 sm:p-7">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400/10 to-amber-500/10 flex items-center justify-center">
@@ -690,12 +690,12 @@ function CheckoutContent() {
                     )}
                   >
                     <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" onChange={handleFileUpload} className="hidden" />
-                    <motion.div
-                      animate={isDragOver ? { scale: 1.1, y: -4 } : { scale: 1, y: 0 }}
+                    <div
+                      
                       className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 flex items-center justify-center mx-auto mb-4"
                     >
                       <Upload size={28} className={cn("transition-colors", isDragOver ? "text-[#2580eb]" : "text-slate-400 group-hover:text-[#2580eb]")} />
-                    </motion.div>
+                    </div>
                     <p className="font-semibold text-slate-700 dark:text-slate-200 mb-1">
                       {isDragOver ? (isAr ? 'أفلت الملفات هنا' : 'Drop files here') : (isAr ? 'اسحب الملفات هنا أو اضغط للاختيار' : 'Drag files here or click to select')}
                     </p>
@@ -705,13 +705,13 @@ function CheckoutContent() {
                   {/* Uploaded Files */}
                   <AnimatePresence>
                     {uploadedFiles.length > 0 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-5 space-y-2.5">
+                      <div className="mt-5 space-y-2.5">
                         {uploadedFiles.map((f) => (
-                          <motion.div
+                          <div
                             key={f.id}
-                            initial={{ opacity: 0, x: -20, scale: 0.95 }}
-                            animate={{ opacity: 1, x: 0, scale: 1 }}
-                            exit={{ opacity: 0, x: 20, scale: 0.95 }}
+
+
+
                             className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 transition-colors group"
                           >
                             {f.preview ? (
@@ -727,11 +727,11 @@ function CheckoutContent() {
                               <p className="text-[11px] text-slate-400">{formatFileSize(f.size)}</p>
                               {f.progress < 100 && (
                                 <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-600 rounded-full mt-1.5 overflow-hidden">
-                                  <motion.div
+                                  <div
                                     className="h-full bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${f.progress}%` }}
-                                    transition={{ duration: 0.3 }}
+
+
+
                                   />
                                 </div>
                               )}
@@ -745,18 +745,18 @@ function CheckoutContent() {
                             >
                               <Trash2 size={14} />
                             </button>
-                          </motion.div>
+                          </div>
                         ))}
-                      </motion.div>
+                      </div>
                     )}
                   </AnimatePresence>
                 </Card>
-              </motion.div>
+              </div>
             )}
 
             {/* ── Promo Code ── */}
             {step === 'info' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+              <div>
                 <Card className="p-5 sm:p-7">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-500/10 flex items-center justify-center">
@@ -779,9 +779,9 @@ function CheckoutContent() {
                     <Button onClick={handleApplyPromo} variant="primary" className="px-6 rounded-xl font-semibold">{isAr ? 'تطبيق' : 'Apply'}</Button>
                   </div>
                   {promoResult && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
+                    <div
+
+
                       className={cn(
                         "flex items-center gap-2 mt-3 text-sm font-semibold px-3 py-2 rounded-xl",
                         promoResult.valid ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400',
@@ -789,16 +789,16 @@ function CheckoutContent() {
                     >
                       {promoResult.valid ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                       {promoResult.message}
-                    </motion.div>
+                    </div>
                   )}
                 </Card>
-              </motion.div>
+              </div>
             )}
 
             {/* ── Order Created Confirmation ── */}
             <AnimatePresence>
               {step === 'order_created' && orderData && (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ type: 'spring', duration: 0.5 }}>
+                <div>
                   <Card className="p-5 sm:p-7 border-2 border-[#14b8a6]/30 bg-gradient-to-br from-[#14b8a6]/5 to-white dark:from-[#14b8a6]/10 dark:to-slate-800">
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400/10 to-emerald-500/10 flex items-center justify-center">
@@ -821,14 +821,14 @@ function CheckoutContent() {
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-4">{isAr ? 'الآن يمكنك اختيار طريقة الدفع وإتمام عملية الشراء' : 'You can now choose a payment method and complete the purchase'}</p>
                   </Card>
-                </motion.div>
+                </div>
               )}
             </AnimatePresence>
 
             {/* ── Payment Method ── */}
             <AnimatePresence>
               {step === 'order_created' && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ delay: 0.1 }}>
+                <div>
                   <Card className="p-5 sm:p-7">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#7c3aed]/10 to-[#2580eb]/10 flex items-center justify-center">
@@ -852,11 +852,11 @@ function CheckoutContent() {
                         {displayMethods.map((method) => {
                           const isSelected = selectedGatewayId === method.id;
                           return (
-                            <motion.button
+                            <button
                               key={method.id}
                               onClick={() => setSelectedGatewayId(method.id)}
-                              whileHover={{ scale: 1.01 }}
-                              whileTap={{ scale: 0.99 }}
+                              
+                              
                               className={cn(
                                 "w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all duration-200 text-right",
                                 isSelected
@@ -881,15 +881,15 @@ function CheckoutContent() {
                                 "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
                                 isSelected ? "border-[#2580eb] bg-[#2580eb]" : "border-slate-300",
                               )}>
-                                {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-2 h-2 rounded-full bg-white" />}
+                                {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                               </div>
-                            </motion.button>
+                            </button>
                           );
                         })}
                       </div>
                     )}
                   </Card>
-                </motion.div>
+                </div>
               )}
             </AnimatePresence>
           </div>
@@ -923,35 +923,35 @@ function CheckoutContent() {
                       <span className="font-semibold text-slate-800 dark:text-slate-200">{formatPrice(basePrice, currencyCode)}</span>
                     </div>
                     {discount > 0 && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between items-center text-sm">
+                      <div className="flex justify-between items-center text-sm">
                         <span className="text-emerald-600 font-medium flex items-center gap-1">
                           <Tag size={13} /> {isAr ? 'الخصم' : 'Discount'}
                         </span>
                         <span className="font-bold text-emerald-600">-{formatPrice(discount, currencyCode)}</span>
-                      </motion.div>
+                      </div>
                     )}
                   </div>
                   <div className="py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'الإجمالي' : 'Total'}</span>
-                      <motion.span
+                      <span
                         key={finalAmount}
-                        initial={{ scale: 1.1 }}
-                        animate={{ scale: 1 }}
+
+
                         className="text-2xl font-extrabold bg-gradient-to-l from-[#2580eb] to-[#14b8a6] bg-clip-text text-transparent"
                       >
                         {formatPrice(finalAmount, currencyCode)}
-                      </motion.span>
+                      </span>
                     </div>
                   </div>
 
                   {/* Error */}
                   {error && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                    <div
                       className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm mb-4">
                       <AlertCircle size={16} className="shrink-0" />
                       <span>{error}</span>
-                    </motion.div>
+                    </div>
                   )}
 
                   {/* Action Buttons */}

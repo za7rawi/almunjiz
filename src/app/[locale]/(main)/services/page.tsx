@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import {
   Search, Clock, ShoppingCart, ArrowLeft, ArrowRight, Star,
   Globe, FileText, Car, Plane, Building2, Headphones,
@@ -59,10 +58,7 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
   const color = categoryColors[service.category] || '#2580eb';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04 }}
+    <div
       className="flex"
     >
       <Card glass padding="none" className="h-full w-full overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
@@ -111,7 +107,7 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
           </div>
         </div>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -164,7 +160,7 @@ export default function ServicesPage() {
       <div className="relative overflow-hidden bg-gradient-to-br from-[#2580eb] via-[#14b8a6] to-[#7c3aed] text-white">
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">
               {isAr ? 'خدماتنا المتكاملة' : 'Our Comprehensive Services'}
             </h1>
@@ -181,7 +177,7 @@ export default function ServicesPage() {
                 className="w-full pr-12 pl-4 py-3 sm:py-4 rounded-2xl border-0 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 transition-all shadow-xl"
               />
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -204,7 +200,7 @@ export default function ServicesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Popular Services */}
           {popularServices.length > 0 && activeCategory === 'all' && !searchQuery && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+            <div className="mb-10">
               <div className="flex items-center gap-3 mb-6">
                 <Heart size={20} className="text-red-500" />
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -216,7 +212,7 @@ export default function ServicesPage() {
                   <ServiceCard key={service.id} service={service} index={i} />
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Category Filters */}
@@ -261,7 +257,7 @@ export default function ServicesPage() {
 
           {/* Empty State */}
           {filtered.length === 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20">
+            <div className="text-center py-20">
               <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
                 <SearchX size={36} className="text-slate-300 dark:text-slate-600" />
               </div>
@@ -274,7 +270,7 @@ export default function ServicesPage() {
               <Button variant="secondary" onClick={() => { setSearchQuery(''); setActiveCategory('all'); }}>
                 {isAr ? 'مسح الفلتر' : 'Clear Filter'}
               </Button>
-            </motion.div>
+            </div>
           )}
         </div>
       )}

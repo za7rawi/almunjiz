@@ -3,11 +3,13 @@ import { prisma } from '@/lib/prisma';
 import { success, error, notFound } from '@/lib/api/response';
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const brief = searchParams.get('brief') === 'true';
 
     let service = await prisma.service.findUnique({ where: { id } });
 
@@ -17,6 +19,24 @@ export async function GET(
 
     if (!service) {
       return notFound('الخدمة غير موجودة');
+    }
+
+    if (brief) {
+      return success({
+        id: service.id,
+        name: service.name,
+        nameEn: service.nameEn,
+        description: service.description,
+        descriptionEn: service.descriptionEn,
+        price: Number(service.price),
+        priceNote: service.priceNote || 'يبدأ من',
+        priceNoteEn: service.priceNoteEn || 'Starting from',
+        duration: service.duration || '',
+        durationEn: service.durationEn || service.duration || '',
+        image: service.image || null,
+        gradient: service.gradient || '',
+        requiredDocuments: service.requiredDocuments,
+      });
     }
 
     const enriched = {
@@ -46,8 +66,6 @@ export async function GET(
       requiredDocuments: service.requiredDocuments,
       requiredDocumentsEn: service.requiredDocumentsEn.length > 0 ? service.requiredDocumentsEn : service.requiredDocuments,
       isPopular: service.isPopular,
-      isActive: service.isActive,
-      sortOrder: service.sortOrder,
       image: service.image || null,
       gradient: service.gradient || '',
     };

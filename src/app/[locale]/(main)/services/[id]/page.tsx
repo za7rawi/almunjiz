@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Clock, DollarSign, CheckCircle, FileText,
   Package, Shield, Star, Globe, Car, Plane, Building2, Headphones,
@@ -72,7 +73,7 @@ function ReviewsSection({ serviceId, isAr }: { serviceId: string; isAr: boolean 
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+    <div>
       <Card glass padding="lg">
         <div className="flex items-center gap-3 mb-6">
           <MessageSquare size={22} className="text-[#2580eb]" />
@@ -122,7 +123,7 @@ function ReviewsSection({ serviceId, isAr }: { serviceId: string; isAr: boolean 
           </div>
         )}
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -143,7 +144,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
       try {
         const [serviceRes, allRes] = await Promise.all([
           fetch(`/api/services/${id}`),
-          fetch('/api/services?limit=100'),
+          fetch('/api/services?limit=20'),
         ]);
         const serviceJson = await serviceRes.json();
         const allJson = await allRes.json();
@@ -162,6 +163,13 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
     }
     fetchService();
   }, [id]);
+
+  const router = useRouter();
+  useEffect(() => {
+    if (service && service.id) {
+      router.prefetch(`/checkout?service=${service.id}`);
+    }
+  }, [service, router]);
 
   if (service === undefined) {
     return (
@@ -229,17 +237,17 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
 
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
             <div className="flex-1">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                   <Icon size={24} className="sm:w-8 sm:h-8" />
                 </div>
                 <Badge variant="secondary" size="sm" className="bg-white/20 text-white border-white/30">{service.categoryAr}</Badge>
-              </motion.div>
-              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">{isAr ? service.name : service.nameEn}</motion.h1>
-              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="text-white/80 text-sm sm:text-lg max-w-2xl leading-relaxed">{isAr ? service.description : service.descriptionEn}</motion.p>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              </div>
+              <h1
+                className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">{isAr ? service.name : service.nameEn}</h1>
+              <p
+                className="text-white/80 text-sm sm:text-lg max-w-2xl leading-relaxed">{isAr ? service.description : service.descriptionEn}</p>
+              <div
                 className="flex flex-wrap items-center gap-2 sm:gap-4 mt-4 sm:mt-6">
                 <div className="flex items-center gap-2 bg-white/20 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm text-xs sm:text-sm">
                   <Clock size={14} className="sm:w-[18px] sm:h-[18px]" />
@@ -249,9 +257,9 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   <DollarSign size={18} />
                   <span className="font-medium">{isAr ? service.priceNote : service.priceNoteEn} {formatPrice(service.price, currency)}</span>
                 </div>
-              </motion.div>
+              </div>
             </div>
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+            <div>
               {isAuthenticated ? (
                 <Link href={`/checkout?service=${service.id}`}>
                   <Button size="xl" className="bg-white text-slate-900 hover:bg-white/90 shadow-2xl shadow-black/20 text-lg px-8 py-4">
@@ -267,7 +275,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   </Button>
                 </Link>
               )}
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
@@ -277,7 +285,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* About Section */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div>
               <Card glass padding="lg">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">{isAr ? 'عن الخدمة' : 'About Service'}</h2>
                 <div className="text-slate-600 dark:text-slate-400 leading-relaxed space-y-4">
@@ -286,37 +294,35 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Features Grid */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div>
               <Card glass padding="lg">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'مميزات الخدمة' : 'Service Features'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {(isAr ? service.features : service.featuresEn).map((feature, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    <div key={i}
                       className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/80 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
                       <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
                         <Check size={16} className="text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <span className="text-slate-700 dark:text-slate-300 text-sm font-medium">{feature}</span>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Steps Section */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div>
               <Card glass padding="lg">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'مراحل التنفيذ' : 'Implementation Steps'}</h2>
                 <div className="space-y-6">
                   {(isAr ? service.steps : service.stepsEn).map((step, i) => {
                     const StepIcon = iconMap[step.icon] || CheckCircle;
                     return (
-                      <motion.div key={i} initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                      <div key={i}
                         className="flex items-start gap-4">
                         <div className="relative">
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br ${service.gradient} text-white shadow-lg`}>
@@ -330,15 +336,15 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                           <h4 className="font-bold text-slate-900 dark:text-white mb-1">{isAr ? 'الخطوة' : 'Step'} {i + 1}: {step.title}</h4>
                           <p className="text-slate-500 dark:text-slate-400 text-sm">{step.description}</p>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Required Documents Section */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div>
               <Card glass padding="lg">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'المستندات المطلوبة' : 'Required Documents'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -352,10 +358,10 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Order Notice */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div>
               <Card glass padding="lg">
                 <div className="flex items-center gap-4 p-4 bg-[#2580eb]/5 rounded-xl border border-[#2580eb]/10">
                   <div className="w-12 h-12 rounded-xl bg-[#2580eb]/10 flex items-center justify-center shrink-0">
@@ -383,10 +389,10 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   )}
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* FAQ Section */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div>
               <Card glass padding="lg">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'الأسئلة الشائعة' : 'Frequently Asked Questions'}</h2>
                 <div className="space-y-3">
@@ -400,27 +406,23 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                       </button>
                       <AnimatePresence>
                         {openFaq === i && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
+                          <div
                             className="overflow-hidden">
                             <div className="px-4 pb-4 text-slate-600 dark:text-slate-400 text-sm leading-relaxed border-t border-slate-100 dark:border-white/5 pt-3">
                               {item.answer}
                             </div>
-                          </motion.div>
+                          </div>
                         )}
                       </AnimatePresence>
                     </div>
                   ))}
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Related Services */}
             {relatedServices.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{isAr ? 'خدمات ذات صلة' : 'Related Services'}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {relatedServices.map((rel) => {
@@ -445,7 +447,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     );
                   })}
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
 
@@ -515,18 +517,11 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
 
       <AnimatePresence>
         {showLoginModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
             onClick={() => setShowLoginModal(false)}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            <div
               className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 relative"
               onClick={(e) => e.stopPropagation()}
             >
@@ -560,8 +555,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                   </Link>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
       </AnimatePresence>
     </div>
