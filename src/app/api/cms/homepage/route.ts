@@ -49,13 +49,51 @@ const DEFAULT_HOMEPAGE = {
   }
 };
 
+function normalizeStats(stats: unknown) {
+  if (!Array.isArray(stats) || stats.length === 0) return DEFAULT_HOMEPAGE.stats;
+  const first = stats[0] as { number?: unknown; value?: unknown; label?: { ar?: string; en?: string } };
+  if (first.number !== undefined) return stats;
+  return stats.map((s) => {
+    const item = s as { value?: unknown; label?: { ar?: string; en?: string } };
+    return {
+      number: String(item.value ?? ''),
+      labelAr: item.label?.ar ?? '',
+      labelEn: item.label?.en ?? '',
+    };
+  });
+}
+
+function normalizeHomepageData(raw: unknown) {
+  const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const hero = (data.hero && typeof data.hero === 'object' ? data.hero : {}) as Record<string, unknown>;
+  const whyUs = Array.isArray(data.whyUs) && data.whyUs.length ? data.whyUs : DEFAULT_HOMEPAGE.whyUs;
+  const steps = Array.isArray(data.steps) && data.steps.length ? data.steps : DEFAULT_HOMEPAGE.steps;
+  const testimonials =
+    Array.isArray(data.testimonials) && data.testimonials.length
+      ? data.testimonials
+      : DEFAULT_HOMEPAGE.testimonials;
+  const faq = Array.isArray(data.faq) && data.faq.length ? data.faq : DEFAULT_HOMEPAGE.faq;
+  const seo = (data.seo && typeof data.seo === 'object' ? data.seo : {}) as Record<string, unknown>;
+  return {
+    ...DEFAULT_HOMEPAGE,
+    ...data,
+    hero: { ...DEFAULT_HOMEPAGE.hero, ...hero },
+    stats: normalizeStats(data.stats),
+    whyUs,
+    steps,
+    testimonials,
+    faq,
+    seo: { ...DEFAULT_HOMEPAGE.seo, ...seo },
+  };
+}
+
 export async function GET() {
   try {
     const content = await prisma.siteContent.findUnique({
       where: { section: 'homepage' },
     });
 
-    const data = content ? content.data : DEFAULT_HOMEPAGE;
+    const data = content ? normalizeHomepageData(content.data) : DEFAULT_HOMEPAGE;
     return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(
@@ -77,7 +115,7 @@ export async function PUT(request: NextRequest) {
       create: { section: 'homepage', data: body, updatedAt: new Date() },
     });
 
-    return NextResponse.json({ success: true, data: content.data });
+    return NextResponse.json({ success: true, data: normalizeHomepageData(content.data) });
   } catch (error) {
     return NextResponse.json(
       { success: false, data: {}, error: error instanceof Error ? 'An error occurred' : 'Failed to update homepage content' },
