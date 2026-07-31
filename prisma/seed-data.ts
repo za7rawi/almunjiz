@@ -5,7 +5,7 @@ async function seedData() {
   console.log('Seeding payment gateways...');
   const gateways: {
     name: string; slug: string; provider: GatewayProvider; displayName: string; displayNameEn: string;
-    description: string; descriptionEn: string; isActive: boolean; isDefault: boolean; sortOrder: number;
+    description: string; isActive: boolean; isDefault: boolean; sortOrder: number;
     environment: GatewayEnvironment; supportsApplePay: boolean; supportsGooglePay: boolean;
     supportedCurrencies: string[]; supportedCountries: string[]; publicKey: string; secretKey: string;
   }[] = [
@@ -16,7 +16,6 @@ async function seedData() {
       displayName: 'تاب',
       displayNameEn: 'Tap',
       description: 'بوابة دفع تاب - فيزا وماستركارد وMADA',
-      descriptionEn: 'Tap Payment Gateway - Visa, Mastercard & MADA',
       publicKey: '',
       secretKey: '',
       isActive: false,
@@ -35,7 +34,6 @@ async function seedData() {
       displayName: 'ميسر',
       displayNameEn: 'Moyasar',
       description: 'بوابة دفع ميسر - فيزا وماستركارد وMADA وApple Pay',
-      descriptionEn: 'Moyasar Payment Gateway - Visa, Mastercard, MADA & Apple Pay',
       publicKey: '',
       secretKey: '',
       isActive: false,
@@ -54,7 +52,6 @@ async function seedData() {
       displayName: 'إس تي سي باي',
       displayNameEn: 'STC Pay',
       description: 'محفظة STC Pay للدفع عبر الجوال',
-      descriptionEn: 'STC Pay mobile wallet payment',
       publicKey: '',
       secretKey: '',
       isActive: false,
@@ -73,7 +70,6 @@ async function seedData() {
       displayName: 'تحويل بنكي',
       displayNameEn: 'Bank Transfer',
       description: 'الدفع عبر التحويل البنكي المباشر',
-      descriptionEn: 'Direct bank transfer payment',
       publicKey: '',
       secretKey: '',
       isActive: false,
