@@ -26,7 +26,7 @@ export async function GET() {
     for (const gw of gateways) {
       const existing = await prisma.paymentGateway.findUnique({ where: { slug: gw.slug } });
       if (existing) {
-        await prisma.paymentGateway.update({ where: { slug: gw.slug }, data: gw });
+        await prisma.paymentGateway.update({ where: { slug: gw.slug }, data: gw as never });
         results.push(`Updated gateway: ${gw.slug}`);
       } else {
         await prisma.paymentGateway.create({ data: gw as never });

@@ -1,8 +1,14 @@
 import { prisma } from '../src/lib/prisma';
+import type { GatewayProvider, GatewayEnvironment } from '@prisma/client';
 
 async function seedData() {
   console.log('Seeding payment gateways...');
-  const gateways = [
+  const gateways: {
+    name: string; slug: string; provider: GatewayProvider; displayName: string; displayNameEn: string;
+    description: string; descriptionEn: string; isActive: boolean; isDefault: boolean; sortOrder: number;
+    environment: GatewayEnvironment; supportsApplePay: boolean; supportsGooglePay: boolean;
+    supportedCurrencies: string[]; supportedCountries: string[]; publicKey: string; secretKey: string;
+  }[] = [
     {
       name: 'Tap Payments',
       slug: 'tap',
@@ -84,10 +90,10 @@ async function seedData() {
   for (const gw of gateways) {
     const existing = await prisma.paymentGateway.findUnique({ where: { slug: gw.slug } });
     if (existing) {
-      await prisma.paymentGateway.update({ where: { slug: gw.slug }, data: gw });
+      await prisma.paymentGateway.update({ where: { slug: gw.slug }, data: gw as never });
       console.log(`  Updated gateway: ${gw.slug}`);
     } else {
-      await prisma.paymentGateway.create({ data: gw });
+      await prisma.paymentGateway.create({ data: gw as never });
       console.log(`  Created gateway: ${gw.slug}`);
     }
   }
