@@ -308,7 +308,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
       if (uploadedFiles.length > 0) {
         const uploadFormData = new FormData();
         uploadedFiles.forEach((f) => uploadFormData.append('files', f.file));
-        const uploadRes = await fetch('/api/upload', {
+        const uploadRes = await fetch('/api/upload-files', {
           method: 'POST',
           body: uploadFormData,
         });

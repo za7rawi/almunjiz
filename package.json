@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "npx tsx prisma/seed-data.ts",
+    "seed:admin": "npx tsx prisma/seed-admin.ts",
+    "seed:services": "npx tsx prisma/seed-services.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
