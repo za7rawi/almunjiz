@@ -1,26 +1,40 @@
 import { MetadataRoute } from 'next';
+import { blogsData } from '@/lib/blogs-data';
 
 const BASE_URL = 'https://munjiz.store';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticPages = [
-    { url: BASE_URL, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 1.0 },
-    { url: `${BASE_URL}/ar/services`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.9 },
-    { url: `${BASE_URL}/en/services`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.9 },
-    { url: `${BASE_URL}/ar/about`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${BASE_URL}/en/about`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${BASE_URL}/ar/contact`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${BASE_URL}/en/contact`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${BASE_URL}/ar/faq`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${BASE_URL}/en/faq`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${BASE_URL}/ar/terms`, lastModified: new Date(), changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${BASE_URL}/en/terms`, lastModified: new Date(), changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${BASE_URL}/ar/privacy`, lastModified: new Date(), changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${BASE_URL}/en/privacy`, lastModified: new Date(), changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${BASE_URL}/ar/track-order`, lastModified: new Date(), changeFrequency: 'always' as const, priority: 0.8 },
-    { url: `${BASE_URL}/en/track-order`, lastModified: new Date(), changeFrequency: 'always' as const, priority: 0.8 },
-    { url: `${BASE_URL}/ar/blog`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.6 },
-    { url: `${BASE_URL}/en/blog`, lastModified: new Date(), changeFrequency: 'weekly' as const, priority: 0.6 },
+  const locales = ['ar', 'en'];
+  const mainPages = [
+    { path: '', priority: 1.0, frequency: 'weekly' as const },
+    { path: 'services', priority: 0.9, frequency: 'weekly' as const },
+    { path: 'track-order', priority: 0.8, frequency: 'always' as const },
+    { path: 'about', priority: 0.7, frequency: 'monthly' as const },
+    { path: 'contact', priority: 0.7, frequency: 'monthly' as const },
+    { path: 'faq', priority: 0.6, frequency: 'monthly' as const },
+    { path: 'blog', priority: 0.6, frequency: 'weekly' as const },
+    { path: 'offers', priority: 0.7, frequency: 'weekly' as const },
+    { path: 'terms', priority: 0.3, frequency: 'yearly' as const },
+    { path: 'privacy', priority: 0.3, frequency: 'yearly' as const },
   ];
-  return staticPages;
+
+  const staticPages: MetadataRoute.Sitemap = mainPages.flatMap((page) =>
+    locales.map((locale) => ({
+      url: `${BASE_URL}/${locale}${page.path ? `/${page.path}` : ''}`,
+      lastModified: new Date(),
+      changeFrequency: page.frequency,
+      priority: page.priority,
+    }))
+  );
+
+  const blogPages: MetadataRoute.Sitemap = blogsData.flatMap((post) =>
+    locales.map((locale) => ({
+      url: `${BASE_URL}/${locale}/blog/${post.slug}`,
+      lastModified: new Date(post.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    }))
+  );
+
+  return [...staticPages, ...blogPages];
 }

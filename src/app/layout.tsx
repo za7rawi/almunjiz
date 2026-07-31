@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Tajawal } from "next/font/google";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
 import { SessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const tajawal = Tajawal({
+  variable: "--font-tajawal",
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500", "700", "800", "900"],
   display: "swap",
 });
 
@@ -49,14 +50,57 @@ export const metadata: Metadata = {
   },
 };
 
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "المنجز | AL-MUNJIZ",
+  alternateName: "Al-Munjiz Platform",
+  url: "https://munjiz.store",
+  logo: "https://munjiz.store/logo.jpg",
+  description:
+    "منصة المنجز الرائدة للخدمات الإلكترونية في المملكة العربية السعودية. نقدم حلولاً سريعة وموثوقة تلبي احتياجاتك.",
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: "+962791038472",
+    contactType: "customer service",
+    areaServed: "SA",
+    availableLanguage: ["ar", "en"],
+  },
+  sameAs: ["https://wa.me/962791038472"],
+};
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "المنجز | AL-MUNJIZ",
+  url: "https://munjiz.store",
+  inLanguage: "ar",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: "https://munjiz.store/ar/services?q={search_term_string}",
+    "query-input": "required name=search_term_string",
+  },
+};
+
+function JsonLd({ data }: { data: object }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${inter.variable} h-full antialiased`}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${tajawal.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
+        <JsonLd data={organizationSchema} />
+        <JsonLd data={websiteSchema} />
         <SessionProvider>
           <ToasterProvider />
           {children}

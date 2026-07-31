@@ -3,21 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 const locales = ["ar", "en"];
 const defaultLocale = "ar";
 
-function getLocaleFromHeaders(request: NextRequest): string {
-  const acceptLanguage = request.headers.get("accept-language");
-  if (acceptLanguage) {
-    const preferred = acceptLanguage
-      .split(",")
-      .map((lang) => lang.split(";")[0].trim())
-      .find((lang) => locales.some((l) => lang.startsWith(l)));
-
-    if (preferred) {
-      return locales.find((l) => preferred.startsWith(l)) ?? defaultLocale;
-    }
-  }
-  return defaultLocale;
-}
-
 function isPublicPath(pathname: string): boolean {
   const publicPaths = [
     "/api/",
@@ -74,7 +59,7 @@ async function verifyRoleCookie(cookie: string, secret: string): Promise<string 
   return role;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname) || isStaticAsset(pathname)) {
@@ -91,9 +76,8 @@ export async function middleware(request: NextRequest) {
   );
 
   if (!pathnameHasLocale) {
-    const locale = getLocaleFromHeaders(request);
     const newUrl = new URL(request.url);
-    newUrl.pathname = pathname === '/' ? `/${locale}` : `/${locale}${pathname}`;
+    newUrl.pathname = pathname === '/' ? `/${defaultLocale}` : `/${defaultLocale}${pathname}`;
     return NextResponse.redirect(newUrl);
   }
 
@@ -153,7 +137,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const locale = pathname.startsWith('/en') ? 'en' : 'ar';
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+  requestHeaders.set('x-locale', locale);
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

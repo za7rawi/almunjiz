@@ -3,7 +3,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-tajawal), var(--font-geist-sans), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-geist-mono);
 
   /* AL-MUNJIZ Brand Colors */
@@ -181,6 +181,33 @@ body {
 .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
 .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+/* Hide horizontal scrollbar (for sliders) */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch slider: smooth drag feel */
+.slider-grab {
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+}
+.slider-grab::-webkit-scrollbar {
+  display: none;
+}
+.slider-grab > * {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+.slider-grab.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
 
 /* Premium Animations */
 @keyframes float {

@@ -5,9 +5,8 @@ import { requireAdmin } from '@/lib/admin-auth';
 const DEFAULT_HOMEPAGE = {
   hero: {
     titleAr: "منصة المنجز", titleEn: "Al-Munjiz Platform",
-    subtitleAr: "للخدمات الإلكترونية", subtitleEn: "for Electronic Services",
-    descriptionAr: "حلول سريعة وموثوقة لاحتياجاتك الإلكترونية",
-    descriptionEn: "Fast and reliable solutions for your electronic needs",
+    subtitleAr: "منصتك المتكاملة لخدمات التأشيرات والسفر والأعمال", subtitleEn: "Your integrated platform for visa, travel & business services",
+    descriptionAr: "أنجز معاملاتك بسهولة، بسرعة، وبموثوقية.", descriptionEn: "Complete your transactions easily, quickly, and reliably.",
     button1Ar: "تصفح خدماتنا", button1En: "Browse Services",
     button2Ar: "تتبع طلبك", button2En: "Track Order",
     image: ""
