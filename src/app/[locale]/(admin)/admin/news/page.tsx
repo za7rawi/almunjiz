@@ -79,7 +79,6 @@ export default function AdminNewsPage() {
 
   const fetchNews = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/news');
       const data = await res.json();
       if (data.success) setNews(data.data);
@@ -88,9 +87,12 @@ export default function AdminNewsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchNews(); }, [fetchNews]);
+  useEffect(() => {
+    const load = () => fetchNews();
+    load();
+  }, [fetchNews]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return news;

@@ -54,9 +54,13 @@ export function Accordion({ items, multiple = false, defaultOpen = [], className
             <button
               onClick={() => !item.disabled && toggle(item.id)}
               disabled={item.disabled}
+              aria-expanded={isOpen}
+              aria-controls={`accordion-panel-${item.id}`}
+              id={`accordion-button-${item.id}`}
               className={cn(
                 'flex items-center justify-between w-full px-5 py-4 text-start cursor-pointer',
                 'text-sm font-medium text-slate-900 dark:text-white',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2580eb]/60 focus-visible:ring-inset',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
@@ -77,6 +81,9 @@ export function Accordion({ items, multiple = false, defaultOpen = [], className
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   className="overflow-hidden"
+                  role="region"
+                  aria-labelledby={`accordion-button-${item.id}`}
+                  id={`accordion-panel-${item.id}`}
                 >
                   <div className="px-5 pb-4 text-sm text-slate-600 dark:text-slate-400">
                     {item.content}

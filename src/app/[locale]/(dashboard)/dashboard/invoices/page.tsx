@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, FileText, FolderOpen, Printer, Loader2 } from 'lucide-react'
+import { Search, FileText, FolderOpen, Printer } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { SkeletonTableRows } from '@/components/ui/skeleton'
 import { printInvoice } from '@/lib/print-invoice'
 import { useIsClient } from '@/hooks/use-is-client'
 import { useAuthStore } from '@/store/auth-store'
@@ -130,9 +132,7 @@ export default function InvoicesPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-[#2580eb]" size={32} />
-        </div>
+        <SkeletonTableRows rows={6} />
       ) : error ? (
         <Card glass className="p-12 text-center">
           <FileText size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
@@ -144,20 +144,13 @@ export default function InvoicesPage() {
           </Button>
         </Card>
       ) : filtered.length === 0 ? (
-        <Card glass className="p-12 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 flex items-center justify-center mx-auto mb-4">
-            <FolderOpen size={36} className="text-[#2580eb]/40" />
-          </div>
-          <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">
-            {isAr ? 'لا توجد فواتير' : 'No invoices found'}
-          </p>
-          <p className="text-slate-400 dark:text-slate-500 text-sm">
-            {searchQuery
-              ? (isAr ? 'جرّب تعديل كلمات البحث' : 'Try adjusting your search terms')
-              : (isAr ? 'ستظهر فواتيرك هنا بعد إنشاء طلبات' : 'Your invoices will appear here after creating orders')
-            }
-          </p>
-        </Card>
+        <EmptyState
+          icon={FolderOpen}
+          title={isAr ? 'لا توجد فواتير' : 'No invoices found'}
+          description={searchQuery
+            ? (isAr ? 'جرّب تعديل كلمات البحث' : 'Try adjusting your search terms')
+            : (isAr ? 'ستظهر فواتيرك هنا بعد إنشاء طلبات' : 'Your invoices will appear here after creating orders')}
+        />
       ) : (
         <Card glass padding="none" className="overflow-hidden">
           <div className="overflow-x-auto">

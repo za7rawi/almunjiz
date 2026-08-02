@@ -80,7 +80,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, dueDate, notes, amount, tax } = body;
+    const { status, dueDate, amount, tax } = body;
 
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) {

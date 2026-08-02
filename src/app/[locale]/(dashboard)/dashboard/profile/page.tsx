@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Mail, Phone, Save, Loader2, CheckCircle, AlertCircle, Shield, Camera } from 'lucide-react'
+import { User, Mail, Phone, Save, CheckCircle, AlertCircle, Shield, Camera } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,10 +20,13 @@ export default function ProfilePage() {
   const isAr = language === 'ar'
 
   useEffect(() => {
-    if (user) {
-      setName(user.name)
-      setPhone(user.phone || '')
+    const sync = () => {
+      if (user) {
+        setName(user.name)
+        setPhone(user.phone || '')
+      }
     }
+    sync()
   }, [user])
 
   const handleSave = async () => {

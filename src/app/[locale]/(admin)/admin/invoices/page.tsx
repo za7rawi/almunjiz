@@ -78,7 +78,6 @@ export default function InvoicesPage() {
 
   const fetchInvoices = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/invoices?limit=100');
       const json = await res.json();
       if (json.success && json.data) {
@@ -109,7 +108,12 @@ export default function InvoicesPage() {
     }
   }, [isAr]);
 
-  useEffect(() => { fetchInvoices(); const interval = setInterval(fetchInvoices, 30000); return () => clearInterval(interval); }, [fetchInvoices]);
+  useEffect(() => {
+    const load = () => fetchInvoices();
+    load();
+    const interval = setInterval(fetchInvoices, 30000);
+    return () => clearInterval(interval);
+  }, [fetchInvoices]);
 
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('ALL');
   const [searchQuery, setSearchQuery] = useState('');

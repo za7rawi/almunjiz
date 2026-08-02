@@ -97,8 +97,8 @@
   },
   "auth": {
     "login": {
-      "title": "Login",
-      "subtitle": "Enter your credentials to access your account",
+      "title": "Welcome Back",
+      "subtitle": "Sign in to access all AL-MUNJIZ services and easily track your orders.",
       "phone": "Phone Number",
       "phonePlaceholder": "05XXXXXXXX",
       "password": "Password",
@@ -106,13 +106,13 @@
       "forgotPassword": "Forgot password?",
       "loginButton": "Login",
       "orLoginWith": "Or login with",
-      "otpLogin": "Login with OTP",
+      "otpLogin": "Login with a verification code",
       "noAccount": "Don't have an account?",
       "createAccount": "Create a new account"
     },
     "register": {
-      "title": "Create Account",
-      "subtitle": "Join AL-MUNJIZ platform now",
+      "title": "Create Your AL-MUNJIZ Account",
+      "subtitle": "Create an account to benefit from all visa, travel and business services and manage your requests in one place.",
       "name": "Full Name",
       "email": "Email",
       "phone": "Phone Number",
@@ -125,8 +125,8 @@
       "login": "Login"
     },
     "otp": {
-      "title": "Verify Code",
-      "subtitle": "Enter the 6-digit code sent to your phone",
+      "title": "Verify Your Identity",
+      "subtitle": "Enter the verification code we sent to your email to complete the sign-in process",
       "verify": "Verify",
       "resend": "Resend Code",
       "resendIn": "Resend in",

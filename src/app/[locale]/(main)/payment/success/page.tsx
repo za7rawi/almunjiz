@@ -13,19 +13,14 @@ import {
   Package,
   CreditCard,
   Calendar,
-  Hash,
   Receipt,
-  Truck,
   CircleDollarSign,
   ShieldCheck,
   User,
   Phone,
   Mail,
-  Percent,
   LayoutDashboard,
-  Download,
   Sparkles,
-  ChevronLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -54,47 +49,53 @@ export default function PaymentSuccessPage() {
   const [paymentVerified, setPaymentVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const searchQuery = orderNumberParam || orderId;
-    if (!searchQuery) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    fetch(`/api/orders?search=${encodeURIComponent(searchQuery)}&limit=1`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success && data.data?.[0]) setOrder(data.data[0]);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const sync = () => {
+      const searchQuery = orderNumberParam || orderId;
+      if (!searchQuery) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      fetch(`/api/orders?search=${encodeURIComponent(searchQuery)}&limit=1`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success && data.data?.[0]) setOrder(data.data[0]);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
+    sync();
   }, [orderId, orderNumberParam]);
 
   useEffect(() => {
-    if (gatewayId && orderId && paymentVerified === null) {
-      setVerifying(true);
-      const txnId = order?.payments?.[0]?.transactionId || paymentId || orderId;
-      fetch('/api/payments/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gatewayId, transactionId: txnId, orderId }),
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          setPaymentVerified(data.success && data.status === 'COMPLETED');
-          if (data.success) {
-            const searchQuery = orderNumberParam || orderId;
-            fetch(`/api/orders?search=${encodeURIComponent(searchQuery)}&limit=1`)
-              .then((r) => r.json())
-              .then((d) => {
-                if (d.success && d.data?.[0]) setOrder(d.data[0]);
-              })
-              .catch(() => {});
-          }
+    const sync = () => {
+      if (gatewayId && orderId && paymentVerified === null) {
+        setVerifying(true);
+        const txnId = order?.payments?.[0]?.transactionId || paymentId || orderId;
+        fetch('/api/payments/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gatewayId, transactionId: txnId, orderId }),
         })
-        .catch(() => setPaymentVerified(false))
-        .finally(() => setVerifying(false));
-    }
-  }, [gatewayId, orderId, paymentVerified, orderNumberParam, paymentId]);
+          .then((r) => r.json())
+          .then((data) => {
+            setPaymentVerified(data.success && data.status === 'COMPLETED');
+            if (data.success) {
+              const searchQuery = orderNumberParam || orderId;
+              fetch(`/api/orders?search=${encodeURIComponent(searchQuery)}&limit=1`)
+                .then((r) => r.json())
+                .then((d) => {
+                  if (d.success && d.data?.[0]) setOrder(d.data[0]);
+                })
+                .catch(() => {});
+            }
+          })
+          .catch(() => setPaymentVerified(false))
+          .finally(() => setVerifying(false));
+      }
+    };
+    sync();
+  }, [gatewayId, orderId, paymentVerified, orderNumberParam, paymentId, order?.payments]);
 
   const isAr = language === 'ar';
   const amount = Number(order?.amount ?? 0);
@@ -190,14 +191,24 @@ export default function PaymentSuccessPage() {
         className="min-h-screen bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-24 pb-16"
         dir={dir}
       >
-        <div className="mx-auto max-w-2xl px-4 flex flex-col items-center justify-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-[#2580eb]/20 border-t-[#2580eb] rounded-full animate-spin" />
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-[#14b8a6] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+        <div className="mx-auto max-w-2xl px-4 flex flex-col items-center">
+          <div className="w-24 h-24 rounded-full bg-slate-200/70 animate-pulse mb-8" />
+          <div className="w-2/3 h-7 rounded-xl bg-slate-200/70 animate-pulse mb-3" />
+          <div className="w-full h-4 rounded-lg bg-slate-200/50 animate-pulse mb-8" />
+          <div className="w-full rounded-3xl border border-slate-100 bg-white/80 shadow-sm overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100 space-y-3">
+              <div className="w-1/3 h-5 rounded-lg bg-slate-200/70 animate-pulse" />
+              <div className="w-1/2 h-4 rounded-lg bg-slate-200/50 animate-pulse" />
+            </div>
+            <div className="px-6 py-6 space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="w-1/4 h-4 rounded-lg bg-slate-200/50 animate-pulse" />
+                  <div className="w-1/3 h-4 rounded-lg bg-slate-200/60 animate-pulse" />
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="mt-6 text-slate-500 text-sm font-medium">
-            {isAr ? 'جاري تحميل تفاصيل الطلب...' : 'Loading order details...'}
-          </p>
         </div>
       </div>
     );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, Search, HelpCircle, MessageSquare, CreditCard, User, LifeBuoy, Loader2 } from 'lucide-react'
+import { ChevronDown, Search, HelpCircle, MessageSquare, CreditCard, User, LifeBuoy } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { useLanguageStore } from '@/store/language-store'
@@ -121,8 +121,13 @@ export default function FAQPage() {
 
         {/* FAQ Items */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={32} className="animate-spin text-[#2580eb]" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-slate-200 p-5 space-y-2">
+                <div className="h-4 w-3/4 rounded-lg bg-slate-200 animate-pulse" />
+                <div className="h-3 w-1/2 rounded-lg bg-slate-200/60 animate-pulse" />
+              </div>
+            ))}
           </div>
         ) : loadError ? (
           <Card glass className="p-12 text-center">

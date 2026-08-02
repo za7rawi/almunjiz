@@ -151,9 +151,8 @@ export class MyFatoorahProvider extends PaymentProvider {
     };
   }
 
-  async verifyWebhookSignature(_payload: WebhookPayload): Promise<boolean> {
-    if (!this.config.webhookSecret) return true;
-    return true;
+  async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
+    return this.verifyHmacSignature(payload, 'x-myfatoorah-signature');
   }
 
   private mapStatus(status: string): PaymentVerification['status'] {

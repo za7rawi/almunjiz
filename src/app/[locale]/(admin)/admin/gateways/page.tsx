@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Plus,
   CreditCard,
-  Globe,
   Trash2,
   Edit,
   Zap,
@@ -13,7 +12,6 @@ import {
   Shield,
   Star,
   CheckCircle2,
-  XCircle,
   Settings,
   Loader2,
   ToggleRight,
@@ -138,7 +136,6 @@ export default function GatewaysPage() {
 
   const fetchGateways = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/admin/gateways');
       const data = await res.json();
       if (data.success) setGateways(data.data);
@@ -148,9 +145,12 @@ export default function GatewaysPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchGateways(); }, [fetchGateways]);
+  useEffect(() => {
+    const load = () => fetchGateways();
+    load();
+  }, [fetchGateways]);
 
   const filteredGateways = gateways.filter((gw) => {
     if (!searchQuery) return true;

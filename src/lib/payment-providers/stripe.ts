@@ -183,7 +183,7 @@ export class StripeProvider extends PaymentProvider {
 
   async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
     const secret = this.config.webhookSecret;
-    if (!secret) return true;
+    if (!secret) return false;
 
     const signatureHeader = payload.headers['stripe-signature'];
     if (!signatureHeader) return false;

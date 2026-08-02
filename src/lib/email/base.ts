@@ -56,10 +56,10 @@ export function baseLayout(opts: {
 
           <!-- Footer -->
           <tr>
-            <td style="background:#f9fafb;border-top:1px solid #eef0f2;padding:24px 32px;text-align:center;">
-              <p style="color:#999;font-size:11px;margin:0 0 8px 0;">فريق المنجز للخدمات الإلكترونية</p>
-              <a href="${SITE_URL}" style="color:${accent};font-size:12px;font-weight:600;text-decoration:none;">${SITE_URL}</a>
-              <p style="color:#bbb;font-size:10px;margin:12px 0 0 0;">© ${YEAR} المنجز AL-MUNJIZ. جميع الحقوق محفوظة.</p>
+            <td style="background:#f9fafb;border-top:1px solid #eef0f2;padding:28px 32px;text-align:center;">
+              <p style="color:#1a1a2e;font-size:13px;font-weight:700;margin:0 0 4px 0;">منصة المنجز للخدمات الإلكترونية</p>
+              <a href="${SITE_URL}" style="color:${accent};font-size:12px;font-weight:600;text-decoration:none;">${SITE_URL.replace(/^https?:\/\//, "")}</a>
+              <p style="color:#bbb;font-size:10px;margin:12px 0 0 0;">© ${YEAR} AL-MUNJIZ. جميع الحقوق محفوظة.</p>
             </td>
           </tr>
 
@@ -93,7 +93,7 @@ export function infoRow(label: string, value: string, accent?: string): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
     <tr>
       <td class="info-label" style="padding:12px 16px;background:#f7f8fa;border-radius:8px 0 0 8px;width:120px;text-align:right;vertical-align:middle;">
-        <span style="color:#888;font-size:13px;font-weight:600;">${label}</span>
+        <span style="color:${c};font-size:13px;font-weight:600;">${label}</span>
       </td>
       <td class="info-value" style="padding:12px 16px;background:#f7f8fa;border-radius:0 8px 8px 0;text-align:left;vertical-align:middle;">
         <span style="color:#1a1a2e;font-size:15px;font-weight:700;direction:ltr;display:inline-block;">${value}</span>
@@ -128,7 +128,11 @@ export function statusBadge(text: string, color: string): string {
 
 export function footerNote(): string {
   return `
-  <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #eef0f2;">
-    <p style="color:#999;font-size:11px;margin:0;">إذا لم تطلب هذا، يمكنك تجاهل هذه الرسالة بأمان.</p>
-  </div>`;
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0 0;">
+    <tr>
+      <td style="background:#fff8f0;border:1px solid #ffedd5;border-radius:10px;padding:12px 16px;">
+        <p style="color:#c2410c;font-size:12px;line-height:1.8;margin:0;text-align:center;font-weight:600;">⚠️ إذا لم تقم بهذا الطلب، يمكنك تجاهل هذه الرسالة بأمان.</p>
+      </td>
+    </tr>
+  </table>`;
 }

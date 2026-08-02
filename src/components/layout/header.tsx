@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogIn,
@@ -11,7 +12,6 @@ import {
   Settings,
   LogOut,
   MessageCircle,
-  Search,
   Menu,
   X,
   Phone,
@@ -79,7 +79,7 @@ export function Header() {
       setMobileOpen(false);
       prevPathnameRef.current = pathname;
     }
-  });
+  }, [pathname]);
 
   const phone = siteSettings.phone || CONTACT_INFO.phone;
   const email = siteSettings.email || CONTACT_INFO.email;
@@ -195,9 +195,9 @@ export function Header() {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center gap-2 md:gap-2.5 p-1.5 md:pr-3 rounded-xl hover:bg-white/[0.08] transition-all duration-300 border border-transparent hover:border-white/10"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-lg shadow-[#2580eb]/30">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-lg shadow-[#2580eb]/30 relative">
                       {user.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                        <Image fill src={user.avatar} alt={user.name} sizes="32px" className="rounded-full object-cover" />
                       ) : (
                         initials
                       )}
@@ -372,14 +372,11 @@ export function Header() {
                     <Link
                       href="/login"
                       onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        'flex-1 inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold rounded-xl',
-                        'bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white',
-                        'shadow-lg shadow-[#2580eb]/25 hover:shadow-xl hover:shadow-[#2580eb]/30',
-                        'transition-all duration-200'
-                      )}
+                      className="flex-1"
                     >
-                      {language === 'ar' ? 'تسجيل الدخول' : 'Login'}
+                      <Button variant="primary" size="md" fullWidth className="font-semibold">
+                        {language === 'ar' ? 'تسجيل الدخول' : 'Login'}
+                      </Button>
                     </Link>
                     <motion.button
                       onClick={handleLangToggle}

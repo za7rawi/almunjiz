@@ -45,6 +45,7 @@ export function Tabs({ tabs, defaultTab, value, onChange, className }: TabsProps
             onClick={() => handleChange(tab.id)}
             className={cn(
               'relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors z-10 cursor-pointer',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2580eb]/60',
               activeTab === tab.id
                 ? 'text-[#2580eb]'
                 : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',

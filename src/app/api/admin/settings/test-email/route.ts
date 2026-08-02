@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
               <p style="color: #94a3b8; margin: 0; font-size: 13px;">
                 📧 البريد المستقبل: ${to}<br/>
                 ⏰ الوقت: ${new Date().toLocaleString('ar-SA', { timeZone: 'Asia/Amman' })}<br/>
-                🔧 الخدمة: Resend
+                🔧 الخدمة: منصة المنجز للخدمات الإلكترونية
               </p>
             </div>
           </div>

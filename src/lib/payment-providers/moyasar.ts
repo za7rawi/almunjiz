@@ -130,8 +130,8 @@ export class MoyasarProvider extends PaymentProvider {
     };
   }
 
-  async verifyWebhookSignature(_payload: WebhookPayload): Promise<boolean> {
-    return true;
+  async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
+    return this.verifyHmacSignature(payload, 'x-moyasar-signature');
   }
 
   private mapStatus(status: string): PaymentVerification['status'] {

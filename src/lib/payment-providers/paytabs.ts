@@ -154,8 +154,8 @@ export class PayTabsProvider extends PaymentProvider {
     };
   }
 
-  async verifyWebhookSignature(_payload: WebhookPayload): Promise<boolean> {
-    return true;
+  async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
+    return this.verifyHmacSignature(payload, 'x-paytabs-signature');
   }
 
   private mapStatus(status: string): PaymentVerification['status'] {

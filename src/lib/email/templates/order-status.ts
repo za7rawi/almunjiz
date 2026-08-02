@@ -3,10 +3,10 @@ import {
   greeting,
   heading,
   textBlock,
-  infoRow,
   statusBadge,
   ctaButton,
   divider,
+  footerNote,
 } from "../base";
 import { SITE_URL } from "@/config";
 
@@ -67,6 +67,7 @@ export function orderStatusTemplate(opts: {
       ${ctaButton("متابعة الطلب 📋", `${SITE_URL}/dashboard/orders`)}
       ${divider()}
       ${textBlock("شكراً لاستخدامك المنجز. نحن نعمل على تقديم أفضل خدمة لك.")}
+      ${footerNote()}
     `,
   });
 }

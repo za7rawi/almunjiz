@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Non-source files (gitignored / tooling / scripts):
+    ".codex-edge-profile/**",
+    "backup/**",
+    "*.cjs",
+    "*.mjs",
+    "lint-output.txt",
   ]),
 ]);
 

@@ -83,7 +83,6 @@ export default function ReviewsPage() {
 
   const fetchReviews = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/reviews');
       const data = await res.json();
       if (data.success) setReviews(data.data);
@@ -94,9 +93,10 @@ export default function ReviewsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchReviews(); }, [fetchReviews]);
-
-  useEffect(() => { setCurrentPage(1); }, [activeStatus, searchQuery]);
+  useEffect(() => {
+    const load = () => fetchReviews();
+    load();
+  }, [fetchReviews]);
 
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
@@ -214,7 +214,7 @@ export default function ReviewsPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setCurrentPage(1); setSearchQuery(e.target.value); }}
             placeholder={isAr ? 'بحث بالاسم، الخدمة، أو التعليق...' : 'Search by name, service, or comment...'}
             className={cn(inputClass, 'ps-10')}
           />
@@ -227,7 +227,7 @@ export default function ReviewsPage() {
             key={tab.id}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setActiveStatus(tab.id)}
+            onClick={() => { setCurrentPage(1); setActiveStatus(tab.id); }}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
               activeStatus === tab.id

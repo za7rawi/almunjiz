@@ -6,6 +6,7 @@ import {
   infoRow,
   ctaButton,
   divider,
+  footerNote,
 } from "../base";
 import { SITE_URL } from "@/config";
 
@@ -38,6 +39,7 @@ export function invoiceTemplate(opts: {
       ${ctaButton("تحميل الفاتورة 📥", `${SITE_URL}/dashboard/invoices`)}
       ${divider()}
       ${textBlock("نتمنى أن نكون عند حسن ظنك.فريق المنجز للخدمات الإلكترونية.")}
+      ${footerNote()}
     `,
   });
 }

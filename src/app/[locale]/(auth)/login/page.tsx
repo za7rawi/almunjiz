@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,10 +10,8 @@ import {
   Eye,
   EyeOff,
   LogIn,
-  ArrowLeft,
   CheckCircle,
   AlertCircle,
-  Loader2,
   KeyRound,
 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
@@ -44,6 +42,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/services';
+  const isExpired = searchParams.get('expired') === '1';
   const { loginEmail } = useAuthStore();
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
@@ -115,7 +114,7 @@ export default function LoginPage() {
         redirect: false,
       });
       if (signInResult?.error) {
-        setErrors({ general: isAr ? 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Failed to create login session. Please try again' });
+        setErrors({ general: isAr ? 'تعذر إتمام تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Unable to complete the sign-in. Please try again' });
         useAuthStore.setState({ user: null, isAuthenticated: false });
         setLoading(false);
         return;
@@ -132,9 +131,23 @@ export default function LoginPage() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="text-center mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'تسجيل الدخول' : 'Sign In'}</h2>
-        <p className="text-white/50 text-sm">{isAr ? 'أدخل بريدك الإلكتروني للمتابعة' : 'Enter your email to continue'}</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'مرحبًا بعودتك' : 'Welcome Back'}</h2>
+        <p className="text-white/50 text-sm">{isAr ? 'سجّل الدخول للوصول إلى جميع خدمات منصة المنجز ومتابعة طلباتك بكل سهولة.' : 'Sign in to access all AL-MUNJIZ services and easily track your orders.'}</p>
       </motion.div>
+
+      <AnimatePresence>
+        {isExpired && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className="mb-5 flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20"
+          >
+            <AlertCircle size={16} className="text-amber-400 shrink-0" />
+            <p className="text-xs text-amber-300">{isAr ? 'انتهت جلستك لأسباب أمنية. يرجى تسجيل الدخول مرة أخرى للمتابعة.' : 'Your session has expired for security reasons. Please sign in again to continue.'}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {errors.general && (

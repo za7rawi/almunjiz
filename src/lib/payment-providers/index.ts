@@ -51,9 +51,10 @@ const providerMap: Record<GatewayProviderSlug, new (config: GatewayConfig) => Pa
 };
 
 export function createPaymentProvider(config: GatewayConfig): PaymentProvider {
-  const Provider = providerMap[config.slug as GatewayProviderSlug];
+  const providerKey = (config.provider || config.slug || '').toLowerCase().trim();
+  const Provider = providerMap[providerKey as GatewayProviderSlug] || providerMap[config.slug as GatewayProviderSlug];
   if (!Provider) {
-    throw new Error(`Unknown payment provider: ${config.slug}`);
+    throw new Error(`Unknown payment provider: ${config.provider || config.slug}`);
   }
   return new Provider(config);
 }
@@ -112,6 +113,7 @@ export function getAvailablePaymentMethods(gateways: Array<{
   displayName?: string;
   displayNameEn?: string;
   slug: string;
+  provider?: string;
   isActive: boolean;
   isDefault: boolean;
   supportsApplePay?: boolean;
@@ -122,21 +124,39 @@ export function getAvailablePaymentMethods(gateways: Array<{
   return gateways
     .filter((g) => g.isActive)
     .sort((a, b) => (a.isDefault ? -1 : b.isDefault ? 1 : 0))
-    .map((g) => ({
-      id: g.id,
-      name: g.displayName || g.displayNameEn || g.name || g.slug,
-      slug: g.slug,
-      type: (BNPL_PROVIDERS.includes(g.slug) ? 'bnpl' : 'card') as PaymentMethodDisplay['type'],
-      supportedMethods: getSupportedMethods(g.slug),
-      isDefault: g.isDefault,
-      supportsApplePay: g.supportsApplePay || false,
-      supportsGooglePay: g.supportsGooglePay || false,
-      supportsInstallments: g.supportsInstallments || false,
-      logo: g.logo,
-    }));
+    .map((g) => {
+      const key = resolveProviderSlug(g.provider, g.slug);
+      return {
+        id: g.id,
+        name: g.displayName || g.displayNameEn || g.name || g.slug,
+        slug: g.slug,
+        type: (BNPL_PROVIDERS.includes(key) ? 'bnpl' : 'card') as PaymentMethodDisplay['type'],
+        supportedMethods: getSupportedMethods(key),
+        isDefault: g.isDefault,
+        supportsApplePay: g.supportsApplePay || false,
+        supportsGooglePay: g.supportsGooglePay || false,
+        supportsInstallments: g.supportsInstallments || false,
+        logo: g.logo,
+      };
+    });
 }
 
-function getSupportedMethods(slug: string): string[] {
+export function resolveProviderSlug(provider?: string | null, slug?: string | null): string {
+  const candidates = [provider, slug];
+  for (const value of candidates) {
+    if (!value) continue;
+    const normalized = value.toLowerCase().trim().split(/[-\s_]+/)[0];
+    if (normalized in providerMap) return normalized;
+  }
+  for (const value of candidates) {
+    if (!value) continue;
+    const normalized = value.toLowerCase().trim();
+    if (normalized in providerMap) return normalized;
+  }
+  return (slug || provider || '').toLowerCase().trim();
+}
+
+function getSupportedMethods(key: string): string[] {
   const methods: Record<string, string[]> = {
     tap: ['Visa', 'Mastercard', 'Mada', 'Apple Pay'],
     moyasar: ['Visa', 'Mastercard', 'Mada'],
@@ -149,5 +169,5 @@ function getSupportedMethods(slug: string): string[] {
     tabby: ['تقسيط - Tabby'],
     custom: ['Custom'],
   };
-  return methods[slug] || ['Card'];
+  return methods[key] || ['Card'];
 }

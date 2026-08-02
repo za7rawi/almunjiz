@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -45,15 +46,17 @@ function Avatar({ src, alt = '', name = '', size = 'md', online, className }: Av
       <div
         className={cn(
           s.container,
-          'rounded-full flex items-center justify-center overflow-hidden',
+          'relative rounded-full flex items-center justify-center overflow-hidden',
           'bg-gradient-to-br from-[#2580eb] to-[#7c3aed] text-white font-semibold ring-2 ring-white dark:ring-slate-900',
         )}
       >
         {showImage ? (
-          <img
+          <Image
+            fill
             src={src}
             alt={alt}
-            className="w-full h-full object-cover"
+            sizes="128px"
+            className="object-cover"
             onError={() => setImgError(true)}
           />
         ) : (

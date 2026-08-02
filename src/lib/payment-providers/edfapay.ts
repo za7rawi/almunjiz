@@ -163,7 +163,7 @@ export class EdfaPayProvider extends PaymentProvider {
 
   async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
     const secret = this.config.webhookSecret;
-    if (!secret) return true;
+    if (!secret) return false;
 
     const signature = payload.headers['x-edfapay-signature'];
     if (!signature) return false;

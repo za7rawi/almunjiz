@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Clock, DollarSign, CheckCircle, FileText,
@@ -221,7 +222,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
       {/* Hero Section */}
       <div className={`relative overflow-hidden ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} text-white min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] flex items-center`}>
         {service.image && (
-          <img src={service.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+          <Image fill src={service.image} alt="" className="object-cover" sizes="100vw" />
         )}
         {service.image && <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />}
         {!service.image && <div className="absolute inset-0 bg-black/10" />}

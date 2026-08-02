@@ -5,16 +5,15 @@ import { Toaster } from 'sonner';
 export function ToasterProvider() {
   return (
     <Toaster
-      position="top-left"
+      position="top-center"
       dir="rtl"
+      gap={10}
+      offset={16}
       toastOptions={{
-        duration: 4000,
-        style: {
-          background: 'var(--background)',
-          color: 'var(--foreground)',
-          border: '1px solid var(--border)',
-        },
+        duration: 4500,
       }}
+      style={{ zIndex: 9999 }}
+      containerAriaLabel="الإشعارات"
     />
   );
 }

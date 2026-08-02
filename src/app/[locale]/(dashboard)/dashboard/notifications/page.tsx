@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Package, CreditCard, AlertCircle, CheckCircle2, Trash2, CheckCheck, Loader2 } from 'lucide-react'
+import { Bell, Package, CreditCard, AlertCircle, CheckCircle2, CheckCheck } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { SkeletonList } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/store/auth-store'
 import { useLanguageStore } from '@/store/language-store'
 
@@ -71,7 +73,10 @@ export default function NotificationsPage() {
   ]
 
   useEffect(() => {
-    if (!user?.id) { setLoading(false); return }
+    if (!user?.id) {
+      Promise.resolve().then(() => setLoading(false))
+      return
+    }
     fetch('/api/notifications?limit=100', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => { if (data.success && Array.isArray(data.data)) setNotifications(data.data) })
@@ -115,14 +120,14 @@ export default function NotificationsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-[#2580eb]" size={32} /></div>
+        <SkeletonList items={5} />
       ) : filtered.length === 0 ? (
-        <Card padding="lg">
-          <div className="py-16 text-center">
-            <Bell size={48} className="mx-auto text-slate-300 mb-3" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'لا توجد إشعارات' : 'No notifications'}</p>
-          </div>
-        </Card>
+        <EmptyState
+          icon={Bell}
+          title={isAr ? 'لا توجد إشعارات' : 'No notifications'}
+          description={isAr ? 'ستظهر هنا إشعارات الطلبات والمدفوعات عند توفرها' : 'Order and payment notifications will appear here'}
+          compact
+        />
       ) : (
         <div className="space-y-3">
           <AnimatePresence>

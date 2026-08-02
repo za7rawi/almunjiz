@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import {
   Search, Package, Clock, CheckCircle, FileText, AlertCircle,
   User, Mail, Phone, CreditCard, Calendar, Hash, Download,
-  File, Image, ChevronLeft, X, Sparkles, MapPin, CircleDollarSign,
+  File, Image as ImageIcon, ChevronLeft, Sparkles, CircleDollarSign,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
@@ -87,7 +88,9 @@ interface OrderData {
 export default function TrackOrderPage() {
   const searchParams = useSearchParams();
   const initialOrder = searchParams.get('order') || '';
+  const initialToken = searchParams.get('token') || '';
   const [orderNumber, setOrderNumber] = useState(initialOrder);
+  const [trackingToken] = useState(initialToken);
   const [foundOrder, setFoundOrder] = useState<OrderData | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
@@ -104,7 +107,8 @@ export default function TrackOrderPage() {
     setFoundOrder(null);
     setError('');
     try {
-      const res = await fetch(`/api/track/${encodeURIComponent(q.trim())}`);
+      const tokenParam = trackingToken ? `&token=${encodeURIComponent(trackingToken)}` : '';
+      const res = await fetch(`/api/track/${encodeURIComponent(q.trim())}?t=${Date.now()}${tokenParam}`);
       const data = await res.json();
       if (data.success && data.data) {
         setFoundOrder(data.data);
@@ -116,14 +120,30 @@ export default function TrackOrderPage() {
     } finally {
       setSearching(false);
     }
-  }, [orderNumber, isAr]);
+  }, [orderNumber, trackingToken, isAr]);
 
   useEffect(() => {
-    if (initialOrder) {
-      setOrderNumber(initialOrder);
-      handleSearch(initialOrder);
-    }
-  }, []);
+    const sync = () => {
+      if (initialOrder) {
+        setOrderNumber(initialOrder);
+        const q = initialOrder.trim();
+        if (!q) return;
+        setSearching(true);
+        setFoundOrder(null);
+        setError('');
+        const tokenParam = initialToken ? `&token=${encodeURIComponent(initialToken)}` : '';
+        fetch(`/api/track/${encodeURIComponent(q)}?t=${Date.now()}${tokenParam}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success && data.data) setFoundOrder(data.data);
+            else setError(data.message || (isAr ? 'لم يتم العثور على الطلب' : 'Order not found'));
+          })
+          .catch(() => setError(isAr ? 'حدث خطأ أثناء البحث' : 'An error occurred while searching'))
+          .finally(() => setSearching(false));
+      }
+    };
+    sync();
+  }, [initialOrder, initialToken, isAr]);
 
   const sc = foundOrder ? orderStatusConfig[foundOrder.status] || { labelAr: foundOrder.status, labelEn: foundOrder.status, variant: 'info' as const, color: '#94a3b8' } : null;
   const pc = foundOrder?.paymentStatus ? paymentStatusConfig[foundOrder.paymentStatus] || { labelAr: foundOrder.paymentStatus, labelEn: foundOrder.paymentStatus, variant: 'info' as const } : null;
@@ -338,13 +358,15 @@ export default function TrackOrderPage() {
                             className="relative h-32 bg-slate-100 dark:bg-slate-700 cursor-pointer group"
                             onClick={() => setPreviewImage(`/api/files/${file.id}`)}
                           >
-                            <img
+                            <Image
+                              fill
                               src={`/api/files/${file.id}`}
                               alt={file.fileName}
-                              className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              className="object-cover group-hover:opacity-80 transition-opacity"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                              <Image size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                              <ImageIcon size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
                             </div>
                           </div>
                         ) : isPdfFile(file.mimeType) ? (
@@ -448,9 +470,11 @@ export default function TrackOrderPage() {
               <ChevronLeft size={16} />
               {isAr ? 'إغلاق' : 'Close'}
             </button>
-            <img
+            <Image
               src={previewImage}
               alt={isAr ? 'معاينة' : 'Preview'}
+              width={1600}
+              height={900}
               className="w-full h-auto max-h-[85vh] object-contain rounded-xl"
             />
           </div>

@@ -12,6 +12,8 @@ const DEFAULT_SEO = {
 };
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const setting = await prisma.settings.findUnique({ where: { key: SEO_KEY } });
 

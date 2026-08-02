@@ -4,18 +4,18 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 const DEFAULT_HOMEPAGE = {
   hero: {
-    titleAr: "منصة المنجز", titleEn: "Al-Munjiz Platform",
-    subtitleAr: "منصتك المتكاملة لخدمات التأشيرات والسفر والأعمال", subtitleEn: "Your integrated platform for visa, travel & business services",
-    descriptionAr: "أنجز معاملاتك بسهولة، بسرعة، وبموثوقية.", descriptionEn: "Complete your transactions easily, quickly, and reliably.",
-    button1Ar: "تصفح خدماتنا", button1En: "Browse Services",
-    button2Ar: "تتبع طلبك", button2En: "Track Order",
+    badgeAr: "منصة المنجز", badgeEn: "AL-MUNJIZ Platform",
+    titleAr: "منصتك المتكاملة لخدمات التأشيرات والسفر والأعمال", titleEn: "Your all-in-one platform for visas, travel & business services",
+    descriptionAr: "أنجز معاملاتك بسهولة، بسرعة، وبموثوقية من خلال منصة إلكترونية تجمع جميع خدمات التأشيرات والسفر والأعمال في مكان واحد.", descriptionEn: "Complete your transactions easily, quickly, and reliably through an electronic platform that brings all visa, travel and business services into one place.",
+    button1Ar: "تصفح الخدمات", button1En: "Browse Services",
+    button2Ar: "تتبع الطلب", button2En: "Track Order",
     image: ""
   },
   stats: [
-    { number: "+10,000", labelAr: "عميل", labelEn: "Clients" },
-    { number: "+50,000", labelAr: "طلب", labelEn: "Orders" },
+    { number: "+17", labelAr: "خدمة", labelEn: "Services" },
+    { number: "+500", labelAr: "عميل", labelEn: "Clients" },
     { number: "24/7", labelAr: "دعم", labelEn: "Support" },
-    { number: "%99", labelAr: "رضا", labelEn: "Satisfaction" }
+    { number: "99%", labelAr: "رضا العملاء", labelEn: "Satisfaction" }
   ],
   whyUs: [
     { icon: "Zap", titleAr: "السرعة", titleEn: "Speed", descAr: "ننجز طلباتك في أسرع وقت ممكن", descEn: "We complete your requests in the fastest time" },
@@ -62,9 +62,29 @@ function normalizeStats(stats: unknown) {
   });
 }
 
+function normalizeHero(raw: unknown) {
+  const hero = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const merged = { ...DEFAULT_HOMEPAGE.hero, ...hero };
+  const isLegacyBadge =
+    hero.badgeAr === undefined &&
+    (hero.titleAr === 'منصة المنجز' || hero.titleAr === 'Al-Munjiz Platform');
+  if (isLegacyBadge) {
+    merged.badgeAr = String(hero.titleAr ?? DEFAULT_HOMEPAGE.hero.badgeAr);
+    merged.badgeEn = String(hero.titleEn ?? DEFAULT_HOMEPAGE.hero.badgeEn);
+    merged.titleAr =
+      typeof hero.subtitleAr === 'string' && hero.subtitleAr
+        ? hero.subtitleAr
+        : DEFAULT_HOMEPAGE.hero.titleAr;
+    merged.titleEn =
+      typeof hero.subtitleEn === 'string' && hero.subtitleEn
+        ? hero.subtitleEn
+        : DEFAULT_HOMEPAGE.hero.titleEn;
+  }
+  return merged;
+}
+
 function normalizeHomepageData(raw: unknown) {
   const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  const hero = (data.hero && typeof data.hero === 'object' ? data.hero : {}) as Record<string, unknown>;
   const whyUs = Array.isArray(data.whyUs) && data.whyUs.length ? data.whyUs : DEFAULT_HOMEPAGE.whyUs;
   const steps = Array.isArray(data.steps) && data.steps.length ? data.steps : DEFAULT_HOMEPAGE.steps;
   const testimonials =
@@ -76,7 +96,7 @@ function normalizeHomepageData(raw: unknown) {
   return {
     ...DEFAULT_HOMEPAGE,
     ...data,
-    hero: { ...DEFAULT_HOMEPAGE.hero, ...hero },
+    hero: normalizeHero(data.hero),
     stats: normalizeStats(data.stats),
     whyUs,
     steps,

@@ -6,6 +6,8 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
 

@@ -9,13 +9,12 @@ import {
   Mail,
   Save,
   Check,
-  Image,
+  Image as ImageIcon,
   X,
   Loader2,
   Search,
   Settings,
   Link2,
-  FileText,
   Shield,
   Bell,
   Database,
@@ -28,7 +27,6 @@ import {
   XCircle,
   Info,
   RefreshCw,
-  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -247,7 +245,7 @@ function UploadArea({
       {uploading ? (
         <Loader2 size={28} className="mx-auto text-[#2580eb] mb-2 animate-spin" />
       ) : (
-        <Image size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+        <ImageIcon size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
       )}
       <p className="text-sm text-slate-500">{uploading ? (isAr ? 'جاري التحميل...' : 'Uploading...') : (isAr ? 'اسحب هنا أو اضغط للتحميل' : 'Drag here or click to upload')}</p>
       <p className="text-xs text-slate-400 mt-1">{isAr ? 'PNG, SVG, JPG (حد أقصى 2MB)' : 'PNG, SVG, JPG (max 2MB)'}</p>
@@ -278,7 +276,6 @@ export default function SettingsPage() {
   const [testingGateways, setTestingGateways] = useState(false);
   const [gatewayResults, setGatewayResults] = useState<{ total: number; passed: number; partial: number; failed: number } | null>(null);
 
-  const [backupCounts, setBackupCounts] = useState<Record<string, number> | null>(null);
   const [exportingBackup, setExportingBackup] = useState(false);
 
   const { language } = useLanguageStore();
@@ -316,16 +313,16 @@ export default function SettingsPage() {
         e.returnValue = '';
       }
     };
+    const pendingTimers = toastTimerRef.current;
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      toastTimerRef.current.forEach(clearTimeout);
+      pendingTimers.forEach(clearTimeout);
     };
   }, [hasUnsavedChanges]);
 
   const fetchSettings = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/settings', { cache: 'no-store' });
       const data = await res.json();
       if (data.success && data.data) {
@@ -335,11 +332,14 @@ export default function SettingsPage() {
       }
     } catch {
       addToast('error', isAr ? 'فشل تحميل الإعدادات' : 'Failed to load settings');
+    } finally {
+      setLoading(false);
     }
   }, [addToast, isAr]);
 
   useEffect(() => {
-    fetchSettings();
+    const load = () => fetchSettings();
+    load();
   }, [fetchSettings]);
 
   const update = (updates: Partial<Settings>) => {
@@ -1078,17 +1078,6 @@ export default function SettingsPage() {
                   {exportingBackup ? (isAr ? 'جاري التصدير...' : 'Exporting...') : (isAr ? 'تحميل النسخة الاحتياطية' : 'Download Backup')}
                 </Button>
               </div>
-
-              {backupCounts && (
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {Object.entries(backupCounts).map(([key, count]) => (
-                    <div key={key} className="text-center p-2 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      <div className="text-lg font-bold text-slate-900 dark:text-white">{count}</div>
-                      <div className="text-xs text-slate-400">{key}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-700">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { $Enums } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
@@ -40,6 +41,8 @@ async function getSystemUserId(): Promise<string> {
 }
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const userId = await getSystemUserId();
     const notifications = await prisma.notification.findMany({
@@ -83,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = await getSystemUserId();
-    const prismaType = (typeMap[type] || 'SYSTEM') as any;
+    const prismaType = (typeMap[type] || 'SYSTEM') as $Enums.NotificationType;
 
     const notification = await prisma.notification.create({
       data: {

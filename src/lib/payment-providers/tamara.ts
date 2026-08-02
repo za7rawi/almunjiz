@@ -172,7 +172,7 @@ export class TamaraProvider extends PaymentProvider {
 
   async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
     const secret = this.config.webhookSecret;
-    if (!secret) return true;
+    if (!secret) return false;
 
     const signature = payload.headers['x-tamara-signature'];
     if (!signature) return false;

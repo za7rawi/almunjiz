@@ -39,8 +39,8 @@ export const RegisterSchema = z
 export const OTPSchema = z.object({
   otp: z
     .string()
-    .length(6, "الرمز يجب أن يكون 6 أرقام / OTP must be 6 digits")
-    .regex(/^\d+$/, "الرمز يجب أن يحتوي على أرقام فقط / OTP must contain only digits"),
+    .length(6, "الرمز يجب أن يكون 6 أرقام / The code must be 6 digits")
+    .regex(/^\d+$/, "الرمز يجب أن يحتوي على أرقام فقط / The code must contain only digits"),
 });
 
 export const OrderSchema = z.object({

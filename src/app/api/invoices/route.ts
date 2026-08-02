@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { customer, email, service, amount, tax, notes, dueDate, status } = body;
+    const { customer, email, amount, tax, dueDate, status } = body;
 
     if (!customer || amount === undefined) {
       return NextResponse.json(

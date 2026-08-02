@@ -3,12 +3,14 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { Package, Search, Eye, Loader2 } from 'lucide-react'
+import { Package, Eye } from 'lucide-react'
 import { useLanguageStore } from '@/store/language-store'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { SkeletonTableRows } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
 import { SearchInput } from '@/components/ui/search-input'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -96,16 +98,14 @@ export default function OrdersPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-[#2580eb]" size={32} /></div>
+        <SkeletonTableRows rows={6} />
       ) : filteredOrders.length === 0 ? (
-        <Card padding="lg">
-          <div className="py-16 text-center">
-            <Package size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">{language === 'ar' ? 'لا توجد طلبات' : 'No orders found'}</h3>
-            <p className="text-sm text-slate-500 mb-4">{language === 'ar' ? 'لم تقم بإنشاء أي طلبات بعد' : "You haven't created any orders yet"}</p>
-            <button onClick={() => router.push('/services')}><Button>{language === 'ar' ? 'تصفح الخدمات' : 'Browse Services'}</Button></button>
-          </div>
-        </Card>
+        <EmptyState
+          icon={Package}
+          title={language === 'ar' ? 'لا توجد طلبات' : 'No orders found'}
+          description={language === 'ar' ? 'لم تقم بإنشاء أي طلبات بعد' : "You haven't created any orders yet"}
+          action={<Button onClick={() => router.push('/services')}>{language === 'ar' ? 'تصفح الخدمات' : 'Browse Services'}</Button>}
+        />
       ) : (
         <div className="space-y-3">
           {filteredOrders.map((order, i) => {

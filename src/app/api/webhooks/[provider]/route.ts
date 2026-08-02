@@ -17,7 +17,13 @@ export async function POST(
     request.headers.forEach((value, key) => { headers[key] = value; });
 
     const gateway = await prisma.paymentGateway.findFirst({
-      where: { slug: providerSlug, isActive: true },
+      where: {
+        isActive: true,
+        OR: [
+          { slug: providerSlug },
+          { provider: providerSlug.toUpperCase() as never },
+        ],
+      },
     });
 
     if (!gateway) {
@@ -63,6 +69,23 @@ export async function POST(
       });
 
       if (payment) {
+        if (
+          webhookResult.amount != null &&
+          Math.abs(Number(webhookResult.amount) - Number(payment.order.total)) > 0.005
+        ) {
+          await writeAuditLog({
+            action: 'webhook.failed',
+            resource: 'Webhook',
+            metadata: {
+              provider: providerSlug,
+              reason: 'Amount mismatch',
+              webhookAmount: webhookResult.amount,
+              orderAmount: payment.order.total,
+            },
+          });
+          return NextResponse.json({ received: false, error: 'Amount mismatch' }, { status: 400 });
+        }
+
         await prisma.payment.update({
           where: { id: payment.id },
           data: {

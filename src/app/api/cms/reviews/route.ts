@@ -3,9 +3,15 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const showAll = searchParams.get('all') === 'true';
+
+  if (showAll) {
+    const auth = await requireAdmin();
+    if ('error' in auth) return auth.error;
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const showAll = searchParams.get('all') === 'true';
     const serviceId = searchParams.get('serviceId');
 
     const where: Record<string, unknown> = {};
@@ -15,7 +21,11 @@ export async function GET(request: NextRequest) {
     const reviews = await prisma.review.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true, email: true, avatar: true } },
+        user: {
+          select: showAll
+            ? { id: true, name: true, email: true, avatar: true }
+            : { id: true, name: true, avatar: true },
+        },
         service: { select: { id: true, name: true, nameEn: true, slug: true } },
       },
       orderBy: { createdAt: 'desc' },

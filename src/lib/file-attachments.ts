@@ -100,8 +100,15 @@ function pickClosestOrder<T extends OrderAttachmentFields>(
 }
 
 function stripInternalFileFields(file: OrphanedFileAttachment): FileAttachmentSummary {
-  const { userId: _userId, ...publicFile } = file;
-  return publicFile;
+  return {
+    id: file.id,
+    fileName: file.fileName,
+    fileUrl: file.fileUrl,
+    fileType: file.fileType,
+    mimeType: file.mimeType,
+    fileSize: file.fileSize,
+    uploadedAt: file.uploadedAt,
+  };
 }
 
 export async function recoverFileAttachmentsForOrder<T extends OrderAttachmentFields>(

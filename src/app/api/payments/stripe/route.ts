@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import Stripe from 'stripe';
+import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/admin-auth';
+import { computeOrderPricing, amountsMatch } from '@/lib/pricing';
 
 interface PaymentIntentRequest {
   amount: number;
@@ -9,6 +11,7 @@ interface PaymentIntentRequest {
   customerEmail: string;
   customerName: string;
   description: string;
+  promoCode?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -18,9 +21,9 @@ export async function POST(request: NextRequest) {
   try {
     const body: PaymentIntentRequest = await request.json();
 
-    const { amount, currency, serviceId, customerEmail, customerName, description } = body;
+    const { currency, serviceId, customerEmail, customerName, description } = body;
 
-    if (!amount || !currency || !serviceId || !customerEmail || !customerName) {
+    if (!serviceId || !customerEmail || !customerName) {
       return Response.json(
         { error: 'جميع الحقول مطلوبة' },
         { status: 400 },
@@ -34,12 +37,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const service = await prisma.service.findUnique({ where: { id: serviceId } });
+    if (!service || !service.isActive) {
+      return Response.json({ error: 'Service not found' }, { status: 400 });
+    }
+
+    const pricing = await computeOrderPricing(Number(service.price), null);
+
+    const clientAmount = body.amount !== undefined && body.amount !== null ? Number(body.amount) : null;
+    if (clientAmount !== null && !amountsMatch(clientAmount, pricing.total)) {
+      return Response.json(
+        { error: 'Amount validation failed. Refresh and try again.' },
+        { status: 400 },
+      );
+    }
+
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2026-06-24.dahlia',
     });
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
+      amount: Math.round(pricing.total * 100),
       currency,
       automatic_payment_methods: { enabled: true },
       metadata: {
@@ -54,6 +72,7 @@ export async function POST(request: NextRequest) {
     return Response.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      amount: pricing.total,
     });
   } catch (error) {
     console.error('Stripe payment error:', error);

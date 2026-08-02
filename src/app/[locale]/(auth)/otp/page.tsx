@@ -135,7 +135,7 @@ export default function OtpPage() {
         });
         if (signInResult?.error) {
           setError(true);
-          setErrorMsg(isAr ? 'فشل إنشاء جلسة تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Failed to create login session. Please try again');
+          setErrorMsg(isAr ? 'تعذر إتمام تسجيل الدخول. يرجى المحاولة مرة أخرى' : 'Unable to complete the sign-in. Please try again');
           useAuthStore.setState({ user: null, isAuthenticated: false });
           setLoading(false);
           return;
@@ -230,8 +230,8 @@ export default function OtpPage() {
         >
           <Shield className="w-8 h-8 text-white" />
         </motion.div>
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'التحقق من الرمز' : 'Verify Code'}</h2>
-        <p className="text-white/50 text-sm mb-3">{isAr ? 'أدخل الرمز المكون من 6 أرقام المرسل إلى' : 'Enter the 6-digit code sent to'}</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'التحقق من هويتك' : 'Verify Your Identity'}</h2>
+        <p className="text-white/50 text-sm mb-3">{isAr ? 'أدخل رمز التحقق الذي أرسلناه إلى بريدك الإلكتروني لإكمال عملية تسجيل الدخول.' : 'Enter the verification code we sent to your email to complete the sign-in process.'}</p>
         <div className="flex items-center justify-center gap-2">
           <Mail size={16} className="text-[#14b8a6]" />
           <p className="text-white font-semibold text-base tracking-wider" dir="ltr">{maskedEmail}</p>
@@ -288,8 +288,8 @@ export default function OtpPage() {
                 <CheckCircle2 className="w-10 h-10 text-emerald-400" />
               </motion.div>
             </motion.div>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-white font-semibold text-lg">{isAr ? 'تم التحقق بنجاح!' : 'Verified successfully!'}</motion.p>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-white/50 text-sm mt-1">{isAr ? 'جاري التحويل إلى لوحة التحكم...' : 'Redirecting to dashboard...'}</motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-white font-semibold text-lg">{isAr ? 'تمت العملية بنجاح' : 'Operation Completed Successfully'}</motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-white/50 text-sm mt-1">{isAr ? 'تم تنفيذ طلبك بنجاح، ويمكنك الآن المتابعة داخل منصة المنجز.' : 'Your request was completed successfully. You can now continue inside the AL-MUNJIZ platform.'}</motion.p>
           </motion.div>
         )}
       </AnimatePresence>

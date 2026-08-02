@@ -8,13 +8,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Mail, Phone, Upload, X, CreditCard,
   Shield, Tag, FileText, File, FileSpreadsheet, Archive,
-  ImageIcon, Globe, Hash, Wallet, ChevronDown,
+  ImageIcon, Globe, Hash, Wallet,
   AlertCircle, Trash2, Clock, ArrowLeft, ArrowRight,
   CheckCircle2, Sparkles, Info, Zap, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { cn, generateOrderNumber } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useRequestProgressStore } from '@/store/request-progress-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useCurrencyStore } from '@/store/currency-store';
@@ -29,6 +29,7 @@ interface GatewayData {
   displayName?: string;
   displayNameEn?: string;
   slug: string;
+  provider?: string;
   isActive: boolean;
   isDefault: boolean;
   supportsApplePay?: boolean;
@@ -105,7 +106,6 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
 
   const [servicesData, setServicesData] = useState<ServiceData[]>([]);
   const [activeGateways, setActiveGateways] = useState<GatewayData[]>([]);
-  const [gatewaysLoading, setGatewaysLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/services?limit=100')
@@ -117,8 +117,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
       .then((data) => {
         if (data.success) setActiveGateways(data.data);
       })
-      .catch(() => {})
-      .finally(() => setGatewaysLoading(false));
+      .catch(() => {});
   }, []);
 
   const service = useMemo(() => servicesData.find((s) => s.id === id), [id, servicesData]);
@@ -153,45 +152,48 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
   });
 
   useEffect(() => {
-    if (_hydrated && !isAuthenticated) {
-      router.replace(`/login?redirect=/request/${id}`);
-    } else if (_hydrated) {
-      setRedirecting(false);
-      if (user) {
-        setFormData((prev) => ({
-          ...prev,
-          name: user.name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-        }));
-        const saved = getProgress(id, user.id);
-        if (saved) {
+    const sync = () => {
+      if (_hydrated && !isAuthenticated) {
+        router.replace(`/login?redirect=/request/${id}`);
+      } else if (_hydrated) {
+        setRedirecting(false);
+        if (user) {
           setFormData((prev) => ({
             ...prev,
-            name: saved.formData.name || user.name || '',
-            email: saved.formData.email || user.email || '',
-            phone: saved.formData.phone || user.phone || '',
-            phoneCode: saved.formData.phoneCode || '+966',
-            country: saved.formData.country || 'السعودية',
-            idNumber: saved.formData.idNumber || '',
-            residenceNumber: saved.formData.residenceNumber || '',
-            passportNumber: saved.formData.passportNumber || '',
-            companyName: saved.formData.companyName || '',
-            profession: saved.formData.profession || '',
-            workerData: saved.formData.workerCount || '',
-            notes: saved.formData.notes || '',
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
           }));
-          setStep(Math.min(saved.step, 3));
-          if (saved.promoCode) {
-            setPromoCode(saved.promoCode);
-          }
-          if (saved.selectedGatewayId) {
-            setSelectedGatewayId(saved.selectedGatewayId);
+          const saved = getProgress(id, user.id);
+          if (saved) {
+            setFormData((prev) => ({
+              ...prev,
+              name: saved.formData.name || user.name || '',
+              email: saved.formData.email || user.email || '',
+              phone: saved.formData.phone || user.phone || '',
+              phoneCode: saved.formData.phoneCode || '+966',
+              country: saved.formData.country || 'السعودية',
+              idNumber: saved.formData.idNumber || '',
+              residenceNumber: saved.formData.residenceNumber || '',
+              passportNumber: saved.formData.passportNumber || '',
+              companyName: saved.formData.companyName || '',
+              profession: saved.formData.profession || '',
+              workerData: saved.formData.workerCount || '',
+              notes: saved.formData.notes || '',
+            }));
+            setStep(Math.min(saved.step, 3));
+            if (saved.promoCode) {
+              setPromoCode(saved.promoCode);
+            }
+            if (saved.selectedGatewayId) {
+              setSelectedGatewayId(saved.selectedGatewayId);
+            }
           }
         }
       }
-    }
-  }, [_hydrated, isAuthenticated, user, router, id]);
+    };
+    sync();
+  }, [_hydrated, isAuthenticated, user, router, id, getProgress]);
 
   useEffect(() => {
     if (!service || !isAuthenticated || redirecting) return;
@@ -220,7 +222,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
       });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [formData, step, promoCode, selectedGatewayId, uploadedFiles, service, isAuthenticated, redirecting, id, saveProgress]);
+  }, [formData, step, promoCode, selectedGatewayId, uploadedFiles, service, isAuthenticated, redirecting, id, saveProgress, user?.id]);
 
   const price = service?.price || 0;
   const discount = useMemo(() => {
@@ -823,7 +825,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
                             >
                               {f.preview ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={f.preview} alt={f.name} className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-700" />
+                                <img src={f.preview} alt={f.name} loading="lazy" className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-700" />
                               ) : (
                                 <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center">
                                   {getFileIcon(f.type)}

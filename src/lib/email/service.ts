@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || "المنجز | AL-MUNJIZ <noreply@munjiz.store>";
+const FROM_EMAIL = process.env.FROM_EMAIL || "AL-MUNJIZ | المنجز <noreply@munjiz.store>";
 
 let resendClient: Resend | null = null;
 
@@ -61,29 +61,75 @@ export async function sendEmail(
 
 import { otpTemplate } from "./templates/otp";
 import { welcomeTemplate } from "./templates/welcome";
+import { changeEmailTemplate } from "./templates/change-email";
+import { inviteTemplate } from "./templates/invite";
 import { orderCreatedTemplate } from "./templates/order-created";
 import { paymentSuccessTemplate } from "./templates/payment-success";
 import { invoiceTemplate } from "./templates/invoice";
 import { orderStatusTemplate } from "./templates/order-status";
 import { orderCompletedTemplate } from "./templates/order-completed";
 
-export async function sendOtpEmail(
+export async function sendLoginOtpEmail(
   email: string,
   name: string,
   code: string
 ) {
   return sendEmail({
     to: email,
-    subject: "رمز التحقق - المنجز",
-    html: otpTemplate({ customerName: name, code }),
+    subject: "رمز تسجيل الدخول إلى منصة المنجز",
+    html: otpTemplate({ customerName: name, code, purpose: "login" }),
+  });
+}
+
+export async function sendResetPasswordOtpEmail(
+  email: string,
+  name: string,
+  code: string
+) {
+  return sendEmail({
+    to: email,
+    subject: "استعادة كلمة المرور الخاصة بحسابك في منصة المنجز",
+    html: otpTemplate({ customerName: name, code, purpose: "reset" }),
   });
 }
 
 export async function sendWelcomeEmail(email: string, name: string) {
   return sendEmail({
     to: email,
-    subject: "مرحبًا بك في المنجز 🎉",
+    subject: "مرحبًا بك في منصة المنجز | تأكيد بريدك الإلكتروني",
     html: welcomeTemplate({ customerName: name }),
+  });
+}
+
+export async function sendChangeEmailEmail(opts: {
+  email: string;
+  name: string;
+  newEmail?: string;
+}) {
+  return sendEmail({
+    to: opts.email,
+    subject: "تأكيد تغيير البريد الإلكتروني في منصة المنجز",
+    html: changeEmailTemplate({
+      customerName: opts.name,
+      newEmail: opts.newEmail,
+    }),
+  });
+}
+
+export async function sendInviteUserEmail(opts: {
+  email: string;
+  name: string;
+  invitedByName?: string;
+  inviteUrl?: string;
+}) {
+  return sendEmail({
+    to: opts.email,
+    subject: "تمت دعوتك للانضمام إلى منصة المنجز",
+    html: inviteTemplate({
+      customerName: opts.name,
+      invitedByName: opts.invitedByName,
+      inviteUrl: opts.inviteUrl,
+    }),
   });
 }
 
@@ -94,6 +140,7 @@ export async function sendOrderCreatedEmail(opts: {
   serviceName: string;
   amount: string;
   currency?: string;
+  trackingUrl?: string;
 }) {
   return sendEmail({
     to: opts.email,
@@ -104,6 +151,7 @@ export async function sendOrderCreatedEmail(opts: {
       serviceName: opts.serviceName,
       amount: opts.amount,
       currency: opts.currency,
+      trackingUrl: opts.trackingUrl,
     }),
   });
 }

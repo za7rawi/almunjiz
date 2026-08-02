@@ -249,248 +249,241 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-800 flex items-center justify-center px-4">
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="w-full max-w-md"
-      >
-        {/* Step 1: Email */}
-        {step === 'email' && (
-          <>
-            <motion.div variants={itemVariants} className="text-center mb-8">
-              <motion.div
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2580eb] to-[#14b8a6] mb-4 shadow-lg shadow-[#2580eb]/30"
-                initial={{ rotate: -10, scale: 0.8 }}
-                animate={{ rotate: 0, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-              >
-                <KeyRound className="w-8 h-8 text-white" />
-              </motion.div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}</h2>
-              <p className="text-white/50 text-sm">{isAr ? 'أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق لإعادة تعيين كلمة المرور' : 'Enter your email and we will send you a code to reset your password'}</p>
+    <motion.div variants={containerVariants} initial="hidden" animate="visible">
+      {/* Step 1: Email */}
+      {step === 'email' && (
+        <>
+          <motion.div variants={itemVariants} className="text-center mb-8">
+            <motion.div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2580eb] to-[#14b8a6] mb-4 shadow-lg shadow-[#2580eb]/30"
+              initial={{ rotate: -10, scale: 0.8 }}
+              animate={{ rotate: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            >
+              <KeyRound className="w-8 h-8 text-white" />
             </motion.div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'استعادة كلمة المرور الخاصة بحسابك' : 'Reset Your Password'}</h2>
+            <p className="text-white/50 text-sm">{isAr ? 'أدخل بريدك الإلكتروني، وسنرسل إليك رابطًا آمنًا لإعادة تعيين كلمة المرور.' : 'Enter your email and we will send you a secure link to reset your password.'}</p>
+          </motion.div>
 
-            <form onSubmit={handleRequestCode} className="bg-white/[0.05] backdrop-blur-sm border border-white/[0.1] rounded-2xl p-8 space-y-5">
-              <AnimatePresence>
-                {error && (
-                  <motion.div initial={{ opacity: 0, y: -10, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -10, height: 0 }} className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <AlertCircle size={16} className="text-red-400 shrink-0" />
-                    <p className="text-xs text-red-400">{error}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          <form onSubmit={handleRequestCode} className="space-y-5">
+            <AnimatePresence>
+              {error && (
+                <motion.div initial={{ opacity: 0, y: -10, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -10, height: 0 }} className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <AlertCircle size={16} className="text-red-400 shrink-0" />
+                  <p className="text-xs text-red-400">{error}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-              <motion.div variants={itemVariants}>
-                <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                    placeholder="example@email.com"
-                    dir="ltr"
-                    className="w-full pr-10 pl-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white placeholder:text-white/50 text-sm focus:outline-none focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20 transition-all"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={loading}
-                  iconLeft={!loading ? <ArrowRight size={18} /> : undefined}
-                  className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 hover:shadow-2xl hover:shadow-[#2580eb]/30 transition-all duration-300"
-                >
-                  {isAr ? 'إرسال رمز التحقق' : 'Send Verification Code'}
-                </Button>
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="text-center">
-                <Link href="/login" className="text-sm text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">
-                  {isAr ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}
-                </Link>
-              </motion.div>
-            </form>
-          </>
-        )}
-
-        {/* Step 2: OTP + New Password */}
-        {step === 'verify' && (
-          <>
-            <motion.div variants={itemVariants} className="text-center mb-8">
-              <motion.div
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2580eb] to-[#14b8a6] mb-4 shadow-lg shadow-[#2580eb]/30"
-                initial={{ rotate: -10, scale: 0.8 }}
-                animate={{ rotate: 0, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-              >
-                <Shield className="w-8 h-8 text-white" />
-              </motion.div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}</h2>
-              <p className="text-white/50 text-sm mb-3">{isAr ? 'أدخل الرمز المكون من 6 أرقام المرسل إلى' : 'Enter the 6-digit code sent to'}</p>
-              <div className="flex items-center justify-center gap-2">
-                <Mail size={16} className="text-[#14b8a6]" />
-                <p className="text-white font-semibold text-base tracking-wider" dir="ltr">{maskedEmail}</p>
+            <motion.div variants={itemVariants}>
+              <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
+              <div className="relative group">
+                <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                  placeholder="example@email.com"
+                  dir="ltr"
+                  className="w-full pr-10 pl-4 py-3.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white placeholder:text-white/50 text-sm focus:outline-none focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20 transition-all"
+                />
               </div>
             </motion.div>
 
-            <div className="bg-white/[0.05] backdrop-blur-sm border border-white/[0.1] rounded-2xl p-8 space-y-5">
-              {devCode && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-[#14b8a6]/10 border border-[#14b8a6]/20 text-center">
-                  <p className="text-xs text-[#14b8a6] mb-1">{isAr ? 'رمز التحقق للتجربة' : 'Test verification code'}</p>
-                  <p className="text-2xl font-bold text-white tracking-[0.3em] font-mono" dir="ltr">{devCode}</p>
-                  <p className="text-[10px] text-white/30 mt-1">{isAr ? 'هذا الرمز يظهر في وضع التطوير فقط' : 'This code is shown in development mode only'}</p>
-                </motion.div>
-              )}
+            <motion.div variants={itemVariants}>
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={loading}
+                iconLeft={!loading ? <ArrowRight size={18} /> : undefined}
+                className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 hover:shadow-2xl hover:shadow-[#2580eb]/30 transition-all duration-300"
+              >
+                {isAr ? 'إرسال رمز التحقق' : 'Send Verification Code'}
+              </Button>
+            </motion.div>
 
-              {/* OTP Inputs */}
-              <motion.div variants={shakeError ? shakeVariants : undefined} animate={shakeError ? 'shake' : undefined} className="flex justify-center gap-2.5 sm:gap-3">
-                {otp.map((digit, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 20, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: 'spring', stiffness: 300, damping: 20 }}>
-                    <input
-                      ref={(el) => { inputRefs.current[i] = el; }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(i, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(i, e)}
-                      onPaste={handlePaste}
-                      disabled={loading}
-                      className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-xl sm:text-2xl font-bold text-white bg-white/[0.05] border rounded-xl focus:outline-none transition-all duration-300 disabled:opacity-50 ${
-                        error ? 'border-red-500/50 bg-red-500/10' : digit ? 'border-[#2580eb]/50 bg-[#2580eb]/5 shadow-lg shadow-[#2580eb]/10' : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
-                      }`}
-                    />
-                  </motion.div>
-                ))}
+            <motion.div variants={itemVariants} className="text-center">
+              <Link href="/login" className="text-sm text-[#2580eb] hover:text-[#2580eb]/80 transition-colors">
+                {isAr ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}
+              </Link>
+            </motion.div>
+          </form>
+        </>
+      )}
+
+      {/* Step 2: Verification Code + New Password */}
+      {step === 'verify' && (
+        <>
+          <motion.div variants={itemVariants} className="text-center mb-8">
+            <motion.div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2580eb] to-[#14b8a6] mb-4 shadow-lg shadow-[#2580eb]/30"
+              initial={{ rotate: -10, scale: 0.8 }}
+              animate={{ rotate: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            >
+              <Shield className="w-8 h-8 text-white" />
+            </motion.div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'تعيين كلمة مرور جديدة' : 'Set a New Password'}</h2>
+            <p className="text-white/50 text-sm mb-3">{isAr ? 'أدخل رمز التحقق الذي أرسلناه إلى بريدك الإلكتروني ثم حدّد كلمة مرورك الجديدة.' : 'Enter the verification code we sent to your email, then set your new password.'}</p>
+            <div className="flex items-center justify-center gap-2">
+              <Mail size={16} className="text-[#14b8a6]" />
+              <p className="text-white font-semibold text-base tracking-wider" dir="ltr">{maskedEmail}</p>
+            </div>
+          </motion.div>
+
+          <div className="space-y-5">
+            {devCode && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-[#14b8a6]/10 border border-[#14b8a6]/20 text-center">
+                <p className="text-xs text-[#14b8a6] mb-1">{isAr ? 'رمز التحقق للتجربة' : 'Test verification code'}</p>
+                <p className="text-2xl font-bold text-white tracking-[0.3em] font-mono" dir="ltr">{devCode}</p>
+                <p className="text-[10px] text-white/30 mt-1">{isAr ? 'هذا الرمز يظهر في وضع التطوير فقط' : 'This code is shown in development mode only'}</p>
               </motion.div>
+            )}
 
-              <AnimatePresence>
-                {error && (
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center justify-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <AlertCircle size={16} className="text-red-400 shrink-0" />
-                    <p className="text-sm text-red-400">{error}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* New Password Input */}
-              <motion.div variants={itemVariants}>
-                <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'كلمة المرور الجديدة' : 'New Password'}</label>
-                <div className="relative">
-                  <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+            {/* Verification Code Inputs */}
+            <motion.div variants={shakeError ? shakeVariants : undefined} animate={shakeError ? 'shake' : undefined} className="flex justify-center gap-2.5 sm:gap-3">
+              {otp.map((digit, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 20, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: 'spring', stiffness: 300, damping: 20 }}>
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
-                    placeholder="••••••••"
-                    className={`w-full pr-10 pl-12 py-3 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
-                      newPassword && newPassword.length < 8
-                        ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-                        : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(i, e)}
+                    onPaste={handlePaste}
+                    disabled={loading}
+                    className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-xl sm:text-2xl font-bold text-white bg-white/[0.05] border rounded-xl focus:outline-none transition-all duration-300 disabled:opacity-50 ${
+                      error ? 'border-red-500/50 bg-red-500/10' : digit ? 'border-[#2580eb]/50 bg-[#2580eb]/5 shadow-lg shadow-[#2580eb]/10' : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
                     }`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {newPassword && newPassword.length < 8 && (
-                  <p className="text-xs text-white/40 mt-1.5">{isAr ? 'يجب أن تكون 8 أحرف على الأقل' : 'Must be at least 8 characters'}</p>
-                )}
-              </motion.div>
+                </motion.div>
+              ))}
+            </motion.div>
 
-              {/* Submit */}
-              <motion.div variants={itemVariants}>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={loading}
-                  onClick={() => handleVerifyCode(otp.join(''))}
-                  iconLeft={!loading ? <ArrowRight size={18} className="rtl:rotate-180" /> : undefined}
-                  disabled={otp.join('').length < 6 || !newPassword || newPassword.length < 8 || loading}
-                  className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 disabled:opacity-40 disabled:shadow-none transition-all duration-300"
+            <AnimatePresence>
+              {error && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center justify-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <AlertCircle size={16} className="text-red-400 shrink-0" />
+                  <p className="text-sm text-red-400">{error}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* New Password Input */}
+            <motion.div variants={itemVariants}>
+              <label className="block text-sm font-medium text-white/70 mb-2">{isAr ? 'كلمة المرور الجديدة' : 'New Password'}</label>
+              <div className="relative group">
+                <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
+                  placeholder="••••••••"
+                  className={`w-full pr-10 pl-12 py-3.5 rounded-xl bg-white/[0.05] border text-white placeholder:text-white/50 text-sm focus:outline-none transition-all duration-300 ${
+                    newPassword && newPassword.length < 8
+                      ? 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-white/[0.08] focus:border-[#2580eb]/50 focus:ring-2 focus:ring-[#2580eb]/20'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                 >
-                  {isAr ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
-                </Button>
-              </motion.div>
-            </div>
-
-            {/* Resend Timer / Button */}
-            <motion.div variants={itemVariants} className="mt-6 flex flex-col items-center gap-4">
-              {!resendable ? (
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <CircularProgress progress={timerProgress} size={48} strokeWidth={3} />
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{timer}</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-white/40">{isAr ? 'إعادة الإرسال بعد' : 'Resend in'}</p>
-                    <p className="text-xs text-white/40">{timer} {isAr ? 'ثانية' : 'seconds'}</p>
-                  </div>
-                </div>
-              ) : (
-                <motion.button onClick={handleResend} disabled={resending} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2580eb]/10 border border-[#2580eb]/20 text-[#2580eb] text-sm font-semibold hover:bg-[#2580eb]/15 transition-all duration-200 disabled:opacity-50">
-                  {resending ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-                  {isAr ? 'إعادة إرسال الرمز' : 'Resend Code'}
-                </motion.button>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {newPassword && newPassword.length < 8 && (
+                <p className="text-xs text-white/40 mt-1.5">{isAr ? 'يجب أن تكون 8 أحرف على الأقل' : 'Must be at least 8 characters'}</p>
               )}
             </motion.div>
 
-            <motion.div variants={itemVariants} className="mt-6 text-center">
-              <button
-                onClick={() => { setStep('email'); setError(''); setOtp(['', '', '', '', '', '']); setNewPassword(''); }}
-                className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+            {/* Submit */}
+            <motion.div variants={itemVariants}>
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={loading}
+                onClick={() => handleVerifyCode(otp.join(''))}
+                iconLeft={!loading ? <ArrowRight size={18} className="rtl:rotate-180" /> : undefined}
+                disabled={otp.join('').length < 6 || !newPassword || newPassword.length < 8 || loading}
+                className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 disabled:opacity-40 disabled:shadow-none transition-all duration-300"
               >
-                {isAr ? 'تغيير البريد الإلكتروني' : 'Change email'}
-                <ArrowLeft size={14} className="rtl:rotate-180" />
-              </button>
+                {isAr ? 'تعيين كلمة المرور' : 'Set New Password'}
+              </Button>
             </motion.div>
-          </>
-        )}
+          </div>
 
-        {/* Step 3: Success */}
-        {step === 'success' && (
-          <>
-            <motion.div variants={itemVariants} className="text-center mb-8">
-              <motion.div
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 mb-4 shadow-lg shadow-emerald-500/30"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
-              >
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}>
-                  <CheckCircle2 className="w-8 h-8 text-white" />
-                </motion.div>
-              </motion.div>
-              <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'تم إعادة تعيين كلمة المرور!' : 'Password Reset Successfully!'}</motion.h2>
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-white/50 text-sm mb-6">{isAr ? 'يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة' : 'You can now sign in with your new password'}</motion.p>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  onClick={() => router.push('/login')}
-                  iconLeft={<ArrowRight size={18} />}
-                  className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 transition-all duration-300"
-                >
-                  {isAr ? 'تسجيل الدخول' : 'Sign In'}
-                </Button>
+          {/* Resend Timer / Button */}
+          <motion.div variants={itemVariants} className="mt-6 flex flex-col items-center gap-4">
+            {!resendable ? (
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <CircularProgress progress={timerProgress} size={48} strokeWidth={3} />
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{timer}</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-white/40">{isAr ? 'إعادة الإرسال بعد' : 'Resend in'}</p>
+                  <p className="text-xs text-white/40">{timer} {isAr ? 'ثانية' : 'seconds'}</p>
+                </div>
+              </div>
+            ) : (
+              <motion.button onClick={handleResend} disabled={resending} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2580eb]/10 border border-[#2580eb]/20 text-[#2580eb] text-sm font-semibold hover:bg-[#2580eb]/15 transition-all duration-200 disabled:opacity-50">
+                {resending ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+                {isAr ? 'إعادة إرسال الرمز' : 'Resend Code'}
+              </motion.button>
+            )}
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="mt-6 text-center">
+            <button
+              onClick={() => { setStep('email'); setError(''); setOtp(['', '', '', '', '', '']); setNewPassword(''); }}
+              className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+            >
+              {isAr ? 'تغيير البريد الإلكتروني' : 'Change email'}
+              <ArrowLeft size={14} className="rtl:rotate-180" />
+            </button>
+          </motion.div>
+        </>
+      )}
+
+      {/* Step 3: Success */}
+      {step === 'success' && (
+        <>
+          <motion.div variants={itemVariants} className="text-center mb-8">
+            <motion.div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 mb-4 shadow-lg shadow-emerald-500/30"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+            >
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}>
+                <CheckCircle2 className="w-8 h-8 text-white" />
               </motion.div>
             </motion.div>
-          </>
-        )}
-      </motion.div>
-    </div>
+            <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'تمت العملية بنجاح' : 'Operation Completed Successfully'}</motion.h2>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-white/50 text-sm mb-6">{isAr ? 'تم تنفيذ طلبك بنجاح، ويمكنك الآن المتابعة داخل منصة المنجز.' : 'Your request was completed successfully. You can now continue inside the AL-MUNJIZ platform.'}</motion.p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                onClick={() => router.push('/login')}
+                iconLeft={<ArrowRight size={18} />}
+                className="py-4 text-base font-bold rounded-2xl shadow-xl shadow-[#2580eb]/20 transition-all duration-300"
+              >
+                {isAr ? 'تسجيل الدخول' : 'Sign In'}
+              </Button>
+            </motion.div>
+          </motion.div>
+        </>
+      )}
+    </motion.div>
   );
 }

@@ -39,11 +39,11 @@ export function GoogleSignInButton({ mode = 'signin' }: { mode?: 'signin' | 'sig
       className={`
         w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl
         bg-white hover:bg-gray-50 active:bg-gray-100
-        text-slate-800 font-medium text-sm
+        text-slate-800 font-semibold text-sm
         border border-slate-200/60 shadow-lg shadow-black/5
         hover:shadow-xl hover:shadow-black/10 hover:border-slate-300/60
         active:shadow-md
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2580eb]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2580eb]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900
         transition-all duration-200
         disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:shadow-lg
       `}

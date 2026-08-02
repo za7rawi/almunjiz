@@ -152,7 +152,7 @@ export class TapProvider extends PaymentProvider {
 
   async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
     const secret = this.config.webhookSecret;
-    if (!secret) return true;
+    if (!secret) return false;
 
     const signature = payload.headers['x-tap-signature'];
     if (!signature) return false;

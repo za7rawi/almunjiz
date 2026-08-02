@@ -36,7 +36,7 @@ function mapRole(raw: string): User['role'] {
   return 'customer';
 }
 
-function clearUserProgressData(_currentUserId?: string) {
+function clearUserProgressData() {
   try {
     localStorage.removeItem('almunjiz-request-progress');
   } catch {}
@@ -50,7 +50,7 @@ export const useAuthStore = create<AuthStore>()(
       _hydrated: false,
 
       login: (user) => {
-        clearUserProgressData(user.id);
+        clearUserProgressData();
         set({ user, isAuthenticated: true });
       },
 
@@ -77,7 +77,7 @@ export const useAuthStore = create<AuthStore>()(
               provider: 'email',
               createdAt: u.createdAt ?? new Date().toISOString(),
             };
-            clearUserProgressData(user.id);
+            clearUserProgressData();
             set({ user, isAuthenticated: true });
             const isAdmin = user.role === 'admin' || user.role === 'manager';
             return {

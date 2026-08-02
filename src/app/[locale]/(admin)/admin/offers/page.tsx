@@ -82,7 +82,6 @@ export default function AdminOffersPage() {
 
   const fetchOffers = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/offers');
       const data = await res.json();
       if (data.success) setOffers(data.data);
@@ -91,11 +90,12 @@ export default function AdminOffersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchOffers(); }, [fetchOffers]);
-
-  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
+  useEffect(() => {
+    const load = () => fetchOffers();
+    load();
+  }, [fetchOffers]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return offers;

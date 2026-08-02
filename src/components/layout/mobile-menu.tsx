@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
 import { NAVIGATION_LINKS, CONTACT_INFO } from '@/constants';
 import { Logo } from '@/components/ui/logo';
+import { Button } from '@/components/ui/button';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -139,17 +140,10 @@ export function MobileMenu({ isOpen, onClose, currentPath = '' }: MobileMenuProp
                   transition={{ delay: 0.3 }}
                   className="flex gap-3"
                 >
-                  <Link
-                    href="/login"
-                    onClick={onClose}
-                    className={cn(
-                      'flex-1 inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold rounded-xl',
-                      'bg-gradient-to-r from-[#2580eb] to-[#14b8a6] text-white',
-                      'shadow-lg shadow-[#2580eb]/25 hover:shadow-xl hover:shadow-[#2580eb]/30',
-                      'transition-all duration-200',
-                    )}
-                  >
-                    {language === 'ar' ? 'تسجيل الدخول' : 'Login'}
+                  <Link href="/login" onClick={onClose} className="flex-1">
+                    <Button variant="primary" size="md" fullWidth>
+                      {language === 'ar' ? 'تسجيل الدخول' : 'Login'}
+                    </Button>
                   </Link>
                   <motion.button
                     onClick={handleLangToggle}

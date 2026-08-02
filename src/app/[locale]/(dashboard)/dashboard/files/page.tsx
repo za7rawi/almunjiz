@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import {
   Upload,
   FileText,
-  Image,
+  Image as ImageIcon,
   File,
-  Archive,
   Download,
   Trash2,
   Grid3X3,
@@ -17,14 +17,15 @@ import {
   CloudUpload,
   X,
   CheckCircle2,
-  Loader2,
   Eye,
+  Loader2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useAuthStore } from '@/store/auth-store'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useLanguageStore } from '@/store/language-store'
 
 type FileType = 'all' | 'document' | 'image' | 'other'
@@ -62,7 +63,7 @@ function getFileCategory(mimeType: string): 'image' | 'document' | 'other' {
 }
 
 function getFileIcon(category: 'image' | 'document' | 'other', mimeType: string) {
-  if (category === 'image') return <Image size={20} className="text-emerald-500" />
+  if (category === 'image') return <ImageIcon size={20} className="text-emerald-500" />
   if (mimeType.includes('pdf')) return <FileText size={20} className="text-red-500" />
   if (mimeType.includes('word') || mimeType.includes('document'))
     return <FileText size={20} className="text-[#2580eb]" />
@@ -94,7 +95,6 @@ export default function FilesPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const isAr = language === 'ar'
 
@@ -123,8 +123,8 @@ export default function FilesPage() {
   }, [activeTab, search])
 
   useEffect(() => {
-    setLoading(true)
-    fetchFiles()
+    const load = () => fetchFiles()
+    load()
   }, [fetchFiles])
 
   useEffect(() => {
@@ -289,7 +289,7 @@ export default function FilesPage() {
               key={tab.id}
               variant={activeTab === tab.id ? 'primary' : 'ghost'}
               size="sm"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { setLoading(true); setActiveTab(tab.id); }}
               className="whitespace-nowrap"
             >
               {tab.label}
@@ -302,7 +302,7 @@ export default function FilesPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setLoading(true); setSearch(e.target.value); }}
               placeholder={isAr ? 'بحث...' : 'Search...'}
               className="pr-9 pl-4 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/20 transition-all w-48 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-[#2580eb] dark:focus:ring-[#2580eb]/20"
             />
@@ -330,21 +330,22 @@ export default function FilesPage() {
 
       {/* Files Grid / List */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-[#2580eb]" size={32} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-200 p-4 space-y-3">
+              <Skeleton className="h-32 w-full rounded-xl" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+          ))}
         </div>
       ) : files.length === 0 ? (
-        <Card padding="lg">
-          <div className="py-16 text-center">
-            <FolderOpen size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {isAr ? 'لا توجد ملفات' : 'No files'}
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              {isAr ? 'ابدأ برفع ملفاتك الأولى' : 'Start uploading your first files'}
-            </p>
-          </div>
-        </Card>
+        <EmptyState
+          icon={FolderOpen}
+          title={isAr ? 'لا توجد ملفات' : 'No files'}
+          description={isAr ? 'ابدأ برفع ملفاتك الأولى وستظهر هنا' : 'Upload your first files and they will appear here'}
+          action={<Button variant="primary" size="sm" onClick={() => fileInputRef.current?.click()}><CloudUpload size={16} className="ms-1.5" />{isAr ? 'رفع ملف' : 'Upload File'}</Button>}
+        />
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <AnimatePresence>
@@ -368,10 +369,12 @@ export default function FilesPage() {
                           className="w-full h-32 rounded-xl mb-3 bg-slate-100 dark:bg-slate-700 overflow-hidden cursor-pointer relative group/preview"
                           onClick={() => setPreviewUrl(`/api/files/${file.id}?inline=true`)}
                         >
-                          <img
+                          <Image
+                            fill
                             src={`/api/files/${file.id}?inline=true`}
                             alt={file.fileName}
-                            className="w-full h-full object-cover"
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                            className="object-cover"
                           />
                           <div className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/30 transition-colors flex items-center justify-center">
                             <Eye size={20} className="text-white opacity-0 group-hover/preview:opacity-100 transition-opacity" />
@@ -545,9 +548,11 @@ export default function FilesPage() {
               >
                 <X size={24} />
               </button>
-              <img
+              <Image
                 src={previewUrl}
                 alt="Preview"
+                width={1600}
+                height={900}
                 className="w-full h-full object-contain rounded-xl"
               />
             </motion.div>

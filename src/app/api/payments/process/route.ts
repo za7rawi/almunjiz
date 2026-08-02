@@ -14,24 +14,41 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      orderId, gatewayId, amount, currency = 'SAR', description,
+      orderId, gatewayId, description,
       customerName, customerEmail, customerPhone, items, metadata,
       idempotencyKey: clientKey,
     } = body;
 
-    if (!orderId || !gatewayId || !amount || !customerName || !customerEmail) {
+    if (!orderId || !gatewayId || !customerName || !customerEmail) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true, orderNumber: true } });
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { userId: true, orderNumber: true, total: true, currency: true, status: true },
+    });
     if (!order || order.userId !== auth.session.userId) {
       return NextResponse.json(
         { success: false, error: 'غير مصرح / Unauthorized' },
         { status: 403 }
       );
+    }
+
+    const orderTotal = Number(order.total);
+    const currency = order.currency || 'SAR';
+    if (orderTotal <= 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          transactionId: null,
+          amount: 0,
+          paid: false,
+          message: 'Order total is zero; no payment required',
+        },
+      });
     }
 
     const idemKey = clientKey || generateIdempotencyKey();
@@ -86,7 +103,7 @@ export async function POST(request: NextRequest) {
     const paymentParams: CreatePaymentParams = {
       orderId,
       orderNumber: order.orderNumber,
-      amount: Number(amount),
+      amount: orderTotal,
       currency,
       description: description || `Payment for order`,
       customerName,
@@ -102,7 +119,7 @@ export async function POST(request: NextRequest) {
       action: 'payment.created',
       resource: 'Payment',
       resourceId: orderId,
-      metadata: { gatewayId, amount, currency, customerEmail, idempotencyKey: idemKey },
+      metadata: { gatewayId, amount: orderTotal, currency, customerEmail, idempotencyKey: idemKey },
     });
 
     const result = await provider.createPayment(paymentParams);
@@ -128,7 +145,7 @@ export async function POST(request: NextRequest) {
           idempotencyKey: idemKey,
           userId: order?.userId || '',
           gatewayId: gateway.id,
-          amount: Number(amount),
+          amount: orderTotal,
           currency,
           method: paymentMethod as never,
           status: 'PENDING',

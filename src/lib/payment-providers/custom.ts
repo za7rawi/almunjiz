@@ -69,7 +69,8 @@ export class CustomProvider extends PaymentProvider {
     }
   }
 
-  async refundPayment(_params: RefundParams): Promise<RefundResult> {
+  async refundPayment(params: RefundParams): Promise<RefundResult> {
+    void params;
     return {
       success: false,
       error: `Refund not supported by ${this.name}`,
@@ -87,8 +88,8 @@ export class CustomProvider extends PaymentProvider {
     };
   }
 
-  async verifyWebhookSignature(_payload: WebhookPayload): Promise<boolean> {
-    return true;
+  async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
+    return this.verifyHmacSignature(payload, 'x-custom-signature');
   }
 
   protected async onTestConnection(): Promise<void> {

@@ -5,15 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   CreditCard,
   Clock,
-  CheckCircle2,
   RotateCcw,
-  Download,
-  Filter,
-  Loader2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatCard } from '@/components/ui/stat-card'
 import { Badge } from '@/components/ui/badge'
+import { SkeletonTableRows } from '@/components/ui/skeleton'
 import { useLanguageStore } from '@/store/language-store'
 
 interface Payment {
@@ -95,7 +92,7 @@ export default function PaymentsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-[#2580eb]" size={32} /></div>
+        <SkeletonTableRows rows={6} />
       ) : (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { trackLimiter } from "@/lib/rate-limit";
 import { fileAttachmentSelect, recoverFileAttachmentsForOrder } from "@/lib/file-attachments";
+
+const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "EMPLOYEE"];
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +24,15 @@ export async function GET(
     const { orderNumber } = await params;
     const trimmed = decodeURIComponent(orderNumber).trim();
 
-    let order = await prisma.order.findUnique({
+    const session = await getServerSession(authOptions);
+    const sessionUserId = (session?.user as Record<string, unknown> | undefined)?.id as string | undefined;
+    const sessionRole = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
+    const isAdmin = !!sessionRole && ADMIN_ROLES.includes(sessionRole);
+
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get("token");
+
+    const order = await prisma.order.findUnique({
       where: { orderNumber: trimmed },
       include: {
         service: { select: { id: true, name: true, nameEn: true, slug: true } },
@@ -29,19 +41,6 @@ export async function GET(
         fileAttachments: { select: fileAttachmentSelect },
       },
     });
-
-    if (!order) {
-      order = await prisma.order.findFirst({
-        where: { orderNumber: { contains: trimmed, mode: "insensitive" } },
-        include: {
-          service: { select: { id: true, name: true, nameEn: true, slug: true } },
-          invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
-          timeline: { orderBy: { createdAt: "asc" } },
-          fileAttachments: { select: fileAttachmentSelect },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-    }
 
     if (!order) {
       return NextResponse.json(
@@ -55,34 +54,50 @@ export async function GET(
       );
     }
 
+    const metadata = (order.metadata as Record<string, unknown> | null) || {};
+    const orderToken = typeof metadata.trackingToken === "string" ? metadata.trackingToken : null;
+
+    const isOwner = !!sessionUserId && order.userId === sessionUserId;
+    const hasValidToken = !!orderToken && !!token && orderToken === token;
+
     const orderWithAttachments = await recoverFileAttachmentsForOrder(order);
+
+    const base = {
+      orderNumber: orderWithAttachments.orderNumber,
+      status: orderWithAttachments.status,
+      paymentStatus: orderWithAttachments.paymentStatus,
+      service: orderWithAttachments.service,
+      baseAmount: Number(orderWithAttachments.amount),
+      discount: Number(orderWithAttachments.discount),
+      tax: Number(orderWithAttachments.tax),
+      total: Number(orderWithAttachments.total),
+      paymentMethod: orderWithAttachments.paymentMethod,
+      timeline: orderWithAttachments.timeline.map((t) => ({
+        id: t.id,
+        status: t.status,
+        description: t.description,
+        createdAt: t.createdAt,
+      })),
+      createdAt: orderWithAttachments.createdAt,
+      estimatedDelivery: orderWithAttachments.estimatedDelivery,
+      deliveredAt: orderWithAttachments.deliveredAt,
+    };
+
+    const authorized = isAdmin || isOwner || hasValidToken;
+
+    const data = authorized
+      ? {
+          ...base,
+          customerName: orderWithAttachments.customerName,
+          invoice: orderWithAttachments.invoice,
+          fileAttachments: orderWithAttachments.fileAttachments,
+          unresolvedAttachments: orderWithAttachments.unresolvedAttachments,
+        }
+      : base;
 
     return NextResponse.json({
       success: true,
-      data: {
-        orderNumber: orderWithAttachments.orderNumber,
-        status: orderWithAttachments.status,
-        paymentStatus: orderWithAttachments.paymentStatus,
-        customerName: orderWithAttachments.customerName,
-        service: orderWithAttachments.service,
-        baseAmount: Number(orderWithAttachments.amount),
-        discount: Number(orderWithAttachments.discount),
-        tax: Number(orderWithAttachments.tax),
-        total: Number(orderWithAttachments.total),
-        paymentMethod: orderWithAttachments.paymentMethod,
-        invoice: orderWithAttachments.invoice,
-        timeline: orderWithAttachments.timeline.map((t) => ({
-          id: t.id,
-          status: t.status,
-          description: t.description,
-          createdAt: t.createdAt,
-        })),
-        fileAttachments: orderWithAttachments.fileAttachments,
-        unresolvedAttachments: orderWithAttachments.unresolvedAttachments,
-        createdAt: orderWithAttachments.createdAt,
-        estimatedDelivery: orderWithAttachments.estimatedDelivery,
-        deliveredAt: orderWithAttachments.deliveredAt,
-      },
+      data,
       message: "تم جلب معلومات الطلب بنجاح / Order info fetched successfully",
       error: null,
     });

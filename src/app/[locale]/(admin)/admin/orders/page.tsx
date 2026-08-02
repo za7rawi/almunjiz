@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Package, Search, Eye, X, User, Calendar, DollarSign, FileText, Loader2,
-  Phone, Mail, CreditCard, Hash, MessageSquare, Paperclip, Download,
+  Phone, Mail, CreditCard, MessageSquare, Paperclip, Download,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +79,7 @@ export default function OrdersPage() {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isAr]);
 
   const statusTabs = useMemo(() => {
     const counts: Record<string, number> = { ALL: orders.length };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { encrypt, decrypt, encryptGatewayKeys, decryptGatewayKeys } from '@/lib/encryption';
+import { encryptGatewayKeys } from '@/lib/encryption';
 import { writeAuditLog } from '@/lib/audit-log';
 import { requireAdmin } from '@/lib/admin-auth';
 

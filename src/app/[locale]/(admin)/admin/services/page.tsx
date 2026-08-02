@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import {
   Search,
   Plus,
@@ -17,7 +18,6 @@ import {
   GripVertical,
   Loader2,
   Upload,
-  Image as ImageIcon,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -313,7 +313,6 @@ export default function AdminServicesPage() {
 
   const fetchServices = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/services');
       const data = await res.json();
       if (data.success) setServices(data.data);
@@ -323,9 +322,12 @@ export default function AdminServicesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchServices(); }, [fetchServices]);
+  useEffect(() => {
+    const load = () => fetchServices();
+    load();
+  }, [fetchServices]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return services;
@@ -863,8 +865,8 @@ export default function AdminServicesPage() {
                           {isAr ? 'صورة الخدمة' : 'Service Image'}
                         </label>
                         {form.image && (
-                          <div className="relative mb-2 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10">
-                            <img src={form.image} alt="" className="w-full h-40 object-cover" />
+                          <div className="relative mb-2 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 h-40">
+                            <Image fill src={form.image} alt="" sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                             <button
                               onClick={() => setForm((prev: ServiceData) => ({ ...prev, image: null }))}
                               className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-600 transition-colors"

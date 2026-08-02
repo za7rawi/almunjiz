@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, ChevronDown, LogOut, User, Settings, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -73,13 +74,13 @@ export function DashboardHeader({
               onBlur={() => setSearchFocused(false)}
               placeholder={language === 'ar' ? 'بحث...' : 'Search...'}
               className={cn(
-                'w-full h-10 pl-10 pr-4 rounded-xl text-sm',
-                'bg-slate-100 dark:bg-slate-800 border border-transparent',
-                'focus:bg-white dark:focus:bg-slate-800',
-                'focus:border-[#2580eb]/30 focus:ring-2 focus:ring-[#2580eb]/20',
+                'w-full h-10 rounded-xl text-sm',
+                'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10',
+                'focus:bg-white dark:focus:bg-white/10',
+                'focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30',
                 'text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500',
                 'transition-all duration-200 outline-none',
-                isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4',
+                isRtl ? 'pr-4 pl-10' : 'pl-10 pr-4',
               )}
             />
           </motion.div>
@@ -118,9 +119,9 @@ export function DashboardHeader({
                 'border border-transparent hover:border-slate-200 dark:hover:border-slate-700',
               )}
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-xs font-bold shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-xs font-bold shrink-0 relative">
                 {userAvatar ? (
-                  <img src={userAvatar} alt={userName} className="w-full h-full rounded-full object-cover" />
+                  <Image fill src={userAvatar} alt={userName} sizes="32px" className="rounded-full object-cover" />
                 ) : (
                   initials
                 )}

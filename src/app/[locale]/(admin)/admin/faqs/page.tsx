@@ -76,7 +76,6 @@ export default function AdminFaqsPage() {
 
   const fetchFaqs = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/faqs');
       const data = await res.json();
       if (data.success) {
@@ -87,9 +86,12 @@ export default function AdminFaqsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchFaqs(); }, [fetchFaqs]);
+  useEffect(() => {
+    const load = () => fetchFaqs();
+    load();
+  }, [fetchFaqs]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return faqs;

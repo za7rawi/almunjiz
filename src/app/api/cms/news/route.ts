@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const news = await prisma.news.findMany({
       orderBy: { createdAt: 'desc' },

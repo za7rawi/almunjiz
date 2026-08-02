@@ -60,7 +60,7 @@ export default function CustomersPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [isAr]);
 
   const customersList = useMemo<CustomerRow[]>(() => {
     return users.filter((u) => u.role === 'CUSTOMER').map((u) => {
@@ -79,8 +79,6 @@ export default function CustomersPage() {
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, activeStatus]);
 
   const stats = useMemo(() => ({ total: customersList.length, active: customersList.filter((c) => c.status === 'ACTIVE').length, blocked: customersList.filter((c) => c.status === 'BLOCKED').length }), [customersList]);
 
@@ -105,13 +103,13 @@ export default function CustomersPage() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
           <Search size={16} className="absolute top-1/2 -translate-y-1/2 start-3 text-slate-400" />
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={isAr ? 'بحث بالاسم، البريد، أو الهاتف...' : 'Search by name, email, or phone...'} className={cn('w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
+          <input type="text" value={searchQuery} onChange={(e) => { setCurrentPage(1); setSearchQuery(e.target.value); }} placeholder={isAr ? 'بحث بالاسم، البريد، أو الهاتف...' : 'Search by name, email, or phone...'} className={cn('w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200', 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10', 'text-slate-900 dark:text-white placeholder:text-slate-400', 'focus:outline-none focus:border-[#2580eb] focus:ring-2 focus:ring-[#2580eb]/30')} />
         </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         {statusTabs.map((tab) => (
-          <motion.button key={tab.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveStatus(tab.id)} className={cn('flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200', activeStatus === tab.id ? 'bg-[#2580eb] text-white shadow-lg shadow-[#2580eb]/25' : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10')}>
+          <motion.button key={tab.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setCurrentPage(1); setActiveStatus(tab.id); }} className={cn('flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200', activeStatus === tab.id ? 'bg-[#2580eb] text-white shadow-lg shadow-[#2580eb]/25' : 'bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10')}>
             {isAr ? tab.label : tab.labelEn}
           </motion.button>
         ))}

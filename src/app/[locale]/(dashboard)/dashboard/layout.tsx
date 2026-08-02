@@ -29,13 +29,13 @@ export default function DashboardLayout({
       setSidebarOpen(false)
       prevPathnameRef.current = pathname
     }
-  })
+  }, [pathname])
 
   useEffect(() => {
     if (ready && !isAuthenticated) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`)
     }
-  }, [ready, isAuthenticated, router])
+  }, [ready, isAuthenticated, router, pathname])
 
   const prevUserIdRef = useRef<string | undefined>(undefined)
   useEffect(() => {

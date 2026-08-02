@@ -15,14 +15,6 @@ interface ProgressProps {
   className?: string;
 }
 
-const colorStyles: Record<ProgressColor, string> = {
-  blue: 'from-[#2580eb] to-[#2580eb]',
-  turquoise: 'from-[#14b8a6] to-[#14b8a6]',
-  purple: 'from-[#7c3aed] to-[#7c3aed]',
-  green: 'from-emerald-500 to-emerald-500',
-  red: 'from-red-500 to-red-500',
-};
-
 const gradientStyles: Record<ProgressColor, string> = {
   blue: 'bg-gradient-to-r from-[#2580eb] to-[#14b8a6]',
   turquoise: 'bg-gradient-to-r from-[#14b8a6] to-[#2580eb]',

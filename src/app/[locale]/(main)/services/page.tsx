@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
-  Search, Clock, ShoppingCart, ArrowLeft, ArrowRight, Star,
+  Search, Clock, ArrowLeft, ArrowRight, Star,
   Globe, FileText, Car, Plane, Building2, Headphones,
   GraduationCap, Shield, Briefcase, Hotel, Laptop,
   MessageSquare, Home, FileSignature, SearchX, Zap, Heart,
@@ -23,19 +24,6 @@ const iconMap: Record<string, React.ComponentType<Record<string, unknown>>> = {
   MessageSquare, Home, FileSignature,
 };
 
-const categoryColors: Record<string, string> = {
-  VISAS: '#2580eb',
-  CONTRACTS: '#14b8a6',
-  VEHICLES: '#7c3aed',
-  TRAVEL: '#F59E0B',
-  BUSINESS: '#10B981',
-  GOVERNMENT: '#EF4444',
-  ELECTRONIC: '#3B82F6',
-  UNIVERSITIES: '#8B5CF6',
-  CONSULTATIONS: '#F97316',
-  OTHER: '#6366F1',
-};
-
 const categories = [
   { id: 'all', label: 'الكل', labelEn: 'All', icon: null },
   { id: 'VISAS', label: 'التأشيرات', labelEn: 'Visas', icon: Globe },
@@ -50,12 +38,11 @@ const categories = [
   { id: 'OTHER', label: 'خدمات متنوعة', labelEn: 'Other', icon: Star },
 ];
 
-function ServiceCard({ service, index }: { service: ServiceData; index: number }) {
+function ServiceCard({ service }: { service: ServiceData }) {
   const { currency } = useCurrencyStore();
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
   const Icon = iconMap[service.icon] || Star;
-  const color = categoryColors[service.category] || '#2580eb';
 
   return (
     <div
@@ -64,7 +51,7 @@ function ServiceCard({ service, index }: { service: ServiceData; index: number }
       <Card glass padding="none" className="h-full w-full overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
         <div className={`relative ${service.image ? '' : `bg-gradient-to-br ${service.gradient}`} text-white aspect-square p-3 sm:p-5`}>
           {service.image && (
-            <img src={service.image} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+            <Image fill src={service.image} alt="" className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
           )}
           <div className={`absolute inset-0 ${service.image ? 'bg-gradient-to-t from-black/70 via-black/30 to-black/10' : ''}`} />
           {service.isPopular && (
@@ -208,8 +195,8 @@ export default function ServicesPage() {
                 </h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {popularServices.map((service, i) => (
-                  <ServiceCard key={service.id} service={service} index={i} />
+                {popularServices.map((service) => (
+                  <ServiceCard key={service.id} service={service} />
                 ))}
               </div>
             </div>
@@ -250,8 +237,8 @@ export default function ServicesPage() {
 
           {/* Services Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-            {filtered.map((service, i) => (
-              <ServiceCard key={service.id} service={service} index={i} />
+            {filtered.map((service) => (
+              <ServiceCard key={service.id} service={service} />
             ))}
           </div>
 

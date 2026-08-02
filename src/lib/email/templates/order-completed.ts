@@ -6,6 +6,7 @@ import {
   infoRow,
   ctaButton,
   divider,
+  footerNote,
 } from "../base";
 import { SITE_URL } from "@/config";
 
@@ -37,6 +38,7 @@ export function orderCompletedTemplate(opts: {
 
       ${divider()}
       ${textBlock("نتطلع لخدمتك مرة أخرى. المنجز هنا دائماً لمساعدتك.")}
+      ${footerNote()}
     `,
   });
 }

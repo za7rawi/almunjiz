@@ -21,7 +21,6 @@ function useCountUp(target: number, duration = 1200) {
   const frameRef = useRef<number>(0);
 
   useEffect(() => {
-    const start = 0;
     const startTime = performance.now();
 
     const animate = (now: number) => {
@@ -62,6 +61,7 @@ export function StatCard({
       className={cn(
         'relative p-5 rounded-2xl bg-white dark:bg-slate-900/50',
         'border border-slate-200 dark:border-white/10',
+        'shadow-sm hover:shadow-xl hover:shadow-slate-900/10 dark:hover:shadow-black/30 transition-shadow duration-300',
         'overflow-hidden',
         className,
       )}

@@ -48,6 +48,17 @@ export function generateInvoiceNumber(): string {
   return `INV-${ts}-${rand}`;
 }
 
+export function generateTrackingToken(): string {
+  const bytes = new Uint8Array(16);
+  const g = globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => void } };
+  if (g.crypto?.getRandomValues) {
+    g.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }

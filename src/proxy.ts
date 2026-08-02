@@ -10,12 +10,14 @@ function isPublicPath(pathname: string): boolean {
     "/favicon.ico",
     "/robots.txt",
     "/sitemap.xml",
+    "/manifest.json",
+    "/site.webmanifest",
   ];
   return publicPaths.some((p) => pathname.startsWith(p));
 }
 
 function isStaticAsset(pathname: string): boolean {
-  const extensions = [".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2"];
+  const extensions = [".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".json", ".webmanifest"];
   return extensions.some((ext) => pathname.endsWith(ext));
 }
 

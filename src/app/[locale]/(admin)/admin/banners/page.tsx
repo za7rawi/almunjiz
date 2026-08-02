@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   Images,
   Plus,
@@ -9,7 +10,6 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  GripVertical,
   ArrowUp,
   ArrowDown,
   Check,
@@ -90,7 +90,6 @@ export default function AdminBannersPage() {
 
   const fetchBanners = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/banners');
       const data = await res.json();
       if (data.success) setBanners(data.data);
@@ -99,9 +98,12 @@ export default function AdminBannersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchBanners(); }, [fetchBanners]);
+  useEffect(() => {
+    const load = () => fetchBanners();
+    load();
+  }, [fetchBanners]);
 
   const sortedBanners = useMemo(
     () => [...banners].sort((a, b) => a.order - b.order),
@@ -336,10 +338,12 @@ export default function AdminBannersPage() {
                 )}
               >
                 {banner.image ? (
-                  <img
+                  <Image
+                    fill
                     src={banner.image}
                     alt={banner.title}
-                    className="w-full h-full object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
                   />
                 ) : (
                   <Images size={40} className="text-slate-300 dark:text-slate-600" />
@@ -529,11 +533,13 @@ export default function AdminBannersPage() {
                 placeholder="https://example.com/image.jpg"
               />
               {form.image && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 h-32">
-                  <img
+                <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 h-32 relative">
+                  <Image
+                    fill
                     src={form.image}
                     alt={isAr ? 'معاينة' : 'Preview'}
-                    className="w-full h-full object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}

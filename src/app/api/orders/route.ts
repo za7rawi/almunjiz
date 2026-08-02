@@ -3,10 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { sendOrderCreatedEmail, sendInvoiceEmail } from '@/lib/email/service';
-import { generateOrderNumber, generateInvoiceNumber } from '@/lib/utils';
+import { generateOrderNumber, generateInvoiceNumber, generateTrackingToken } from '@/lib/utils';
 import { writeAuditLog } from '@/lib/audit-log';
+import { SITE_URL } from '@/config';
 import { apiLimiter } from '@/lib/rate-limit';
 import { fileAttachmentSelect, recoverFileAttachmentsForOrder, recoverFileAttachmentsForOrders } from '@/lib/file-attachments';
+import { resolveCoupon, computeOrderPricing, amountsMatch } from '@/lib/pricing';
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,22 +89,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, data: null, message: 'يجب تسجيل الدخول', error: null }, { status: 401 });
     }
     const userId = (session.user as Record<string, unknown>).id as string;
+    const currency = 'SAR';
 
     const body = await request.json();
     const {
       serviceId,
-      serviceName,
-      amount,
-      discount = 0,
-      total,
-      currency = 'SAR',
       customerName,
       customerEmail,
       customerPhone,
       notes,
       attachments = [],
-      promoCode,
       fileAttachmentIds = [],
+      promoCode,
+      amount: clientAmount,
+      total: clientTotal,
     } = body;
 
     if (!serviceId || !customerName || !customerEmail) {
@@ -120,19 +120,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!service.isActive) {
+      return NextResponse.json(
+        { success: false, error: 'Service is not available' },
+        { status: 400 }
+      );
+    }
+
+    const coupon = await resolveCoupon(promoCode, Number(service.price));
+    const pricing = await computeOrderPricing(Number(service.price), coupon);
+
+    const clientAmountNum = clientAmount !== undefined && clientAmount !== null ? Number(clientAmount) : null;
+    const clientTotalNum = clientTotal !== undefined && clientTotal !== null ? Number(clientTotal) : null;
+
+    if (clientAmountNum !== null && !amountsMatch(clientAmountNum, pricing.amount)) {
+      return NextResponse.json(
+        { success: false, error: 'Price validation failed. Refresh and try again.' },
+        { status: 400 }
+      );
+    }
+
+    if (clientTotalNum !== null && !amountsMatch(clientTotalNum, pricing.total)) {
+      return NextResponse.json(
+        { success: false, error: 'Total validation failed. Refresh and try again.' },
+        { status: 400 }
+      );
+    }
+
     const orderNumber = generateOrderNumber();
     const invoiceNumber = generateInvoiceNumber();
+    const trackingToken = generateTrackingToken();
 
     const { createdOrder, invoice } = await prisma.$transaction(async (tx) => {
+      if (coupon) {
+        const couponRow = await tx.coupon.findUnique({ where: { id: coupon.id } });
+        if (!couponRow || (couponRow.maxUses !== null && couponRow.usedCount >= couponRow.maxUses)) {
+          throw new Error('COUPON_EXHAUSTED');
+        }
+        await tx.coupon.update({
+          where: { id: coupon.id },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
       const createdOrder = await tx.order.create({
         data: {
           orderNumber,
           userId,
           serviceId,
-          amount: Number(amount),
-          discount: Number(discount),
-          tax: 0,
-          total: Number(total ?? amount),
+          amount: pricing.amount,
+          discount: pricing.discount,
+          tax: pricing.tax,
+          total: pricing.total,
           currency,
           paymentStatus: 'PENDING',
           customerName,
@@ -140,6 +179,7 @@ export async function POST(request: NextRequest) {
           customerPhone: customerPhone || '',
           notes: notes || '',
           attachments: attachments || [],
+          metadata: { trackingToken, ...(coupon ? { couponCode: coupon.code } : {}) },
           status: 'PENDING',
         },
       });
@@ -157,10 +197,10 @@ export async function POST(request: NextRequest) {
           invoiceNumber,
           orderId: createdOrder.id,
           userId,
-          subtotal: Number(amount),
-          tax: 0,
-          discount: Number(discount),
-          total: Number(total ?? amount),
+          subtotal: pricing.amount,
+          tax: pricing.tax,
+          discount: pricing.discount,
+          total: pricing.total,
           status: 'PENDING',
         },
       });
@@ -203,15 +243,16 @@ export async function POST(request: NextRequest) {
       name: customerName,
       orderNumber,
       serviceName: service.name,
-      amount: String(Number(total ?? amount)),
+      amount: String(pricing.total),
       currency,
+      trackingUrl: `${SITE_URL}/track-order?order=${encodeURIComponent(orderNumber)}&token=${encodeURIComponent(trackingToken)}`,
     }).catch((err) => console.error("[Orders] Failed to send order email:", err));
 
     sendInvoiceEmail({
       email: customerEmail,
       name: customerName,
       invoiceNumber,
-      amount: String(Number(total ?? amount)),
+      amount: String(pricing.total),
       currency,
       orderNumber,
     }).catch((err) => console.error("[Orders] Failed to send invoice email:", err));
@@ -226,8 +267,8 @@ export async function POST(request: NextRequest) {
           userId: admin.id,
           title: 'طلب جديد',
           titleEn: 'New Order',
-          message: `طلب جديد من ${customerName} - ${service.name} (${Number(total ?? amount)} ر.س)`,
-          messageEn: `New order from ${customerName} - ${service.name} (${Number(total ?? amount)} SAR)`,
+          message: `طلب جديد من ${customerName} - ${service.name} (${pricing.total} ر.س)`,
+          messageEn: `New order from ${customerName} - ${service.name} (${pricing.total} SAR)`,
           type: 'ORDER',
           link: `/admin/orders`,
         },
@@ -248,6 +289,12 @@ export async function POST(request: NextRequest) {
       },
     }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === 'COUPON_EXHAUSTED') {
+      return NextResponse.json(
+        { success: false, error: 'Coupon has reached its usage limit' },
+        { status: 400 }
+      );
+    }
     console.error('Failed to create order:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to create order' },

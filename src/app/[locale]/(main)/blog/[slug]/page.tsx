@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calendar, Clock, User, Tag, FileText } from 'lucide-react';
+import { ArrowRight, Calendar, Clock, User, Tag, FileText, ChevronLeft } from 'lucide-react';
 import { blogsData, blogCategories } from '@/lib/blogs-data';
 import { useLanguageStore } from '@/store/language-store';
 
@@ -55,7 +55,6 @@ export default function BlogPostPage({
   }
 
   const title = isAr ? post.title : post.titleEn;
-  const excerpt = isAr ? post.excerpt : post.excerptEn;
   const content = isAr ? post.content : post.contentEn;
   const author = isAr ? post.author : post.authorEn;
   const categoryLabel =
@@ -74,15 +73,13 @@ export default function BlogPostPage({
         </div>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={containerVariants} initial="hidden" animate="visible">
-            <motion.div variants={itemVariants}>
-              <Link
-                href="/blog"
-                className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-[#2580eb] transition-colors mb-6"
-              >
-                <ArrowRight size={16} />
-                {isAr ? 'العودة للمدونة' : 'Back to Blog'}
-              </Link>
-            </motion.div>
+            <motion.nav variants={itemVariants} aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 mb-6">
+              <Link href="/" className="hover:text-[#2580eb] transition-colors">{isAr ? 'الرئيسية' : 'Home'}</Link>
+              <ChevronLeft size={14} className="text-slate-300 dark:text-slate-600 rtl:rotate-180" />
+              <Link href="/blog" className="hover:text-[#2580eb] transition-colors">{isAr ? 'المدونة' : 'Blog'}</Link>
+              <ChevronLeft size={14} className="text-slate-300 dark:text-slate-600 rtl:rotate-180" />
+              <span className="text-slate-900 dark:text-white font-medium truncate">{title}</span>
+            </motion.nav>
 
             <motion.div variants={itemVariants} className="mb-4">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2580eb]/10 text-[#2580eb] text-xs font-medium">

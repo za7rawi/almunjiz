@@ -218,7 +218,7 @@ export default function AdminReportsPage() {
       })
       .catch(() => { toast.error(isAr ? 'فشل تحميل التقارير' : 'Failed to load reports'); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAr]);
 
   const filteredOrders = useMemo(() => {
     let result = orders;
@@ -236,7 +236,7 @@ export default function AdminReportsPage() {
     [filteredOrders],
   );
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
 
   const totalRevenue = useMemo(
     () => paidOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
@@ -286,7 +286,7 @@ export default function AdminReportsPage() {
       months.push({ month: prefix, label, value });
     }
     return months;
-  }, [paidOrders, now]);
+  }, [paidOrders, now, isAr]);
 
   const topServices = useMemo(() => {
     const map: Record<string, { revenue: number; count: number }> = {};
@@ -305,7 +305,7 @@ export default function AdminReportsPage() {
       }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 8);
-  }, [paidOrders]);
+  }, [paidOrders, isAr]);
 
   const statsCards = [
     {

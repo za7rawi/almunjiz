@@ -67,7 +67,6 @@ export default function AdminPagesPage() {
 
   const fetchPages = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/pages');
       const data = await res.json();
       if (data.success) setPages(data.data);
@@ -76,9 +75,12 @@ export default function AdminPagesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchPages(); }, [fetchPages]);
+  useEffect(() => {
+    const load = () => fetchPages();
+    load();
+  }, [fetchPages]);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return pages;

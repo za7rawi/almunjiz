@@ -6,6 +6,8 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
   try {
     const { id } = await params;
 
@@ -44,8 +46,6 @@ export async function PUT(
         { status: 404 }
       );
     }
-
-    const isPublishedNow = body.isPublished ?? existing.isPublished;
 
     const news = await prisma.news.update({
       where: { id },

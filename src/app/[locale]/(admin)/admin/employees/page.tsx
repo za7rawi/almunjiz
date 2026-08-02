@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { UserCog, Search, Edit, Trash2, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,7 +48,7 @@ export default function EmployeesPage() {
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [activeRole, setActiveRole] = useState<RoleFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+  const [removedIds] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [formName, setFormName] = useState('');
@@ -58,7 +58,7 @@ export default function EmployeesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 15;
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const res = await fetch('/api/users');
       const data = await res.json();
@@ -66,9 +66,14 @@ export default function EmployeesPage() {
     } catch {
       toast.error(isAr ? 'فشل تحميل الموظفين' : 'Failed to load employees');
     }
-  };
+  }, [isAr]);
 
-  useEffect(() => { fetchUsers(); const interval = setInterval(fetchUsers, 30000); return () => clearInterval(interval); }, []);
+  useEffect(() => {
+    const load = () => fetchUsers();
+    load();
+    const interval = setInterval(fetchUsers, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUsers]);
 
   const employeesList = useMemo(() => {
     return users
@@ -107,8 +112,6 @@ export default function EmployeesPage() {
       return matchesRole && matchesSearch;
     });
   }, [activeRole, searchQuery, employeesList]);
-
-  useEffect(() => { setCurrentPage(1); }, [activeRole, searchQuery]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -153,7 +156,7 @@ export default function EmployeesPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             placeholder={isAr ? 'بحث بالاسم أو البريد...' : 'Search by name or email...'}
             className={cn(
               'w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200',
@@ -171,7 +174,7 @@ export default function EmployeesPage() {
             key={tab.id}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setActiveRole(tab.id)}
+            onClick={() => { setActiveRole(tab.id); setCurrentPage(1); }}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
               activeRole === tab.id

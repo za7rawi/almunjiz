@@ -6,6 +6,7 @@ import {
   infoRow,
   ctaButton,
   divider,
+  footerNote,
 } from "../base";
 import { SITE_URL } from "@/config";
 
@@ -15,8 +16,10 @@ export function orderCreatedTemplate(opts: {
   serviceName: string;
   amount: string;
   currency?: string;
+  trackingUrl?: string;
 }): string {
   const currency = opts.currency || "SAR";
+  const trackHref = opts.trackingUrl || `${SITE_URL}/track-order?order=${encodeURIComponent(opts.orderNumber)}`;
   return baseLayout({
     title: "تم استلام طلبك بنجاح",
     subtitle: "طلب جديد",
@@ -32,10 +35,11 @@ export function orderCreatedTemplate(opts: {
         ${infoRow("المبلغ", `${opts.amount} ${currency}`)}
       </div>
 
-      ${textBlock("يمكنك متابعة حالة الطلب من حسابك في أي وقت. سيقوم فريقنا بالتواصل معك عند تحديث أي تفاصيل.")}
-      ${ctaButton("متابعة الطلب 📋", `${SITE_URL}/dashboard/orders`)}
+      ${textBlock("يمكنك متابعة حالة طلبك من الرابط التالي في أي وقت. سيقوم فريقنا بالتواصل معك عند تحديث أي تفاصيل.")}
+      ${ctaButton("تتبع الطلب 📋", trackHref)}
       ${divider()}
       ${textBlock("شكراً لثقتك بالمنجز. نحن ملتزمون بتقديم أفضل خدمة لك.")}
+      ${footerNote()}
     `,
   });
 }

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, amount, serviceId } = body;
+    const { code, amount } = body;
 
     if (!code) {
       return NextResponse.json(

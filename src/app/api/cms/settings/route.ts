@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
 
@@ -35,8 +36,8 @@ export async function PUT(request: NextRequest) {
     for (const [key, value] of Object.entries(updates)) {
       await prisma.settings.upsert({
         where: { key },
-        update: { value: value as any, updatedAt: new Date() },
-        create: { key, value: value as any, updatedAt: new Date() },
+        update: { value: value as Prisma.InputJsonValue, updatedAt: new Date() },
+        create: { key, value: value as Prisma.InputJsonValue, updatedAt: new Date() },
       });
     }
 

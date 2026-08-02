@@ -45,7 +45,7 @@ export async function writeAuditLog(params: AuditParams): Promise<void> {
   try {
     await prisma.auditLog.create({
       data: {
-        userId: params.userId || 'system',
+        userId: params.userId || null,
         action: params.action,
         resource: params.resource,
         resourceId: params.resourceId,

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, FileIcon, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, FileIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileWithPreview extends File {
@@ -148,9 +149,11 @@ export function FileUpload({
                 className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10"
               >
                 {isImage(file) && file.preview ? (
-                  <img
+                  <Image
                     src={file.preview}
                     alt={file.name}
+                    width={40}
+                    height={40}
                     className="w-10 h-10 rounded-lg object-cover"
                   />
                 ) : (

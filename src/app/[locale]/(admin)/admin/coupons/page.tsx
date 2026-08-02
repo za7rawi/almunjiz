@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Ticket,
   Search,
@@ -49,7 +49,6 @@ export default function CouponsPage() {
 
   const fetchCoupons = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/coupons');
       const data = await res.json();
       if (data.success) setCoupons(data.data);
@@ -59,9 +58,12 @@ export default function CouponsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchCoupons(); }, [fetchCoupons]);
+  useEffect(() => {
+    const load = () => fetchCoupons();
+    load();
+  }, [fetchCoupons]);
 
   const filtered = useMemo(() => {
     return coupons.filter((c) => {
@@ -71,8 +73,6 @@ export default function CouponsPage() {
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginatedData = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   const handleSaveCoupon = async () => {
     setSaving(true);
@@ -203,7 +203,7 @@ export default function CouponsPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setCurrentPage(1); setSearchQuery(e.target.value); }}
             placeholder={isAr ? 'بحث بكود الكوبون...' : 'Search by coupon code...'}
             className={cn(
               'w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200',

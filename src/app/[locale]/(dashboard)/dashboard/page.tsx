@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Package, CreditCard, Receipt, FolderOpen, Plus, Search, Headphones, ArrowUpLeft, TrendingUp, CheckCircle2, MessageSquare, Loader2, Bell, Shield, Download, ChevronLeft, Zap } from 'lucide-react'
+import { Package, CreditCard, Receipt, FolderOpen, Plus, Search, Headphones, ArrowUpLeft, Bell, Download, Zap } from 'lucide-react'
 import { useAuthStore } from '@/store/auth-store'
 import { useLanguageStore } from '@/store/language-store'
 import { StatCard } from '@/components/ui/stat-card'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { SkeletonStatGrid, SkeletonList } from '@/components/ui/skeleton'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/page-header'
 import type { ApiOrder } from '@/types/api-order'
@@ -85,7 +87,10 @@ export default function DashboardPage() {
   const [fileCount, setFileCount] = useState(0)
 
   useEffect(() => {
-    if (!user?.id) { setLoading(false); return }
+    if (!user?.id) {
+      Promise.resolve().then(() => setLoading(false))
+      return
+    }
 
     const fetchAll = () => {
       fetch('/api/orders?limit=50', { cache: 'no-store' })
@@ -119,9 +124,6 @@ export default function DashboardPage() {
   const totalOrders = orders.length
   const totalPaid = orders.filter(o => o.status === 'COMPLETED' || o.paymentStatus === 'PAID').reduce((s, o) => s + Number(o.total), 0)
   const activeOrders = orders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'UNDER_REVIEW').length
-  const mostRecentOrder = orders[0]
-  const mostRecentStep = mostRecentOrder ? statusToStep[mostRecentOrder.status] || 0 : 0
-
   const statusDistribution = Object.entries(statusMap)
     .map(([status, cfg]) => ({
       status,
@@ -146,32 +148,36 @@ export default function DashboardPage() {
         gradient
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="relative">
-          <StatCard icon={<Package size={20} />} value={totalOrders} label={language === 'ar' ? 'عدد الطلبات' : 'Total Orders'} />
-          {totalOrders === 0 && (
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'ابدأ بإنشاء طلبك الأول' : 'Start by creating your first order'}</p>
-          )}
+      {loading && orders.length === 0 ? (
+        <SkeletonStatGrid count={4} />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="relative">
+            <StatCard icon={<Package size={20} />} value={totalOrders} label={language === 'ar' ? 'عدد الطلبات' : 'Total Orders'} />
+            {totalOrders === 0 && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'ابدأ بإنشاء طلبك الأول' : 'Start by creating your first order'}</p>
+            )}
+          </div>
+          <div className="relative">
+            <StatCard icon={<CreditCard size={20} />} value={totalPaid} prefix="ر.س " label={language === 'ar' ? 'المدفوعات' : 'Total Paid'} />
+            {totalPaid === 0 && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'لم تتم أي مدفوعات بعد' : 'No payments made yet'}</p>
+            )}
+          </div>
+          <div className="relative">
+            <StatCard icon={<Receipt size={20} />} value={invoiceCount} label={language === 'ar' ? 'الفواتير' : 'Invoices'} />
+            {invoiceCount === 0 && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'ستظهر الفواتير هنا' : 'Invoices will appear here'}</p>
+            )}
+          </div>
+          <div className="relative">
+            <StatCard icon={<FolderOpen size={20} />} value={fileCount} label={language === 'ar' ? 'الملفات' : 'Files'} />
+            {fileCount === 0 && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'لم يتم رفع ملفات بعد' : 'No files uploaded yet'}</p>
+            )}
+          </div>
         </div>
-        <div className="relative">
-          <StatCard icon={<CreditCard size={20} />} value={totalPaid} prefix="ر.س " label={language === 'ar' ? 'المدفوعات' : 'Total Paid'} />
-          {totalPaid === 0 && (
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'لم تتم أي مدفوعات بعد' : 'No payments made yet'}</p>
-          )}
-        </div>
-        <div className="relative">
-          <StatCard icon={<Receipt size={20} />} value={invoiceCount} label={language === 'ar' ? 'الفواتير' : 'Invoices'} />
-          {invoiceCount === 0 && (
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'ستظهر الفواتير هنا' : 'Invoices will appear here'}</p>
-          )}
-        </div>
-        <div className="relative">
-          <StatCard icon={<FolderOpen size={20} />} value={fileCount} label={language === 'ar' ? 'الملفات' : 'Files'} />
-          {fileCount === 0 && (
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 px-5">{language === 'ar' ? 'لم يتم رفع ملفات بعد' : 'No files uploaded yet'}</p>
-          )}
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-2 space-y-6">
@@ -182,12 +188,16 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
-                <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-[#2580eb]" size={24} /></div>
+                <div className="p-4"><SkeletonList items={4} /></div>
               ) : recentOrders.length === 0 ? (
-                <div className="py-12 text-center">
-                  <Package size={40} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                  <p className="text-sm text-slate-500">{language === 'ar' ? 'لا توجد طلبات بعد' : 'No orders yet'}</p>
-                  <Link href="/services" className="mt-3 inline-block"><Button size="sm">{language === 'ar' ? 'إنشاء أول طلب' : 'Create First Order'}</Button></Link>
+                <div className="p-5">
+                  <EmptyState
+                    compact
+                    icon={Package}
+                    title={language === 'ar' ? 'لا توجد طلبات بعد' : 'No orders yet'}
+                    description={language === 'ar' ? 'ابدأ بإنشاء طلبك الأول للاستفادة من خدماتنا' : 'Create your first order to start using our services'}
+                    action={<Link href="/services"><Button size="sm">{language === 'ar' ? 'إنشاء أول طلب' : 'Create First Order'}</Button></Link>}
+                  />
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-white/5">

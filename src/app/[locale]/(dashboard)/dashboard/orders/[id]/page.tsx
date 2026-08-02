@@ -10,7 +10,6 @@ import {
   FileText,
   MessageCircle,
   Package,
-  Loader2,
   Clock,
   CreditCard,
   RotateCcw,
@@ -20,6 +19,8 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { SkeletonOrderDetail } from '@/components/ui/skeleton'
 import { printInvoice } from '@/lib/print-invoice'
 import { useLanguageStore } from '@/store/language-store'
 import { FileAttachmentCard } from '@/components/ui/file-attachment-card'
@@ -112,24 +113,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }, [id])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="animate-spin text-[#2580eb]" size={32} />
-      </div>
-    )
+    return <SkeletonOrderDetail />
   }
 
   if (!order) {
     return (
-      <div className="text-center py-20">
-        <Package size={48} className="mx-auto text-slate-300 mb-3" />
-        <p className="text-slate-500 dark:text-slate-400 mb-4">{isAr ? 'الطلب غير موجود' : 'Order not found'}</p>
-        <Link href="/dashboard/orders">
-          <Button variant="secondary" size="sm">
-            <ArrowRight size={16} /> {isAr ? 'العودة للطلبات' : 'Back to Orders'}
-          </Button>
-        </Link>
-      </div>
+      <EmptyState
+        icon={Package}
+        title={isAr ? 'الطلب غير موجود' : 'Order not found'}
+        description={isAr ? 'لم نتمكن من العثور على الطلب المطلوب' : 'We could not find the requested order'}
+        action={<Link href="/dashboard/orders"><Button variant="secondary" size="sm"><ArrowRight size={16} /> {isAr ? 'العودة للطلبات' : 'Back to Orders'}</Button></Link>}
+      />
     )
   }
 

@@ -51,6 +51,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               'placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none',
               iconLeft && 'ps-10',
               (iconRight || isPassword) && 'pe-10',
+              className,
             )}
             {...props}
           />

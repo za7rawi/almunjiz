@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import { User, Lock, Bell, Trash2, Save, Shield, Upload, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -75,11 +76,14 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState({ email: true, mobile: true, orders: true, offers: false })
 
   useEffect(() => {
-    if (user) {
-      setName(user.name ?? '')
-      setEmail(user.email ?? '')
-      setAvatar(user.avatar ?? null)
+    const sync = () => {
+      if (user) {
+        setName(user.name ?? '')
+        setEmail(user.email ?? '')
+        setAvatar(user.avatar ?? null)
+      }
     }
+    sync()
   }, [user])
 
   if (!mounted) return null
@@ -175,8 +179,8 @@ export default function SettingsPage() {
                   <CardContent>
                     <div className="space-y-5">
                       <div className="flex items-center gap-4 mb-6">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-                          {avatar ? <img src={avatar} alt="avatar" className="w-full h-full object-cover" /> : getInitials(name || (isAr ? 'مستخدم' : 'User'))}
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-2xl font-bold overflow-hidden relative">
+                          {avatar ? <Image fill src={avatar} alt="avatar" sizes="80px" className="object-cover" /> : getInitials(name || (isAr ? 'مستخدم' : 'User'))}
                         </div>
                         <div>
                           <button onClick={() => { const el = fileInputRef.current; el?.click(); }} className="text-sm text-[#2580eb] hover:underline flex items-center gap-1.5">

@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Loader2, RefreshCw, Filter, Clock, User, Package, CreditCard } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Activity, Loader2, RefreshCw, Clock, Package, CreditCard } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { useLanguageStore } from '@/store/language-store';
@@ -79,7 +78,6 @@ export default function AuditLogsPage() {
 
   const fetchLogs = useCallback(async () => {
     try {
-      setRefreshing(true);
       const res = await fetch('/api/admin/audit-logs');
       const json = await res.json();
       if (json.success && json.data) {
@@ -101,10 +99,11 @@ export default function AuditLogsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isAr]);
 
   useEffect(() => {
-    fetchLogs();
+    const load = () => fetchLogs();
+    load();
   }, [fetchLogs]);
 
   useEffect(() => {
@@ -116,7 +115,6 @@ export default function AuditLogsPage() {
     ? logs
     : logs.filter((l) => l.resource === activeFilter.replace(/s$/, '').replace('gateways', 'gateway').replace('users', 'user'));
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const displayed = filtered.slice(0, page * PAGE_SIZE);
 
   const today = new Date().toISOString().split('T')[0];
@@ -151,7 +149,7 @@ export default function AuditLogsPage() {
           { label: isAr ? 'سجل النشاطات' : 'Audit Logs' },
         ]}
         actions={
-          <Button variant="ghost" size="sm" onClick={fetchLogs} disabled={refreshing}>
+          <Button variant="ghost" size="sm" onClick={() => { setRefreshing(true); fetchLogs(); }} disabled={refreshing}>
             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             <span className="me-2">{isAr ? 'تحديث' : 'Refresh'}</span>
           </Button>

@@ -58,4 +58,90 @@ function SkeletonImage({ className }: SkeletonProps) {
   return <Skeleton className={cn('aspect-video rounded-xl', className)} />;
 }
 
-export { Skeleton, SkeletonText, SkeletonCard, SkeletonAvatar, SkeletonImage, type SkeletonProps };
+function SkeletonStatGrid({ count = 4, className }: SkeletonProps & { count?: number }) {
+  return (
+    <div className={cn('grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4', className)}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="rounded-2xl border border-slate-200 dark:border-white/10 p-5 space-y-3">
+          <Skeleton className="w-10 h-10 rounded-xl" />
+          <Skeleton className="h-5 w-1/3" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonTableRows({ rows = 5, className }: SkeletonProps & { rows?: number }) {
+  return (
+    <div className={cn('space-y-3', className)}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-white/10 px-5 py-4">
+          <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+          <Skeleton className="h-6 w-20 rounded-full hidden sm:block" />
+          <Skeleton className="h-5 w-14 hidden md:block" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonList({ items = 4, className }: SkeletonProps & { items?: number }) {
+  return (
+    <div className={cn('space-y-3', className)}>
+      {Array.from({ length: items }).map((_, i) => (
+        <div key={i} className="flex items-start gap-3 rounded-2xl border border-slate-200 dark:border-white/10 p-4">
+          <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+          <div className="flex-1 space-y-2 pt-0.5">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-3 w-3/4" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonOrderDetail({ className }: SkeletonProps) {
+  return (
+    <div className={cn('grid gap-6 lg:grid-cols-3', className)}>
+      <div className="lg:col-span-2 space-y-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-6 space-y-4">
+          <Skeleton className="h-6 w-1/3" />
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-6 space-y-3">
+          <Skeleton className="h-5 w-1/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+      </div>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 p-6 space-y-3">
+          <Skeleton className="h-5 w-1/2" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonCard,
+  SkeletonAvatar,
+  SkeletonImage,
+  SkeletonStatGrid,
+  SkeletonTableRows,
+  SkeletonList,
+  SkeletonOrderDetail,
+  type SkeletonProps,
+};
+

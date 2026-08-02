@@ -78,7 +78,6 @@ export default function PaymentsPage() {
 
   const fetchPayments = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/payments?limit=100');
       const json = await res.json();
       if (json.success && json.data) {
@@ -100,9 +99,14 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchPayments(); const interval = setInterval(fetchPayments, 30000); return () => clearInterval(interval); }, [fetchPayments]);
+  useEffect(() => {
+    const load = () => fetchPayments();
+    load();
+    const interval = setInterval(fetchPayments, 30000);
+    return () => clearInterval(interval);
+  }, [fetchPayments]);
 
   const [activeMethod, setActiveMethod] = useState<MethodFilter>('ALL');
   const [activeStatus, setActiveStatus] = useState<StatusFilter>('ALL');
@@ -121,8 +125,6 @@ export default function PaymentsPage() {
       return matchesMethod && matchesStatus && matchesSearch;
     });
   }, [activeMethod, activeStatus, searchQuery, payments]);
-
-  useEffect(() => { setPage(1); }, [activeMethod, activeStatus, searchQuery]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginatedData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -200,7 +202,7 @@ export default function PaymentsPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setPage(1); setSearchQuery(e.target.value); }}
             placeholder={isAr ? 'بحث بالاسم أو رقم الدفع...' : 'Search by name or payment ID...'}
             className={cn(
               'w-full ps-10 pe-4 py-2.5 text-sm rounded-xl transition-all duration-200',
@@ -219,7 +221,7 @@ export default function PaymentsPage() {
               key={tab.id}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveMethod(tab.id)}
+              onClick={() => { setPage(1); setActiveMethod(tab.id); }}
               className={cn(
                 'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
                 activeMethod === tab.id
@@ -237,7 +239,7 @@ export default function PaymentsPage() {
               key={status}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveStatus(status)}
+              onClick={() => { setPage(1); setActiveStatus(status); }}
               className={cn(
                 'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
                 activeStatus === status

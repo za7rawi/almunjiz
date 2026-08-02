@@ -10,12 +10,10 @@ import {
   ArrowUpRight,
   ShoppingCart,
   Wrench,
-  Eye,
   Clock,
   CalendarDays,
   TrendingUp,
   Loader2,
-  Activity,
   FileText,
   AlertCircle,
   CheckCircle2,
@@ -87,7 +85,7 @@ export default function AdminDashboardPage() {
   const [newCustomerCount, setNewCustomerCount] = useState(0);
   const [weeklyRevenue, setWeeklyRevenue] = useState<{ day: string; value: number }[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -152,7 +150,7 @@ export default function AdminDashboardPage() {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isAr]);
 
   const maxRevenue = Math.max(...weeklyRevenue.map((d) => d.value), 1);
   const recentOrders = orders.slice(0, 5);

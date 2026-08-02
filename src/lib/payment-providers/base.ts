@@ -79,6 +79,7 @@ export abstract class PaymentProvider {
   abstract parseWebhook(payload: WebhookPayload): WebhookResult;
 
   async refundPayment(params: RefundParams): Promise<RefundResult> {
+    void params;
     return {
       success: false,
       error: `Refund not supported by ${this.name}`,
@@ -86,7 +87,27 @@ export abstract class PaymentProvider {
   }
 
   async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
-    return true;
+    void payload;
+    return false;
+  }
+
+  protected async verifyHmacSignature(
+    payload: WebhookPayload,
+    signatureHeader: string,
+    rawBodyKey = 'rawBody'
+  ): Promise<boolean> {
+    const secret = this.config.webhookSecret;
+    if (!secret) return false;
+
+    const signature = payload.headers[signatureHeader.toLowerCase()];
+    if (!signature) return false;
+
+    const rawBody = payload[rawBodyKey as keyof WebhookPayload]
+      ? String(payload[rawBodyKey as keyof WebhookPayload])
+      : JSON.stringify(payload.body);
+
+    const { computeHmacSha256 } = await import('@/lib/encryption');
+    return computeHmacSha256(secret, rawBody) === signature;
   }
 
   async testConnection(): Promise<{ success: boolean; message: string }> {

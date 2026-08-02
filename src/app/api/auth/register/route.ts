@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
       },
       "تم إنشاء الحساب بنجاح"
     );
-  } catch {
+  } catch (e) {
+    console.error("[Register] error:", e instanceof Error ? e.stack || e.message : e);
     return error("حدث خطأ أثناء إنشاء الحساب", 500);
   }
 }

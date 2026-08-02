@@ -38,7 +38,8 @@ const Card = ({
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       className={cn(
-        'rounded-2xl bg-white dark:bg-slate-900/50',
+        'rounded-2xl bg-white dark:bg-slate-900/50 shadow-sm transition-shadow duration-300',
+        'hover:shadow-xl hover:shadow-slate-900/10 dark:hover:shadow-black/30',
         border && !gradientBorder && 'border border-slate-200 dark:border-white/10',
         glass &&
           'bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-xl shadow-black/5',

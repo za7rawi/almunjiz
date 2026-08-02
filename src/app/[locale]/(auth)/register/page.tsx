@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,9 +13,7 @@ import {
   UserPlus,
   CheckCircle,
   AlertCircle,
-  Loader2,
 } from 'lucide-react';
-import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { GoogleSignInButton } from '@/components/ui/google-sign-in-button';
 import { useAuthStore } from '@/store/auth-store';
@@ -158,8 +156,8 @@ export default function RegisterPage() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="text-center mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'إنشاء حساب جديد' : 'Create Account'}</h2>
-        <p className="text-white/50 text-sm">{isAr ? 'أدخل بياناتك لإنشاء حسابك' : 'Enter your details to create your account'}</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{isAr ? 'أنشئ حسابك في منصة المنجز' : 'Create Your AL-MUNJIZ Account'}</h2>
+        <p className="text-white/50 text-sm">{isAr ? 'أنشئ حسابًا للاستفادة من جميع خدمات التأشيرات والسفر والأعمال وإدارة طلباتك في مكان واحد.' : 'Create an account to benefit from all visa, travel and business services and manage your requests in one place.'}</p>
       </motion.div>
 
       <AnimatePresence>

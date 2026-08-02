@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
 
@@ -21,7 +22,7 @@ export function Logo({ size = 'md', showText = false, white = false, className }
   return (
     <span className={cn('inline-flex items-center gap-2.5 shrink-0', className)}>
       <span className="relative flex items-center justify-center">
-        <img
+        <Image
           src="/logo.jpg"
           alt="المنجز"
           className="relative shrink-0 object-contain drop-shadow-lg"

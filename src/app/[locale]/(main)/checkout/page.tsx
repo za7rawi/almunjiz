@@ -5,11 +5,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AnimatePresence } from 'framer-motion';
 import {
-  User, Mail, Phone, Upload, X, CreditCard,
+  User, Upload, X,
   CheckCircle2, Shield, Tag, FileText, File,
   FileSpreadsheet, Archive, ImageIcon, Loader2,
-  Globe, Hash, Lock, Wallet, ChevronDown, AlertCircle,
-  Trash2, Star, Clock, Sparkles, Info, Zap, Sparkle,
+  Wallet, AlertCircle,
+  Trash2, Clock, Sparkles, Zap,
   ChevronLeft, ChevronRight, Printer, Home, CheckCircle,
   Circle,
 } from 'lucide-react';
@@ -21,7 +21,6 @@ import { useAuthStore } from '@/store/auth-store';
 import { useCurrencyStore } from '@/store/currency-store';
 import { formatPrice } from '@/lib/currency';
 import { useLanguageStore } from '@/store/language-store';
-import { useDirection } from '@/hooks/use-direction';
 import type { ServiceData } from '@/types/service-data';
 
 interface UploadedFile {
@@ -134,7 +133,6 @@ function CheckoutContent() {
   const { user, isAuthenticated, _hydrated } = useAuthStore();
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
-  const { dir } = useDirection();
   const { currency } = useCurrencyStore();
 
   const [service, setService] = useState<Partial<ServiceData> | null>(null);
@@ -162,25 +160,31 @@ function CheckoutContent() {
   }));
 
   useEffect(() => {
-    if (_hydrated && !isAuthenticated) {
-      router.replace(`/login?redirect=${encodeURIComponent(`/checkout?service=${serviceId || ''}`)}`);
-    } else if (_hydrated) {
-      setRedirecting(false);
-    }
+    const sync = () => {
+      if (_hydrated && !isAuthenticated) {
+        router.replace(`/login?redirect=${encodeURIComponent(`/checkout?service=${serviceId || ''}`)}`);
+      } else if (_hydrated) {
+        setRedirecting(false);
+      }
+    };
+    sync();
   }, [_hydrated, isAuthenticated, router, serviceId]);
 
   useEffect(() => {
-    if (serviceId) {
-      fetch(`/api/services/${serviceId}?brief=true`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) setService(data.data);
-        })
-        .catch(() => {})
-        .finally(() => setServiceLoading(false));
-    } else {
-      setServiceLoading(false);
-    }
+    const sync = () => {
+      if (serviceId) {
+        fetch(`/api/services/${serviceId}?brief=true`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) setService(data.data);
+          })
+          .catch(() => {})
+          .finally(() => setServiceLoading(false));
+      } else {
+        setServiceLoading(false);
+      }
+    };
+    sync();
   }, [serviceId]);
 
   const basePrice = service?.price || 0;
@@ -217,7 +221,7 @@ function CheckoutContent() {
     if (!formData.phone || formData.phone.length < 7) errors.phone = isAr ? 'رقم الجوال غير صحيح' : 'Invalid phone number';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [formData]);
+  }, [formData, isAr]);
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
@@ -630,7 +634,7 @@ function CheckoutContent() {
                   <div key={f.id} className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 transition-colors group">
                     {f.preview ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={f.preview} alt={f.name} className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-600" />
+                      <img src={f.preview} alt={f.name} loading="lazy" className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-600" />
                     ) : (
                       <div className="w-11 h-11 rounded-xl bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-600 flex items-center justify-center">
                         {getFileIcon(f.type)}

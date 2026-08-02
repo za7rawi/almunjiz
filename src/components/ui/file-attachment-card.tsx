@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, FileIcon, Image as ImageIcon, Download, ExternalLink, X, ZoomIn } from 'lucide-react';
 
@@ -71,7 +72,7 @@ export function FileAttachmentCard({ file, isAr }: FileAttachmentCardProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`rounded-xl border ${colors.border} ${colors.bg} p-4 hover:shadow-md transition-all duration-200 group`}
+        className={`rounded-2xl border ${colors.border} ${colors.bg} p-4 hover:shadow-lg hover:shadow-slate-900/10 dark:hover:shadow-black/30 transition-all duration-200 group`}
       >
         <div className="flex items-center gap-3 mb-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-white dark:bg-white/10`}>
@@ -90,11 +91,12 @@ export function FileAttachmentCard({ file, isAr }: FileAttachmentCardProps) {
             className="relative rounded-lg overflow-hidden mb-3 cursor-pointer aspect-video bg-slate-100 dark:bg-slate-800"
             onClick={handlePreview}
           >
-            <img
+            <Image
+              fill
               src={previewUrl}
               alt={file.fileName}
-              className="w-full h-full object-cover"
-              loading="lazy"
+              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-slate-800/90 rounded-full p-2.5">
@@ -144,9 +146,11 @@ export function FileAttachmentCard({ file, isAr }: FileAttachmentCardProps) {
               >
                 <X size={20} />
               </button>
-              <img
+              <Image
                 src={lightboxUrl}
                 alt={isAr ? 'معاينة' : 'Preview'}
+                width={1600}
+                height={900}
                 className="w-full h-full object-contain rounded-xl max-h-[85vh]"
               />
               <div className="flex justify-center mt-3 gap-2">

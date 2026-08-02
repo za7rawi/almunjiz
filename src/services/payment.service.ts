@@ -35,12 +35,22 @@ export class PaymentService {
     reference?: string;
     metadata?: Record<string, unknown>;
   }) {
+    const order = await prisma.order.findUnique({ where: { id: data.orderId } });
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    const serverAmount = Number(order.total);
+    if (data.amount !== undefined && Math.abs(Number(data.amount) - serverAmount) > 0.005) {
+      throw new Error('Amount mismatch');
+    }
+
     const payment = await prisma.payment.create({
       data: {
         orderId: data.orderId,
         invoiceId: data.invoiceId,
         userId: data.userId,
-        amount: data.amount,
+        amount: serverAmount,
         method: data.method as never,
         reference: data.reference,
         metadata: data.metadata as never,

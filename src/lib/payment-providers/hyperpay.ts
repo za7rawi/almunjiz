@@ -146,7 +146,7 @@ export class HyperPayProvider extends PaymentProvider {
   }
 
   async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
-    if (!this.config.webhookSecret) return true;
+    if (!this.config.webhookSecret) return false;
     const secret = payload.headers['authorization'];
     if (!secret) return false;
     return secret === `Bearer ${this.config.webhookSecret}`;

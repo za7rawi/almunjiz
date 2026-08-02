@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -55,7 +56,7 @@ export function Sidebar({ user, isOpen: externalOpen, onClose }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { language } = useLanguageStore();
-  const { dir, isRtl } = useDirection();
+  const { isRtl } = useDirection();
   const isMobile = useIsMobile();
   const router = useRouter();
   const { logout } = useAuthStore();
@@ -164,9 +165,9 @@ export function Sidebar({ user, isOpen: externalOpen, onClose }: SidebarProps) {
 
       <div className={cn('p-3 border-t border-white/10', collapsed && !isMobile ? 'text-center' : '')}>
         <div className={cn('flex items-center gap-3 p-3 rounded-xl bg-white/5', collapsed && !isMobile ? 'justify-center' : '')}>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2580eb] to-[#14b8a6] flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden relative">
             {userAvatar ? (
-              <img src={userAvatar} alt={userName} className="w-full h-full rounded-full object-cover" />
+              <Image fill src={userAvatar} alt={userName} sizes="36px" className="rounded-full object-cover" />
             ) : (
               initials
             )}

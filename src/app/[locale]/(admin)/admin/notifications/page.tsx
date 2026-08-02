@@ -90,7 +90,6 @@ export default function NotificationsPage() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/cms/notifications');
       const data = await res.json();
       if (data.success) setNotifications(data.data);
@@ -99,9 +98,12 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAr]);
 
-  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+  useEffect(() => {
+    const load = () => fetchNotifications();
+    load();
+  }, [fetchNotifications]);
 
   const filtered = useMemo(() => {
     return notifications.filter((n) => {

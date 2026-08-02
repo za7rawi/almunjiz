@@ -34,6 +34,7 @@ import {
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { blogsData } from '@/lib/blogs-data';
 import { CONTACT_INFO, SUPPORT_CHANNELS } from '@/constants';
 import type { ServiceData } from '@/types/service-data';
@@ -113,8 +114,8 @@ const whyUsIconMap: Record<string, React.ComponentType<{ size?: number; classNam
 
 interface HomepageData {
   hero: {
+    badgeAr: string; badgeEn: string;
     titleAr: string; titleEn: string;
-    subtitleAr: string; subtitleEn: string;
     descriptionAr: string; descriptionEn: string;
     button1Ar: string; button1En: string;
     button2Ar: string; button2En: string;
@@ -128,17 +129,17 @@ interface HomepageData {
 
 const STATIC_HOMEPAGE: HomepageData = {
   hero: {
-    titleAr: 'منصة المنجز', titleEn: 'Al-Munjiz Platform',
-    subtitleAr: 'منصتك المتكاملة لخدمات التأشيرات والسفر والأعمال', subtitleEn: 'Your integrated platform for visa, travel & business services',
-    descriptionAr: 'أنجز معاملاتك بسهولة، بسرعة، وبموثوقية.', descriptionEn: 'Complete your transactions easily, quickly, and reliably.',
-    button1Ar: 'تصفح خدماتنا', button1En: 'Browse Services',
-    button2Ar: 'تتبع طلبك', button2En: 'Track Order',
+    badgeAr: 'منصة المنجز', badgeEn: 'AL-MUNJIZ Platform',
+    titleAr: 'منصتك المتكاملة لخدمات التأشيرات والسفر والأعمال', titleEn: 'Your all-in-one platform for visas, travel & business services',
+    descriptionAr: 'أنجز معاملاتك بسهولة، بسرعة، وبموثوقية من خلال منصة إلكترونية تجمع جميع خدمات التأشيرات والسفر والأعمال في مكان واحد.', descriptionEn: 'Complete your transactions easily, quickly, and reliably through an electronic platform that brings all visa, travel and business services into one place.',
+    button1Ar: 'تصفح الخدمات', button1En: 'Browse Services',
+    button2Ar: 'تتبع الطلب', button2En: 'Track Order',
   },
   stats: [
-    { number: '+10,000', labelAr: 'عميل', labelEn: 'Clients' },
-    { number: '+50,000', labelAr: 'طلب', labelEn: 'Orders' },
+    { number: '+17', labelAr: 'خدمة', labelEn: 'Services' },
+    { number: '+500', labelAr: 'عميل', labelEn: 'Clients' },
     { number: '24/7', labelAr: 'دعم', labelEn: 'Support' },
-    { number: '%99', labelAr: 'رضا', labelEn: 'Satisfaction' },
+    { number: '99%', labelAr: 'رضا العملاء', labelEn: 'Satisfaction' },
   ],
   whyUs: [
     { icon: 'Zap', titleAr: 'السرعة', titleEn: 'Speed', descAr: 'ننجز طلباتك في أسرع وقت ممكن', descEn: 'We complete your requests in the fastest time' },
@@ -311,15 +312,18 @@ export default function HomePage() {
   const [animateHero, setAnimateHero] = useState(true);
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem('almunjiz-hero-seen')) {
-        setAnimateHero(false);
-      } else {
-        sessionStorage.setItem('almunjiz-hero-seen', '1');
+    const sync = () => {
+      try {
+        if (sessionStorage.getItem('almunjiz-hero-seen')) {
+          setAnimateHero(false);
+        } else {
+          sessionStorage.setItem('almunjiz-hero-seen', '1');
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
+    };
+    sync();
   }, []);
 
   useEffect(() => {
@@ -374,64 +378,59 @@ export default function HomePage() {
   return (
     <div className="overflow-hidden">
       {/* ─── SECTION 1: HERO ─── */}
-      <section className="relative min-h-[80vh] sm:min-h-[85vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-[#2580eb]/20 rounded-full blur-[120px] animate-orb-1" />
-          <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] bg-[#14b8a6]/15 rounded-full blur-[120px] animate-orb-2" />
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-[#7c3aed]/10 rounded-full blur-[100px] animate-orb-3" />
-        </div>
-
+      <section className="relative min-h-[80vh] sm:min-h-[85vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <svg className="absolute top-[15%] right-[10%] w-20 h-20 opacity-10 animate-float" viewBox="0 0 100 100" fill="none">
-            <path d="M50 3 L92 26 L92 74 L50 97 L8 74 L8 26 Z" stroke="#2580eb" strokeWidth="1.5" />
-          </svg>
-          <svg className="absolute bottom-[20%] left-[8%] w-14 h-14 opacity-10 animate-float-slow" viewBox="0 0 100 100" fill="none">
-            <path d="M50 3 L92 26 L92 74 L50 97 L8 74 L8 26 Z" stroke="#14b8a6" strokeWidth="1.5" />
-          </svg>
-          <div className="absolute top-[30%] left-[15%] w-3 h-3 bg-[#2580eb]/30 rounded-full animate-float-delayed" />
-          <div className="absolute top-[60%] right-[20%] w-2 h-2 bg-[#14b8a6]/40 rounded-full animate-float" />
-          <div className="absolute bottom-[30%] right-[35%] w-4 h-4 bg-[#7c3aed]/20 rounded-full animate-float-slow" />
-          <div className="absolute top-[45%] left-[25%] w-8 h-8 border border-[#2580eb]/15 rotate-45 animate-spin-slow" />
-          <svg className="absolute top-[70%] left-[40%] w-10 h-10 opacity-[0.07] animate-float-delayed" viewBox="0 0 100 100" fill="none">
-            <path d="M50 3 L92 26 L92 74 L50 97 L8 74 L8 26 Z" stroke="#7c3aed" strokeWidth="2" />
-          </svg>
+          <div className="absolute -top-48 -left-40 w-[480px] h-[480px] bg-[#2580eb]/[0.07] rounded-full blur-[140px]" />
+          <div className="absolute -bottom-48 -right-40 w-[560px] h-[560px] bg-[#14b8a6]/[0.05] rounded-full blur-[140px]" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative z-10 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-32 sm:py-36 lg:py-44 text-center">
           <motion.div
-            initial={animateHero ? { opacity: 0, scale: 0.6, y: -20 } : false}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
+            initial={animateHero ? { opacity: 0, y: 12 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="mb-8 sm:mb-10"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-sm text-slate-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#14b8a6]" />
+              {isAr ? hero.badgeAr : hero.badgeEn}
+            </span>
+          </motion.div>
+
+          <motion.div
+            initial={animateHero ? { opacity: 0, scale: 0.92 } : false}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: animateHero ? 0.12 : 0, ease: 'easeOut' }}
+            className="mb-8 sm:mb-10"
           >
             <Image
-              src="/logo.svg"
-              alt="المنجز"
-              width={100}
-              height={100}
+              src="/logo.jpg"
+              alt={isAr ? 'شعار المنجز' : 'AL-MUNJIZ logo'}
+              width={112}
+              height={112}
               unoptimized
               priority
-              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mx-auto mb-4 md:mb-6 drop-shadow-2xl"
+              className="w-24 h-24 sm:w-28 sm:h-28 mx-auto object-contain drop-shadow-2xl"
             />
           </motion.div>
 
-          <motion.div
-            initial={animateHero ? { opacity: 0, y: 30 } : false}
+          <motion.h1
+            initial={animateHero ? { opacity: 0, y: 24 } : false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: animateHero ? 0.15 : 0, ease: 'easeOut' }}
+            transition={{ duration: 0.7, delay: animateHero ? 0.2 : 0, ease: 'easeOut' }}
+            className={cn(
+              'text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white text-balance mb-6 sm:mb-8',
+              isAr ? 'leading-[1.25]' : 'tracking-tight leading-[1.15]',
+            )}
           >
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-3 sm:mb-5 leading-tight">
-              <span className="text-white">{isAr ? hero.titleAr : hero.titleEn} </span>
-              <span className="bg-gradient-to-r from-[#2580eb] via-[#14b8a6] to-[#2580eb] bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-premium">
-                {isAr ? hero.subtitleAr : hero.subtitleEn}
-              </span>
-            </h1>
-          </motion.div>
+            {isAr ? hero.titleAr : hero.titleEn}
+          </motion.h1>
 
           <motion.p
             initial={animateHero ? { opacity: 0, y: 20 } : false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: animateHero ? 0.3 : 0, ease: 'easeOut' }}
-            className="text-base md:text-xl text-slate-400 max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed"
+            transition={{ duration: 0.7, delay: animateHero ? 0.3 : 0, ease: 'easeOut' }}
+            className="text-base md:text-lg text-slate-400 max-w-xl mx-auto mb-12 md:mb-14 leading-relaxed text-balance"
           >
             {isAr ? hero.descriptionAr : hero.descriptionEn}
           </motion.p>
@@ -439,44 +438,47 @@ export default function HomePage() {
           <motion.div
             initial={animateHero ? { opacity: 0, y: 20 } : false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: animateHero ? 0.45 : 0, ease: 'easeOut' }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+            transition={{ duration: 0.7, delay: animateHero ? 0.42 : 0, ease: 'easeOut' }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5"
           >
-            <Link href="/services">
-              <Button size="lg" className="min-w-[200px]">
+            <Link href="/services" className="w-full sm:w-auto">
+              <Button size="xl" className="w-full sm:w-auto min-w-[240px] px-8">
                 {isAr ? hero.button1Ar : hero.button1En}
               </Button>
             </Link>
-            <Link href="/track-order">
-              <Button variant="secondary" size="lg" className="min-w-[200px] border-white/25 text-white hover:bg-white/10">
+            <Link href="/track-order" className="w-full sm:w-auto">
+              <Button
+                variant="secondary"
+                size="xl"
+                className="w-full sm:w-auto min-w-[240px] px-8 border-white/25 text-white hover:bg-white/10"
+              >
                 {isAr ? hero.button2Ar : hero.button2En}
               </Button>
             </Link>
           </motion.div>
         </div>
+      </section>
 
-        <motion.div
-          initial={animateHero ? { opacity: 0, y: 30 } : false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: animateHero ? 0.6 : 0, ease: 'easeOut' }}
-          className="absolute bottom-0 left-0 right-0"
-        >
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 md:pb-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {stats.map((stat) => (
-                <div key={stat.labelAr} className="flex items-center gap-2.5 md:gap-3 p-3 md:p-4 rounded-2xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.06]">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-[#2580eb]/20 to-[#14b8a6]/20 flex items-center justify-center shrink-0">
-                    <Users size={14} className="md:w-[18px] md:h-[18px] text-[#14b8a6]" />
-                  </div>
-                  <div>
-                    <div className="text-sm md:text-xl font-extrabold text-white">{stat.number}</div>
-                    <div className="text-[10px] md:text-xs text-slate-400">{isAr ? stat.labelAr : stat.labelEn}</div>
-                  </div>
+      {/* ─── SECTION 1.5: STATS ─── */}
+      <section className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+          <motion.div
+            {...fadeInUp}
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5"
+          >
+            {stats.map((stat) => (
+              <div
+                key={stat.labelAr}
+                className="rounded-2xl border border-slate-100 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.03] px-4 py-6 sm:py-7 text-center"
+              >
+                <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold gradient-text">{stat.number}</div>
+                <div className="text-xs sm:text-sm md:text-base text-slate-500 dark:text-slate-400 mt-1.5 sm:mt-2">
+                  {isAr ? stat.labelAr : stat.labelEn}
                 </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
       </section>
 
       {/* ─── SECTION 2: SERVICES SEARCH BAR ─── */}

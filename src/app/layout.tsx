@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Tajawal } from "next/font/google";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
 import { SessionProvider } from "@/components/providers/session-provider";
+import { RootSplash } from "@/components/providers/root-splash";
 import "./globals.css";
 
 const tajawal = Tajawal({
@@ -28,7 +30,19 @@ export const metadata: Metadata = {
       { url: "/favicon.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon.jpg", type: "image/jpeg" },
     ],
-    apple: "/favicon.png",
+    apple: [
+      { url: "/icons/icon-180x180.png", sizes: "180x180", type: "image/png" },
+      { url: "/favicon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "المنجز | AL-MUNJIZ",
+  },
+  formatDetection: {
+    telephone: false,
   },
   openGraph: {
     type: "website",
@@ -48,6 +62,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://munjiz.store",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#2580eb",
 };
 
 const organizationSchema = {
@@ -91,17 +111,24 @@ function JsonLd({ data }: { data: object }) {
   );
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isEnglish = pathname.startsWith("/en");
+  const lang = isEnglish ? "en" : "ar";
+  const dir = isEnglish ? "ltr" : "rtl";
+
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${tajawal.variable} h-full antialiased`}>
+    <html lang={lang} dir={dir} suppressHydrationWarning className={`${tajawal.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <JsonLd data={organizationSchema} />
         <JsonLd data={websiteSchema} />
         <SessionProvider>
+          <RootSplash />
           <ToasterProvider />
           {children}
         </SessionProvider>
