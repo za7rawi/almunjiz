@@ -75,9 +75,17 @@ export async function POST(request: NextRequest) {
       config: gateway.config as Record<string, unknown> | null,
     });
 
+    const refundAmount = amount || payment.amount;
+    if (refundAmount <= 0 || refundAmount > Number(payment.amount)) {
+      return NextResponse.json(
+        { success: false, error: 'Refund amount must be between 0 and the original payment amount' },
+        { status: 400 }
+      );
+    }
+
     const refundParams: RefundParams = {
       transactionId: payment.transactionId,
-      amount: amount || payment.amount,
+      amount: refundAmount,
       reason: reason || 'Customer requested refund',
     };
 

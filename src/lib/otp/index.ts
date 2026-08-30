@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import { randomInt } from "crypto";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 export function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(100000, 999999).toString();
 }
 
 export async function storeOTP(identifier: string, code: string): Promise<void> {

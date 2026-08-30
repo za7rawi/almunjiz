@@ -6,6 +6,38 @@ import { sendWelcomeEmail } from "@/lib/email/service";
 import { authLimiter } from "@/lib/rate-limit";
 import { setRoleCookie } from "@/lib/auth/role-cookie";
 
+// SECURITY: Per-account login attempt tracking
+const loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
+const MAX_ACCOUNT_ATTEMPTS = 5;
+const ACCOUNT_LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkAccountLockout(email: string): { allowed: boolean; remainingMs?: number } {
+  const entry = loginAttempts.get(email.toLowerCase());
+  if (!entry) return { allowed: true };
+  if (Date.now() > entry.lockedUntil) {
+    loginAttempts.delete(email.toLowerCase());
+    return { allowed: true };
+  }
+  return { allowed: false, remainingMs: entry.lockedUntil - Date.now() };
+}
+
+function recordFailedAttempt(email: string): void {
+  const key = email.toLowerCase();
+  const entry = loginAttempts.get(key);
+  if (!entry) {
+    loginAttempts.set(key, { count: 1, lockedUntil: Date.now() + ACCOUNT_LOCKOUT_MS });
+    return;
+  }
+  entry.count++;
+  if (entry.count >= MAX_ACCOUNT_ATTEMPTS) {
+    entry.lockedUntil = Date.now() + ACCOUNT_LOCKOUT_MS;
+  }
+}
+
+function clearFailedAttempts(email: string): void {
+  loginAttempts.delete(email.toLowerCase());
+}
+
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
@@ -17,7 +49,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password } = await request.json();
+    const body = await request.json();
+    const { email } = body;
+    const password = body.password || '';
 
     if (!email || !password) {
       return error("البريد الإلكتروني وكلمة المرور مطلوبان");
@@ -31,16 +65,39 @@ export async function POST(request: NextRequest) {
       return error("كلمة المرور غير صحيحة", 401);
     }
 
+    // SECURITY: Check per-account lockout
+    const lockout = checkAccountLockout(email);
+    if (!lockout.allowed) {
+      const remainingMinutes = Math.ceil((lockout.remainingMs || 0) / 60000);
+      return NextResponse.json(
+        { success: false, error: `تم تجاوز الحد المسموح. حاول مرة أخرى بعد ${remainingMinutes} دقيقة` },
+        { status: 429 }
+      );
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return error("البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
     }
 
+    // SECURITY: Check if user account is active
+    if (!user.isActive) {
+      return NextResponse.json(
+        { success: false, error: 'تم تعطيل هذا الحساب. يرجى التواصل مع الدعم الفني' },
+        { status: 403 }
+      );
+    }
+
     const bcrypt = await import("bcryptjs");
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
+      // SECURITY: Record failed attempt for account lockout
+      recordFailedAttempt(email);
       return error("البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
     }
+
+    // SECURITY: Clear failed attempts on successful login
+    clearFailedAttempts(email);
 
     const isFirstLogin = !user.lastLoginAt;
 

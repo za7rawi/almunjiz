@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Phone,
@@ -10,40 +9,20 @@ import {
   MapPin,
   Clock,
   ChevronLeft,
+  ShieldCheck as ShieldCheckIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
 import { NAVIGATION_LINKS, CONTACT_INFO, APP_NAME } from '@/constants';
 import { Logo } from '@/components/ui/logo';
+import type { StorefrontCategory, StorefrontContact, PaymentBadge } from '@/lib/storefront-data';
 
-interface SiteSettings {
-  phone?: string;
-  email?: string;
-  whatsapp?: string;
-  address?: string;
-  addressEn?: string;
-  workingHours?: string;
-  workingHoursEn?: string;
+interface FooterProps {
+  categories?: StorefrontCategory[];
+  contact?: StorefrontContact;
+  payments?: PaymentBadge[];
 }
-
-interface SocialLinks {
-  twitter?: string;
-  instagram?: string;
-  youtube?: string;
-  tiktok?: string;
-  facebook?: string;
-  linkedin?: string;
-}
-
-const serviceLinks = [
-  { label: 'التأشيرات', labelEn: 'Visas', href: '/services' },
-  { label: 'العقود', labelEn: 'Contracts', href: '/services' },
-  { label: 'المركبات', labelEn: 'Vehicles', href: '/services' },
-  { label: 'السفر', labelEn: 'Travel', href: '/services' },
-  { label: 'الخدمات الحكومية', labelEn: 'Government', href: '/services' },
-  { label: 'الاستشارات', labelEn: 'Consulting', href: '/services' },
-];
 
 const quickLinks = [
   ...NAVIGATION_LINKS,
@@ -82,55 +61,48 @@ const TiktokIcon = () => (
   </svg>
 );
 
-export function Footer() {
+const LinkedInIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+  </svg>
+);
+
+export function Footer({ categories = [], contact, payments = [] }: FooterProps) {
   const { language } = useLanguageStore();
   const { dir, isRtl } = useDirection();
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
-  const [socialLinks, setSocialLinks] = useState<SocialLinks>({});
 
-  useEffect(() => {
-    fetch('/api/cms/settings')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setSiteSettings({
-            phone: json.data.phone || json.data.contact_phone,
-            email: json.data.email || json.data.contact_email,
-            whatsapp: json.data.whatsapp || json.data.contact_whatsapp,
-            address: json.data.address || json.data.contact_address,
-            addressEn: json.data.addressEn || json.data.contact_address_en,
-            workingHours: json.data.workingHours,
-            workingHoursEn: json.data.workingHoursEn,
-          });
-        }
-      })
-      .catch(() => {});
-
-    fetch('/api/cms/social')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setSocialLinks(json.data);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const phone = siteSettings.phone || CONTACT_INFO.phone;
-  const email = siteSettings.email || CONTACT_INFO.email;
-  const whatsapp = siteSettings.whatsapp || CONTACT_INFO.whatsapp;
+  const phone = contact?.phone || CONTACT_INFO.phone;
+  const email = contact?.email || CONTACT_INFO.email;
+  const whatsapp = contact?.whatsapp || CONTACT_INFO.whatsapp;
   const whatsappNum = whatsapp.replace(/[^0-9]/g, '');
   const whatsappMessage = encodeURIComponent(CONTACT_INFO.whatsappMessage);
-  const address = language === 'ar' ? (siteSettings.address || CONTACT_INFO.address) : (siteSettings.addressEn || CONTACT_INFO.addressEn);
+  const address = language === 'ar' ? CONTACT_INFO.address : CONTACT_INFO.addressEn;
+
+  const social = contact?.social ?? {};
+  const hasSocial = Object.keys(social).length > 0;
 
   const socialEntries = [
-    { Icon: TwitterIcon, href: socialLinks.twitter || 'https://twitter.com/almunjiz', label: 'Twitter / X', show: !!socialLinks.twitter },
-    { Icon: InstagramIcon, href: socialLinks.instagram || 'https://instagram.com/almunjiz', label: 'Instagram', show: !!socialLinks.instagram },
-    { Icon: YoutubeIcon, href: socialLinks.youtube || 'https://youtube.com/@almunjiz', label: 'YouTube', show: !!socialLinks.youtube },
-    { Icon: FacebookIcon, href: socialLinks.facebook || '', label: 'Facebook', show: !!socialLinks.facebook },
-    { Icon: TiktokIcon, href: socialLinks.tiktok || '', label: 'TikTok', show: !!socialLinks.tiktok },
+    ...(hasSocial
+      ? (Object.entries(social) as [string, string][]).map(([key, href]) => {
+          const Icon =
+            key === 'twitter' ? TwitterIcon
+            : key === 'instagram' ? InstagramIcon
+            : key === 'youtube' ? YoutubeIcon
+            : key === 'facebook' ? FacebookIcon
+            : key === 'tiktok' ? TiktokIcon
+            : key === 'linkedin' ? LinkedInIcon
+            : MessageCircle;
+          return { Icon, href, label: key, show: true };
+        })
+      : []),
     { Icon: MessageCircle, href: `https://wa.me/${whatsappNum}`, label: 'WhatsApp', show: true },
-  ].filter((s) => s.show || s.label === 'WhatsApp');
+  ].filter((s) => s.show);
+
+  const serviceLinks = categories.map((cat) => ({
+    label: cat.labelAr,
+    labelEn: cat.labelEn,
+    href: `/services?category=${encodeURIComponent(cat.key)}`,
+  }));
 
   return (
     <footer dir={dir} className="relative bg-[#0f172a] text-white overflow-hidden">
@@ -257,6 +229,27 @@ export function Footer() {
             </div>
           </div>
         </div>
+
+        {payments.length > 0 && (
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-2.5">
+            {payments.map((p) => (
+              <span
+                key={p.slug}
+                className={cn(
+                  'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold',
+                  'bg-white/[0.05] border border-white/10 text-slate-300'
+                )}
+              >
+                <ShieldCheckIcon size={14} className="text-[#14b8a6] shrink-0" />
+                {language === 'ar' ? p.displayName : p.displayNameEn}
+              </span>
+            ))}
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.05] border border-white/10 text-slate-300">
+              <ShieldCheckIcon size={14} className="text-[#14b8a6] shrink-0" />
+              {language === 'ar' ? 'مدفوعات آمنة ومشفرة' : 'Secure encrypted payments'}
+            </span>
+          </div>
+        )}
 
         <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-slate-500 text-sm text-center md:text-start">

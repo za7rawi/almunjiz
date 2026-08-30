@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       const bcrypt = await import("bcryptjs");
-      const defaultPassword = await bcrypt.hash("otp_" + Date.now(), 10);
+      const crypto = await import("crypto");
+      const defaultPassword = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
       const nameFromEmail = email.split("@")[0];
 
       user = await prisma.user.create({

@@ -4,6 +4,7 @@ import { createPaymentProvider } from '@/lib/payment-providers';
 import { writeAuditLog } from '@/lib/audit-log';
 import { sendPaymentSuccessEmail, sendInvoiceEmail } from '@/lib/email/service';
 import { generateInvoiceNumber } from '@/lib/utils';
+import { isWebhookDuplicate, recordWebhookEvent, updateWebhookEventStatus } from '@/lib/webhook-events';
 
 export async function POST(
   request: NextRequest,
@@ -12,7 +13,19 @@ export async function POST(
   try {
     const { provider: providerSlug } = await params;
     const rawBody = await request.text();
-    const body = JSON.parse(rawBody);
+
+    const payloadHash = Buffer.from(rawBody).toString('base64').substring(0, 128);
+    if (await isWebhookDuplicate(providerSlug, null, payloadHash)) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ received: false, error: 'Invalid JSON' }, { status: 400 });
+    }
+
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => { headers[key] = value; });
 
@@ -44,14 +57,21 @@ export async function POST(
       config: gateway.config as Record<string, unknown> | null,
     });
 
+    const webhookEventId = await recordWebhookEvent(providerSlug, null, rawBody);
+
     await writeAuditLog({
       action: 'webhook.received',
       resource: 'Webhook',
       metadata: { provider: providerSlug, hasSignature: !!headers['stripe-signature'] || !!headers['x-tap-signature'] },
     });
 
+    const hasAnySignature = !!headers['stripe-signature'] || !!headers['x-tap-signature'] || !!headers['x-moyasar-signature'];
+    const signatureSecret = gateway.webhookSecret;
+    const needsSignature = signatureSecret && signatureSecret.length > 0;
+
     const isValid = await provider.verifyWebhookSignature({ headers, body, rawBody });
-    if (!isValid) {
+    if (needsSignature && !isValid) {
+      await updateWebhookEventStatus(webhookEventId, 'rejected_invalid_signature');
       await writeAuditLog({
         action: 'webhook.failed',
         resource: 'Webhook',
@@ -60,9 +80,22 @@ export async function POST(
       return NextResponse.json({ received: false, error: 'Invalid signature' }, { status: 401 });
     }
 
+    if (!needsSignature && !hasAnySignature) {
+      await writeAuditLog({
+        action: 'webhook.no_signature_configured',
+        resource: 'Webhook',
+        metadata: { provider: providerSlug, note: 'No webhook secret configured - skipping signature verification' },
+      });
+    }
+
     const webhookResult = provider.parseWebhook({ headers, body, rawBody });
 
     if (webhookResult.transactionId) {
+      if (await isWebhookDuplicate(providerSlug, webhookResult.transactionId, payloadHash)) {
+        await updateWebhookEventStatus(webhookEventId, 'duplicate_skipped');
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+
       const payment = await prisma.payment.findFirst({
         where: { transactionId: webhookResult.transactionId },
         include: { order: true },
@@ -73,6 +106,7 @@ export async function POST(
           webhookResult.amount != null &&
           Math.abs(Number(webhookResult.amount) - Number(payment.order.total)) > 0.005
         ) {
+          await updateWebhookEventStatus(webhookEventId, 'rejected_amount_mismatch');
           await writeAuditLog({
             action: 'webhook.failed',
             resource: 'Webhook',
@@ -93,7 +127,7 @@ export async function POST(
               : webhookResult.status === 'FAILED' ? 'FAILED'
               : webhookResult.status === 'CANCELLED' ? 'FAILED'
               : 'PENDING',
-            gatewayData: body,
+            gatewayData: JSON.parse(JSON.stringify(body)),
           },
         });
 
@@ -220,6 +254,8 @@ export async function POST(
         });
       }
     }
+
+    await updateWebhookEventStatus(webhookEventId, 'processed');
 
     await writeAuditLog({
       action: 'webhook.processed',

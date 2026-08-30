@@ -85,7 +85,6 @@ export default function LoginPage() {
       if (data.success) {
         sessionStorage.setItem('otp_identifier', email);
         sessionStorage.setItem('otp_type', 'email');
-        if (data.devCode) sessionStorage.setItem('otp_dev_code', data.devCode);
         router.push(`/otp?redirect=${encodeURIComponent(redirectTo)}`);
       } else {
         setErrors({ general: data.error || data.message || (isAr ? 'فشل إرسال رمز التحقق' : 'Failed to send verification code') });

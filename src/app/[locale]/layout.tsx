@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { PromoBar } from "@/components/storefront/promo-bar";
 import { LocaleProvider } from "@/components/providers/locale-provider";
 import { prisma } from "@/lib/prisma";
+import { getStorefrontMeta } from "@/lib/storefront-data";
 import { blogsData } from "@/lib/blogs-data";
 
 const SITE_URL = "https://munjiz.store";
@@ -182,12 +184,29 @@ export default async function LocaleLayout({
   const { locale } = await params;
   const pathname = await getPathname(`/${locale}`);
 
+  const isShellRoute = /^\/(?:ar|en)\/(?:admin|dashboard|login|register|forgot-password|otp|verify)(?:\/|$)/.test(pathname);
+
+  let storefrontMeta;
+  try {
+    storefrontMeta = await getStorefrontMeta();
+  } catch (error) {
+    console.error("Failed to load storefront meta:", error);
+    storefrontMeta = null;
+  }
+
   return (
     <LocaleProvider locale={locale}>
       <Breadcrumb pathname={pathname} locale={locale} />
-      <Header />
-      <main className="flex-1 pt-16 md:pt-20">{children}</main>
-      <Footer />
+      {!isShellRoute && <PromoBar data={storefrontMeta?.promoBar ?? null} />}
+      {!isShellRoute && <Header categories={storefrontMeta?.categories ?? []} contact={storefrontMeta?.contact} />}
+      <main className="flex-1">{children}</main>
+      {!isShellRoute && (
+        <Footer
+          categories={storefrontMeta?.categories ?? []}
+          contact={storefrontMeta?.contact}
+          payments={storefrontMeta?.payments ?? []}
+        />
+      )}
     </LocaleProvider>
   );
 }

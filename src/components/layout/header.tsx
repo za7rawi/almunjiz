@@ -16,6 +16,7 @@ import {
   X,
   Phone,
   Mail,
+  ShoppingCart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/store/language-store';
@@ -25,28 +26,29 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import { SearchTrigger } from '@/components/shared/search-trigger';
 import { CurrencyToggle } from '@/components/ui/currency-toggle';
+import { CartDrawer } from '@/components/cart/cart-drawer';
 import { useAuthStore } from '@/store/auth-store';
+import { useCartStore, useCartCount } from '@/store/cart-store';
 import { getInitials } from '@/lib/utils';
+import type { StorefrontCategory, StorefrontContact } from '@/lib/storefront-data';
 
-interface SiteSettings {
-  whatsapp?: string;
-  phone?: string;
-  email?: string;
-  logo?: string;
-  siteName?: string;
-  siteNameEn?: string;
+interface HeaderProps {
+  categories?: StorefrontCategory[];
+  contact?: StorefrontContact;
 }
 
-export function Header() {
+export function Header({ categories = [], contact }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeHover, setActiveHover] = useState<string | null>(null);
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
+  const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
   const pathname = usePathname();
   const { language, setLanguage } = useLanguageStore();
   const { dir, isRtl } = useDirection();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const cartCount = useCartCount();
+  const setCartOpen = useCartStore((s) => s.setOpen);
   const router = useRouter();
   const prevPathnameRef = useRef(pathname);
 
@@ -57,33 +59,17 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/cms/settings')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setSiteSettings({
-            whatsapp: json.data.whatsapp || json.data.contact_whatsapp,
-            phone: json.data.phone || json.data.contact_phone,
-            email: json.data.email || json.data.contact_email,
-            logo: json.data.logo,
-            siteName: json.data.siteName || json.data.site_name,
-            siteNameEn: json.data.siteNameEn || json.data.site_name_en,
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
     if (prevPathnameRef.current !== pathname) {
       setMobileOpen(false);
+      setShowUserMenu(false);
+      setServiceMenuOpen(false);
       prevPathnameRef.current = pathname;
     }
   }, [pathname]);
 
-  const phone = siteSettings.phone || CONTACT_INFO.phone;
-  const email = siteSettings.email || CONTACT_INFO.email;
-  const whatsapp = siteSettings.whatsapp || CONTACT_INFO.whatsapp;
+  const phone = contact?.phone || CONTACT_INFO.phone;
+  const email = contact?.email || CONTACT_INFO.email;
+  const whatsapp = contact?.whatsapp || CONTACT_INFO.whatsapp;
   const whatsappMessage = encodeURIComponent(CONTACT_INFO.whatsappMessage);
 
   const handleLangToggle = () => {
@@ -118,7 +104,7 @@ export function Header() {
       <header
         dir={dir}
         className={cn(
-          'fixed top-0 inset-x-0 z-50 transition-all duration-500',
+          'sticky top-0 inset-x-0 z-50 transition-all duration-500',
           scrolled
             ? 'bg-[#0f172a]/98 backdrop-blur-2xl shadow-2xl shadow-black/20 border-b border-white/5'
             : 'bg-[#0f172a]/95 backdrop-blur-2xl border-b border-white/[0.06]'
@@ -139,6 +125,84 @@ export function Header() {
               {NAVIGATION_LINKS.map((link) => {
                 const isActive = pathname === link.href;
                 const isHovered = hoveredNav === link.href;
+                if (link.href === '/services') {
+                  return (
+                    <div
+                      key={link.href}
+                      className="relative"
+                      onMouseEnter={() => setServiceMenuOpen(true)}
+                      onMouseLeave={() => setServiceMenuOpen(false)}
+                    >
+                      <Link
+                        href={link.href}
+                        onMouseEnter={() => setActiveHover(link.href)}
+                        onFocus={() => setServiceMenuOpen(true)}
+                        onBlur={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) setServiceMenuOpen(false);
+                        }}
+                        className={cn(
+                          'relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 z-10',
+                          isActive ? 'text-white' : 'text-white/60 hover:text-white'
+                        )}
+                      >
+                        {language === 'ar' ? link.label : link.labelEn}
+                        <ChevronDown
+                          size={14}
+                          className={cn('text-white/40 transition-transform duration-200', serviceMenuOpen && 'rotate-180')}
+                        />
+                        {(isActive || isHovered) && (
+                          <motion.div
+                            layoutId="nav-bg"
+                            className="absolute inset-0 rounded-lg bg-white/[0.08]"
+                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                          />
+                        )}
+                      </Link>
+                      <AnimatePresence>
+                        {serviceMenuOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 8 }}
+                            transition={{ duration: 0.15 }}
+                            className={cn(
+                              'absolute top-full mt-2 w-72 z-40 py-2 rounded-2xl',
+                              'bg-[#1e293b]/95 backdrop-blur-2xl shadow-2xl shadow-black/30 border border-white/10 overflow-hidden'
+                            )}
+                          >
+                            {categories.length > 0 ? (
+                              <>
+                                {categories.map((cat) => (
+                                  <Link
+                                    key={cat.key}
+                                    href={`/services?category=${encodeURIComponent(cat.key)}`}
+                                    onClick={() => setServiceMenuOpen(false)}
+                                    className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors"
+                                  >
+                                    <span className="font-medium">
+                                      {language === 'ar' ? cat.labelAr : cat.labelEn}
+                                    </span>
+                                    <span className="text-[11px] text-white/30 bg-white/[0.06] rounded-full px-2 py-0.5">
+                                      {cat.count}
+                                    </span>
+                                  </Link>
+                                ))}
+                                <div className="h-px bg-white/[0.08] my-1.5" />
+                              </>
+                            ) : null}
+                            <Link
+                              href="/services"
+                              onClick={() => setServiceMenuOpen(false)}
+                              className="block px-4 py-2.5 text-sm font-semibold text-[#2580eb] hover:bg-white/[0.06] transition-colors"
+                            >
+                              {language === 'ar' ? 'عرض جميع الخدمات' : 'View all services'}
+                            </Link>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                }
                 return (
                   <Link
                     key={link.href}
@@ -185,6 +249,22 @@ export function Header() {
               </motion.a>
 
               <SearchTrigger />
+
+              {/* Cart */}
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCartOpen(true)}
+                aria-label={language === 'ar' ? 'سلة الطلبات' : 'Cart'}
+                className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-[#2580eb]/15 text-[#2580eb] hover:bg-[#2580eb]/25 transition-all duration-300 border border-[#2580eb]/20 hover:border-[#2580eb]/40"
+              >
+                <ShoppingCart size={18} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -end-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </motion.button>
 
               {/* Auth */}
               {isAuthenticated && user ? (
@@ -359,6 +439,34 @@ export function Header() {
                       </motion.div>
                     );
                   })}
+
+                  {categories.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.22 }}
+                      className="pt-4"
+                    >
+                      <p className="px-4 pb-2 text-xs font-bold text-white/40 tracking-wide uppercase">
+                        {language === 'ar' ? 'الأقسام' : 'Categories'}
+                      </p>
+                      <div className="space-y-1">
+                        {categories.map((cat) => (
+                          <Link
+                            key={cat.key}
+                            href={`/services?category=${encodeURIComponent(cat.key)}`}
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm text-white/60 hover:bg-white/5 hover:text-white transition-all duration-200"
+                          >
+                            <span>{language === 'ar' ? cat.labelAr : cat.labelEn}</span>
+                            <span className="text-[11px] text-white/30 bg-white/[0.06] rounded-full px-2 py-0.5">
+                              {cat.count}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
                 </nav>
 
                 {/* Bottom actions */}
@@ -434,6 +542,8 @@ export function Header() {
           </>
         )}
       </AnimatePresence>
+
+      <CartDrawer />
     </>
   );
 }

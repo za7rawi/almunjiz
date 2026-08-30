@@ -28,6 +28,7 @@ import {
   Menu,
   X,
   Layers,
+  Search,
   Wallet,
   Activity,
   HelpCircle,
@@ -47,27 +48,69 @@ interface AdminSidebarItem {
   href: string;
 }
 
-const adminSidebarItems: AdminSidebarItem[] = [
-  { label: 'لوحة التحكم', labelEn: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin' },
-  { label: 'الخدمات', labelEn: 'Services', icon: <Layers size={20} />, href: '/admin/services' },
-  { label: 'الطلبات', labelEn: 'Orders', icon: <Package size={20} />, href: '/admin/orders' },
-  { label: 'العملاء', labelEn: 'Customers', icon: <Users size={20} />, href: '/admin/customers' },
-  { label: 'الموظفون', labelEn: 'Employees', icon: <UserCog size={20} />, href: '/admin/employees' },
-  { label: 'الفواتير', labelEn: 'Invoices', icon: <FileText size={20} />, href: '/admin/invoices' },
-  { label: 'المدفوعات', labelEn: 'Payments', icon: <CreditCard size={20} />, href: '/admin/payments' },
-  { label: 'بوابات الدفع', labelEn: 'Gateways', icon: <Wallet size={20} />, href: '/admin/gateways' },
-  { label: 'الإشعارات', labelEn: 'Notifications', icon: <Bell size={20} />, href: '/admin/notifications' },
-  { label: 'التقييمات', labelEn: 'Reviews', icon: <Star size={20} />, href: '/admin/reviews' },
-  { label: 'الأخبار', labelEn: 'News', icon: <Newspaper size={20} />, href: '/admin/news' },
-  { label: 'الصفحات', labelEn: 'Pages', icon: <File size={20} />, href: '/admin/pages' },
-  { label: 'البانرات', labelEn: 'Banners', icon: <Images size={20} />, href: '/admin/banners' },
-  { label: 'العروض', labelEn: 'Offers', icon: <Tag size={20} />, href: '/admin/offers' },
-  { label: 'الكوبونات', labelEn: 'Coupons', icon: <Percent size={20} />, href: '/admin/coupons' },
-  { label: 'الأسئلة الشائعة', labelEn: 'FAQs', icon: <HelpCircle size={20} />, href: '/admin/faqs' },
-  { label: 'الصلاحيات', labelEn: 'Permissions', icon: <Shield size={20} />, href: '/admin/permissions' },
-  { label: 'التقارير', labelEn: 'Reports', icon: <BarChart3 size={20} />, href: '/admin/reports' },
-  { label: 'سجل النشاطات', labelEn: 'Audit Logs', icon: <Activity size={20} />, href: '/admin/audit-logs' },
-  { label: 'الإعدادات', labelEn: 'Settings', icon: <Settings size={20} />, href: '/admin/settings' },
+interface SidebarSection {
+  title: string;
+  titleEn: string;
+  items: AdminSidebarItem[];
+}
+
+const sidebarSections: SidebarSection[] = [
+  {
+    title: 'نظرة عامة',
+    titleEn: 'OVERVIEW',
+    items: [
+      { label: 'لوحة التحكم', labelEn: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin' },
+    ],
+  },
+  {
+    title: 'المبيعات',
+    titleEn: 'SALES',
+    items: [
+      { label: 'الطلبات', labelEn: 'Orders', icon: <Package size={20} />, href: '/admin/orders' },
+      { label: 'الفواتير', labelEn: 'Invoices', icon: <FileText size={20} />, href: '/admin/invoices' },
+      { label: 'المدفوعات', labelEn: 'Payments', icon: <CreditCard size={20} />, href: '/admin/payments' },
+      { label: 'العملاء', labelEn: 'Customers', icon: <Users size={20} />, href: '/admin/customers' },
+    ],
+  },
+  {
+    title: 'المحتوى',
+    titleEn: 'CONTENT',
+    items: [
+      { label: 'الخدمات', labelEn: 'Services', icon: <Layers size={20} />, href: '/admin/services' },
+      { label: 'العروض', labelEn: 'Offers', icon: <Tag size={20} />, href: '/admin/offers' },
+      { label: 'الأخبار', labelEn: 'News', icon: <Newspaper size={20} />, href: '/admin/news' },
+      { label: 'الصفحات', labelEn: 'Pages', icon: <File size={20} />, href: '/admin/pages' },
+      { label: 'البانرات', labelEn: 'Banners', icon: <Images size={20} />, href: '/admin/banners' },
+      { label: 'الأسئلة الشائعة', labelEn: 'FAQs', icon: <HelpCircle size={20} />, href: '/admin/faqs' },
+    ],
+  },
+  {
+    title: 'العمليات',
+    titleEn: 'OPERATIONS',
+    items: [
+      { label: 'الإشعارات', labelEn: 'Notifications', icon: <Bell size={20} />, href: '/admin/notifications' },
+      { label: 'التقييمات', labelEn: 'Reviews', icon: <Star size={20} />, href: '/admin/reviews' },
+      { label: 'الكوبونات', labelEn: 'Coupons', icon: <Percent size={20} />, href: '/admin/coupons' },
+    ],
+  },
+  {
+    title: 'المستخدمون',
+    titleEn: 'USERS',
+    items: [
+      { label: 'الموظفون', labelEn: 'Employees', icon: <UserCog size={20} />, href: '/admin/employees' },
+      { label: 'الصلاحيات', labelEn: 'Permissions', icon: <Shield size={20} />, href: '/admin/permissions' },
+    ],
+  },
+  {
+    title: 'النظام',
+    titleEn: 'SYSTEM',
+    items: [
+      { label: 'بوابات الدفع', labelEn: 'Gateways', icon: <Wallet size={20} />, href: '/admin/gateways' },
+      { label: 'التقارير', labelEn: 'Reports', icon: <BarChart3 size={20} />, href: '/admin/reports' },
+      { label: 'سجل النشاطات', labelEn: 'Audit Logs', icon: <Activity size={20} />, href: '/admin/audit-logs' },
+      { label: 'الإعدادات', labelEn: 'Settings', icon: <Settings size={20} />, href: '/admin/settings' },
+    ],
+  },
 ];
 
 interface AdminSidebarProps {
@@ -76,9 +119,10 @@ interface AdminSidebarProps {
   adminAvatar?: string | null;
   mobileOpen?: boolean;
   onMobileToggle?: (open: boolean) => void;
+  onSearchOpen?: () => void;
 }
 
-export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almunjiz.com', adminAvatar, mobileOpen = false, onMobileToggle }: AdminSidebarProps) {
+export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almunjiz.com', adminAvatar, mobileOpen = false, onMobileToggle, onSearchOpen }: AdminSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -113,78 +157,91 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
           )}
         </Link>
         {!isMobile && (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          <button
+            onClick={onSearchOpen}
+            title="Search"
+            className={cn(
+              'p-1.5 rounded-lg transition-colors',
+              'hover:bg-white/10 text-slate-400 hover:text-white',
+              collapsed ? 'hidden' : '',
+            )}
+          >
+            <Search size={16} />
+          </button>
+        )}
+        {!isMobile && (
+          <button
             onClick={() => setCollapsed(!collapsed)}
             className={cn(
               'p-1.5 rounded-lg transition-colors',
               'hover:bg-white/10 text-slate-400 hover:text-white',
             )}
           >
-            <motion.div
-              animate={{ rotate: collapsed ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
+            <div
+              style={{ transform: `rotate(${collapsed ? 180 : 0}deg)`, transition: 'transform 0.2s' }}
             >
               {isRtl ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-            </motion.div>
-          </motion.button>
+            </div>
+          </button>
         )}
         {isMobile && (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={() => onMobileToggle?.(false)}
             className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
           >
             <X size={18} />
-          </motion.button>
+          </button>
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin">
-        {adminSidebarItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => isMobile && onMobileToggle?.(false)}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative',
-                isActive
-                  ? 'bg-gradient-to-r from-[#2580eb]/15 to-[#14b8a6]/10 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5',
-              )}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="admin-sidebar-active"
-                  className={cn(
-                    'absolute inset-y-1 w-0.5 rounded-full bg-gradient-to-b from-[#2580eb] to-[#14b8a6]',
-                    isRtl ? 'right-0' : 'left-0',
-                  )}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <span className={cn('shrink-0', isActive ? 'text-[#2580eb]' : '')}>
-                {item.icon}
-              </span>
-              <AnimatePresence>
-                {(!collapsed || isMobile) && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="truncate"
+      <nav className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin">
+        {sidebarSections.map((section) => (
+          <div key={section.titleEn}>
+            {(!collapsed || isMobile) && (
+              <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                {language === 'ar' ? section.title : section.titleEn}
+              </p>
+            )}
+            {collapsed && !isMobile && (
+              <div className="mx-3 mb-1.5 border-t border-white/5" />
+            )}
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => isMobile && onMobileToggle?.(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative',
+                      isActive
+                        ? 'bg-[#2580eb]/10 text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5',
+                    )}
                   >
-                    {language === 'ar' ? item.label : item.labelEn}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </Link>
-          );
-        })}
+                    {isActive && (
+                      <div
+                        className={cn(
+                          'absolute inset-y-1 w-0.5 rounded-full bg-[#2580eb]',
+                          isRtl ? 'right-0' : 'left-0',
+                        )}
+                      />
+                    )}
+                    <span className={cn('shrink-0', isActive ? 'text-[#2580eb]' : '')}>
+                      {item.icon}
+                    </span>
+                    {(!collapsed || isMobile) && (
+                      <span className="truncate">
+                        {language === 'ar' ? item.label : item.labelEn}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className={cn('p-3 border-t border-white/10', collapsed && !isMobile ? 'text-center' : '')}>
@@ -196,23 +253,14 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
               initials
             )}
           </div>
-          <AnimatePresence>
-            {(!collapsed || isMobile) && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-sm font-medium text-white truncate">{adminName}</p>
-                <p className="text-xs text-slate-400 truncate">{adminEmail}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {(!collapsed || isMobile) && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{adminName}</p>
+              <p className="text-xs text-slate-400 truncate">{adminEmail}</p>
+            </div>
+          )}
         </div>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={handleLogout}
           className={cn(
             'flex items-center gap-3 w-full mt-2 px-3 py-2.5 rounded-xl text-sm font-medium',
@@ -221,18 +269,12 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
           )}
         >
           <LogOut size={18} />
-          <AnimatePresence>
-            {(!collapsed || isMobile) && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-              >
-                {language === 'ar' ? 'تسجيل خروج' : 'Logout'}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </motion.button>
+          {(!collapsed || isMobile) && (
+            <span>
+              {language === 'ar' ? 'تسجيل خروج' : 'Logout'}
+            </span>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -240,15 +282,13 @@ export function AdminSidebar({ adminName = 'مدير', adminEmail = 'admin@almun
   if (isMobile) {
     return (
       <>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => onMobileToggle?.(true)}
           className="fixed top-4 z-40 p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700"
           style={{ [isRtl ? 'right' : 'left']: '16px' }}
         >
           <Menu size={20} className="text-slate-700 dark:text-slate-200" />
-        </motion.button>
+        </button>
 
         <AnimatePresence>
           {mobileOpen && (

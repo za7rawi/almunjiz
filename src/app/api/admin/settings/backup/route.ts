@@ -43,7 +43,22 @@ export async function GET() {
           updatedAt: true,
         },
       }),
-      prisma.paymentGateway.findMany(),
+      prisma.paymentGateway.findMany({
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          provider: true,
+          displayName: true,
+          isActive: true,
+          environment: true,
+          apiEndpoint: true,
+          config: true,
+          createdAt: true,
+          updatedAt: true,
+          // SECURITY: Never export secretKey, publicKey, webhookSecret, merchantId
+        },
+      }),
       prisma.banner.findMany(),
       prisma.news.findMany(),
       prisma.fAQ.findMany(),

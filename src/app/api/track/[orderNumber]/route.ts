@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { trackLimiter } from "@/lib/rate-limit";
-import { fileAttachmentSelect, recoverFileAttachmentsForOrder } from "@/lib/file-attachments";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "EMPLOYEE"];
 
@@ -38,7 +37,6 @@ export async function GET(
         service: { select: { id: true, name: true, nameEn: true, slug: true } },
         invoice: { select: { id: true, invoiceNumber: true, status: true, total: true, paidAt: true } },
         timeline: { orderBy: { createdAt: "asc" } },
-        fileAttachments: { select: fileAttachmentSelect },
       },
     });
 
@@ -60,38 +58,38 @@ export async function GET(
     const isOwner = !!sessionUserId && order.userId === sessionUserId;
     const hasValidToken = !!orderToken && !!token && orderToken === token;
 
-    const orderWithAttachments = await recoverFileAttachmentsForOrder(order);
+    const authorized = isAdmin || isOwner || hasValidToken;
 
     const base = {
-      orderNumber: orderWithAttachments.orderNumber,
-      status: orderWithAttachments.status,
-      paymentStatus: orderWithAttachments.paymentStatus,
-      service: orderWithAttachments.service,
-      baseAmount: Number(orderWithAttachments.amount),
-      discount: Number(orderWithAttachments.discount),
-      tax: Number(orderWithAttachments.tax),
-      total: Number(orderWithAttachments.total),
-      paymentMethod: orderWithAttachments.paymentMethod,
-      timeline: orderWithAttachments.timeline.map((t) => ({
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      service: order.service,
+      baseAmount: Number(order.amount),
+      discount: Number(order.discount),
+      tax: Number(order.tax),
+      total: Number(order.total),
+      paymentMethod: order.paymentMethod,
+      timeline: order.timeline.map((t) => ({
         id: t.id,
         status: t.status,
         description: t.description,
         createdAt: t.createdAt,
       })),
-      createdAt: orderWithAttachments.createdAt,
-      estimatedDelivery: orderWithAttachments.estimatedDelivery,
-      deliveredAt: orderWithAttachments.deliveredAt,
+      createdAt: order.createdAt,
+      estimatedDelivery: order.estimatedDelivery,
+      deliveredAt: order.deliveredAt,
     };
-
-    const authorized = isAdmin || isOwner || hasValidToken;
 
     const data = authorized
       ? {
           ...base,
-          customerName: orderWithAttachments.customerName,
-          invoice: orderWithAttachments.invoice,
-          fileAttachments: orderWithAttachments.fileAttachments,
-          unresolvedAttachments: orderWithAttachments.unresolvedAttachments,
+          customerName: order.customerName,
+          customerEmail: isAdmin ? order.customerEmail : undefined,
+          customerPhone: isAdmin ? order.customerPhone : undefined,
+          invoice: order.invoice,
+          notes: order.notes,
+          internalNotes: isAdmin ? order.internalNotes : undefined,
         }
       : base;
 

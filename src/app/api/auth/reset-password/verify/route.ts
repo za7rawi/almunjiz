@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyStoredOTP } from "@/lib/otp";
 import { prisma } from "@/lib/prisma";
+import { revokeAllUserSessions } from "@/lib/session-revocation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,6 +33,11 @@ export async function POST(req: NextRequest) {
       where: { id: user.id },
       data: { password: hashedPassword },
     });
+
+    await revokeAllUserSessions(user.id, 'password_reset');
+
+    const { revokeAllSessions } = await import("@/lib/session-security");
+    await revokeAllSessions(user.id);
 
     return NextResponse.json({ success: true, message: "تم تحديث كلمة المرور بنجاح" });
   } catch (error) {

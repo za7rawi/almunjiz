@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   Ban,
   Star,
+  CreditCard,
+  Bell,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -179,6 +181,8 @@ export default function AdminDashboardPage() {
     )
     .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
   const inProgressOrders = orders.filter((o) => o.status === 'IN_PROGRESS').length;
+  const pendingPayments = orders.filter((o) => o.paymentStatus === 'PENDING').length;
+  const unpaidInvoices = orders.filter((o) => o.paymentStatus === 'UNPAID' || o.paymentStatus === 'PENDING').length;
 
   const statusCounts: Record<string, number> = {};
   orders.forEach((o) => {
@@ -205,6 +209,8 @@ export default function AdminDashboardPage() {
     { label: isAr ? 'طلبات هذا الأسبوع' : 'This Week Orders', value: weekOrdersCount, suffix: '', icon: Clock, color: '#4f46e5', numeric: weekOrdersCount },
     { label: isAr ? 'إيرادات هذا الشهر' : "This Month Revenue", value: monthRevenue, suffix: ' ر.س', icon: TrendingUp, color: '#10b981', numeric: monthRevenue },
     { label: isAr ? 'طلبات قيد التنفيذ' : 'In Progress Orders', value: inProgressOrders, suffix: '', icon: Loader2, color: '#f97316', numeric: inProgressOrders },
+    { label: isAr ? 'مدفوعات معلقة' : 'Pending Payments', value: pendingPayments, suffix: '', icon: CreditCard, color: '#eab308', numeric: pendingPayments },
+    { label: isAr ? 'فواتير غير مدفوعة' : 'Unpaid Invoices', value: unpaidInvoices, suffix: '', icon: AlertCircle, color: '#ef4444', numeric: unpaidInvoices },
   ];
 
   const getStatusLabel = (status: string) => statusConfig[status]?.[isAr ? 'labelAr' : 'labelEn'] || status;
@@ -212,8 +218,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title={isAr ? 'لوحة تحكم المدير' : 'Admin Dashboard'}
-        subtitle={isAr ? 'مرحباً بك في لوحة التحكم' : 'Welcome to the dashboard'}
+        title={isAr ? 'مرحبًا بك في لوحة تحكم المنجز' : 'Welcome to AL-MUNJIZ Dashboard'}
+        subtitle={isAr ? 'نظرة عامة على أداء المنصة' : 'Platform performance overview'}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -262,7 +268,9 @@ export default function AdminDashboardPage() {
                     <tr className="border-b border-slate-100 dark:border-white/5">
                       <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'العميل' : 'Customer'}</th>
                       <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الخدمة' : 'Service'}</th>
-                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'الحالة' : 'Status'}</th>
+                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'حالة الطلب' : 'Status'}</th>
+                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'حالة الدفع' : 'Payment'}</th>
+                      <th className="text-start py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'التاريخ' : 'Date'}</th>
                       <th className="text-end py-3 px-2 text-slate-500 dark:text-slate-400 font-medium">{isAr ? 'المبلغ' : 'Amount'}</th>
                     </tr>
                   </thead>
@@ -289,6 +297,16 @@ export default function AdminDashboardPage() {
                             {getStatusLabel(order.status)}
                           </Badge>
                         </td>
+                        <td className="py-3 px-2">
+                          <Badge
+                            variant={order.paymentStatus === 'PAID' ? 'success' : order.paymentStatus === 'UNPAID' ? 'danger' : 'warning'}
+                            size="sm"
+                            dot
+                          >
+                            {order.paymentStatus === 'PAID' ? (isAr ? 'مدفوع' : 'Paid') : order.paymentStatus === 'UNPAID' ? (isAr ? 'غير مدفوع' : 'Unpaid') : (isAr ? 'معلق' : 'Pending')}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-2 text-xs text-slate-500 dark:text-slate-400">{new Date(order.createdAt).toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}</td>
                         <td className="py-3 px-2 text-end font-bold text-slate-900 dark:text-white">
                           {Number(order.total || 0).toLocaleString()} ر.س
                         </td>
@@ -296,7 +314,7 @@ export default function AdminDashboardPage() {
                     ))}
                     {recentOrders.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500">
+                        <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-slate-500">
                           {isAr ? 'لا توجد طلبات بعد' : 'No orders yet'}
                         </td>
                       </tr>
@@ -444,6 +462,102 @@ export default function AdminDashboardPage() {
                     </motion.div>
                   </Link>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Bell size={18} className="text-[#f59e0b]" />
+              <h3 className="font-bold text-slate-900 dark:text-white">{isAr ? 'مركز الإجراءات' : 'Action Center'}</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {newOrders > 0 && (
+                  <Link href="/admin/orders?status=PENDING">
+                    <motion.div
+                      whileHover={{ x: 4 }}
+                      className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                          <ShoppingCart size={18} className="text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'طلبات جديدة' : 'New Orders'}</p>
+                          <p className="text-xs text-slate-400">{isAr ? 'بانتظار المعالجة' : 'Awaiting processing'}</p>
+                        </div>
+                      </div>
+                      <Badge variant="warning" size="sm">{newOrders}</Badge>
+                    </motion.div>
+                  </Link>
+                )}
+                {pendingPayments > 0 && (
+                  <Link href="/admin/payments?status=PENDING">
+                    <motion.div
+                      whileHover={{ x: 4 }}
+                      className="flex items-center justify-between p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                          <CreditCard size={18} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'مدفوعات معلقة' : 'Pending Payments'}</p>
+                          <p className="text-xs text-slate-400">{isAr ? 'بانتظار المراجعة' : 'Awaiting review'}</p>
+                        </div>
+                      </div>
+                      <Badge variant="info" size="sm">{pendingPayments}</Badge>
+                    </motion.div>
+                  </Link>
+                )}
+                {unpaidInvoices > 0 && (
+                  <Link href="/admin/payments?status=UNPAID">
+                    <motion.div
+                      whileHover={{ x: 4 }}
+                      className="flex items-center justify-between p-3 rounded-xl bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center">
+                          <AlertCircle size={18} className="text-red-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'فواتير غير مدفوعة' : 'Unpaid Invoices'}</p>
+                          <p className="text-xs text-slate-400">{isAr ? 'تحتاج متابعة' : 'Need follow-up'}</p>
+                        </div>
+                      </div>
+                      <Badge variant="danger" size="sm">{unpaidInvoices}</Badge>
+                    </motion.div>
+                  </Link>
+                )}
+                {inProgressOrders > 0 && (
+                  <Link href="/admin/orders?status=IN_PROGRESS">
+                    <motion.div
+                      whileHover={{ x: 4 }}
+                      className="flex items-center justify-between p-3 rounded-xl bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-orange-500/15 flex items-center justify-center">
+                          <Loader2 size={18} className="text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'قيد التنفيذ' : 'In Progress'}</p>
+                          <p className="text-xs text-slate-400">{isAr ? 'طلبات جارية' : 'Active orders'}</p>
+                        </div>
+                      </div>
+                      <Badge variant="primary" size="sm">{inProgressOrders}</Badge>
+                    </motion.div>
+                  </Link>
+                )}
+                {newOrders === 0 && pendingPayments === 0 && unpaidInvoices === 0 && inProgressOrders === 0 && (
+                  <div className="flex items-center justify-center p-6 rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
+                    <div className="text-center">
+                      <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{isAr ? 'لا توجد إجراءات مطلوبة' : 'No actions needed'}</p>
+                      <p className="text-xs text-slate-400">{isAr ? 'كل شيء على ما يرام' : 'Everything is up to date'}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

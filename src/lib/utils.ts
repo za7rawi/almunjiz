@@ -37,30 +37,31 @@ export function truncate(str: string, length: number): string {
 }
 
 export function generateOrderNumber(): string {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { randomBytes } = require("crypto") as typeof import("crypto");
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const random = randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
   return `AM-${timestamp}-${random}`;
 }
 
 export function generateInvoiceNumber(): string {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { randomInt } = require("crypto") as typeof import("crypto");
   const ts = Date.now();
-  const rand = Math.floor(1000 + Math.random() * 9000);
+  const rand = randomInt(1000, 9999);
   return `INV-${ts}-${rand}`;
 }
 
 export function generateTrackingToken(): string {
-  const bytes = new Uint8Array(16);
-  const g = globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => void } };
-  if (g.crypto?.getRandomValues) {
-    g.crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { randomBytes } = require("crypto") as typeof import("crypto");
+  return randomBytes(32).toString('hex');
 }
 
 export function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { randomInt } = require("crypto") as typeof import("crypto");
+  return randomInt(100000, 999999).toString();
 }
 
 export function slugify(text: string): string {

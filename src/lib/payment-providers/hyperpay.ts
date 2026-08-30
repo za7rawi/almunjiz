@@ -147,9 +147,12 @@ export class HyperPayProvider extends PaymentProvider {
 
   async verifyWebhookSignature(payload: WebhookPayload): Promise<boolean> {
     if (!this.config.webhookSecret) return false;
-    const secret = payload.headers['authorization'];
-    if (!secret) return false;
-    return secret === `Bearer ${this.config.webhookSecret}`;
+    const authHeader = payload.headers['authorization'];
+    if (!authHeader) return false;
+    const expected = `Bearer ${this.config.webhookSecret}`;
+    if (authHeader.length !== expected.length) return false;
+    const { timingSafeEqual } = await import('crypto');
+    return timingSafeEqual(Buffer.from(authHeader, 'utf8'), Buffer.from(expected, 'utf8'));
   }
 
   private mapStatus(code: string): PaymentVerification['status'] {

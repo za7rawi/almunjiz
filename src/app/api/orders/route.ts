@@ -8,7 +8,7 @@ import { writeAuditLog } from '@/lib/audit-log';
 import { SITE_URL } from '@/config';
 import { apiLimiter } from '@/lib/rate-limit';
 import { fileAttachmentSelect, recoverFileAttachmentsForOrder, recoverFileAttachmentsForOrders } from '@/lib/file-attachments';
-import { resolveCoupon, computeOrderPricing, amountsMatch } from '@/lib/pricing';
+import { resolveCoupon, computeOrderPricing } from '@/lib/pricing';
 
 export async function GET(request: NextRequest) {
   try {
@@ -101,9 +101,10 @@ export async function POST(request: NextRequest) {
       attachments = [],
       fileAttachmentIds = [],
       promoCode,
-      amount: clientAmount,
-      total: clientTotal,
     } = body;
+
+    // SECURITY: Client-submitted prices are completely ignored.
+    // All pricing is computed server-side from the database.
 
     if (!serviceId || !customerName || !customerEmail) {
       return NextResponse.json(
@@ -128,24 +129,9 @@ export async function POST(request: NextRequest) {
     }
 
     const coupon = await resolveCoupon(promoCode, Number(service.price));
+    // SECURITY: All pricing computed server-side from database values only.
+    // Client-submitted amounts are completely ignored.
     const pricing = await computeOrderPricing(Number(service.price), coupon);
-
-    const clientAmountNum = clientAmount !== undefined && clientAmount !== null ? Number(clientAmount) : null;
-    const clientTotalNum = clientTotal !== undefined && clientTotal !== null ? Number(clientTotal) : null;
-
-    if (clientAmountNum !== null && !amountsMatch(clientAmountNum, pricing.amount)) {
-      return NextResponse.json(
-        { success: false, error: 'Price validation failed. Refresh and try again.' },
-        { status: 400 }
-      );
-    }
-
-    if (clientTotalNum !== null && !amountsMatch(clientTotalNum, pricing.total)) {
-      return NextResponse.json(
-        { success: false, error: 'Total validation failed. Refresh and try again.' },
-        { status: 400 }
-      );
-    }
 
     const orderNumber = generateOrderNumber();
     const invoiceNumber = generateInvoiceNumber();

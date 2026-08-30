@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
 import { useCurrencyStore } from '@/store/currency-store';
+import { useCartStore } from '@/store/cart-store';
 import { formatPrice } from '@/lib/currency';
 import { useLanguageStore } from '@/store/language-store';
 import type { ServiceData } from '@/types/service-data';
@@ -43,6 +44,18 @@ interface CustomerForm {
   phoneCode: string;
 }
 
+interface LineItem {
+  serviceId: string;
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  price: number;
+  duration?: string;
+  durationEn?: string;
+  image?: string | null;
+  qty: number;
+}
+
 interface OrderResult {
   id: string;
   orderNumber: string;
@@ -56,6 +69,13 @@ interface OrderResult {
   createdAt: string;
   customerName: string;
   serviceName: string;
+}
+
+interface GatewayInfo {
+  slug: string;
+  displayName: string;
+  displayNameEn: string;
+  logo?: string | null;
 }
 
 const phoneCodes = [
@@ -134,19 +154,23 @@ function CheckoutContent() {
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
   const { currency } = useCurrencyStore();
+  const cartItems = useCartStore((s) => s.items);
+  const clearCart = useCartStore((s) => s.clear);
+  const setCartOpen = useCartStore((s) => s.setOpen);
 
-  const [service, setService] = useState<Partial<ServiceData> | null>(null);
+  const [servicesMap, setServicesMap] = useState<Record<string, Partial<ServiceData>>>({});
   const [serviceLoading, setServiceLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(true);
 
-  const [step, setStep] = useState<'customer_info' | 'documents' | 'confirm' | 'payment' | 'order_created'>('customer_info');
-  const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
+  const [step, setStep] = useState<'customer_info' | 'documents' | 'confirm' | 'payment'>('customer_info');
+  const [orderResults, setOrderResults] = useState<OrderResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isDragOver, setIsDragOver] = useState(false);
   const [fileUploading, setFileUploading] = useState(false);
+  const [gateways, setGateways] = useState<GatewayInfo[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [promoCode, setPromoCode] = useState('');
@@ -162,7 +186,7 @@ function CheckoutContent() {
   useEffect(() => {
     const sync = () => {
       if (_hydrated && !isAuthenticated) {
-        router.replace(`/login?redirect=${encodeURIComponent(`/checkout?service=${serviceId || ''}`)}`);
+        router.replace(`/login?redirect=${encodeURIComponent(`/checkout${serviceId ? `?service=${serviceId}` : ''}`)}`);
       } else if (_hydrated) {
         setRedirecting(false);
       }
@@ -170,38 +194,103 @@ function CheckoutContent() {
     sync();
   }, [_hydrated, isAuthenticated, router, serviceId]);
 
-  useEffect(() => {
-    const sync = () => {
-      if (serviceId) {
-        fetch(`/api/services/${serviceId}?brief=true`)
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.success) setService(data.data);
-          })
-          .catch(() => {})
-          .finally(() => setServiceLoading(false));
-      } else {
-        setServiceLoading(false);
-      }
-    };
-    sync();
-  }, [serviceId]);
+  const lines = useMemo<LineItem[]>(() => {
+    if (serviceId) {
+      return [{ serviceId, slug: serviceId, nameAr: '', nameEn: '', price: 0, qty: 1 }];
+    }
+    return cartItems.map((i) => ({
+      serviceId: i.serviceId,
+      slug: i.slug,
+      nameAr: i.nameAr,
+      nameEn: i.nameEn,
+      price: i.price,
+      duration: i.duration,
+      durationEn: i.durationEn,
+      image: i.image,
+      qty: i.qty,
+    }));
+  }, [serviceId, cartItems]);
 
-  const basePrice = service?.price || 0;
+  useEffect(() => {
+    const idArr = Array.from(new Set<string>(serviceId ? [serviceId] : cartItems.map((i) => i.serviceId)));
+    Promise.all(
+      idArr.map((id) =>
+        fetch(`/api/services/${id}?brief=true`)
+          .then((r) => r.json())
+          .then((d) => (d.success ? d.data : null))
+          .catch(() => null)
+      )
+    )
+      .then((results) => {
+        const map: Record<string, Partial<ServiceData>> = {};
+        results.forEach((service, i) => {
+          if (service) map[idArr[i]] = service;
+        });
+        setServicesMap(map);
+      })
+      .finally(() => setServiceLoading(false));
+  }, [serviceId, cartItems]);
+
+  useEffect(() => {
+    fetch('/api/storefront')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.meta?.payments) setGateways(d.meta.payments as GatewayInfo[]);
+      })
+      .catch(() => {});
+  }, []);
+
+  const resolved = useMemo<LineItem[]>(
+    () =>
+      lines.map((l) => {
+        const s = servicesMap[l.serviceId];
+        if (!s) return l;
+        return {
+          ...l,
+          nameAr: s.name || l.nameAr,
+          nameEn: s.nameEn || l.nameEn,
+          price: Number(s.price) ?? l.price,
+          duration: s.duration || l.duration,
+          durationEn: s.durationEn || l.durationEn,
+          image: s.image || l.image,
+        };
+      }),
+    [lines, servicesMap]
+  );
+
+  const missingService = !serviceLoading && resolved.some((l) => !l.nameAr && !l.nameEn);
+  const totalUnits = resolved.reduce((sum, l) => sum + l.qty, 0);
+  const singleUnit = totalUnits === 1;
+
   const discount = useMemo(() => {
-    if (!promoResult?.valid) return 0;
-    if (promoResult.discountType === 'percentage') return Math.round(basePrice * promoResult.discount / 100);
-    return promoResult.discount;
-  }, [promoResult, basePrice]);
-  const finalAmount = Math.max(0, basePrice - discount);
-  const requiredDocs = (isAr ? service?.requiredDocuments : service?.requiredDocumentsEn) || service?.requiredDocuments || [];
+    if (!promoResult?.valid || !singleUnit) return 0;
+    const linePrice = resolved[0]?.price || 0;
+    if (promoResult.discountType === 'percentage') return Math.round(linePrice * promoResult.discount / 100);
+    return Math.min(promoResult.discount, linePrice);
+  }, [promoResult, singleUnit, resolved]);
+
+  const subtotal = resolved.reduce((s, l) => s + l.price * l.qty, 0);
+  const grandTotal = Math.max(0, subtotal - discount);
+
+  const requiredDocsList = useMemo(
+    () =>
+      resolved
+        .map((l) => {
+          const s = servicesMap[l.serviceId];
+          const docs = (isAr ? s?.requiredDocuments : s?.requiredDocumentsEn) || s?.requiredDocuments || [];
+          return { serviceId: l.serviceId, nameAr: l.nameAr, nameEn: l.nameEn, docs: docs as string[] };
+        })
+        .filter((g) => g.docs.length > 0),
+    [resolved, servicesMap, isAr]
+  );
 
   const currentStepIndex = STEPS.findIndex((s) => s.key === step);
-  const maxReachableStep = orderResult ? 5 : 3;
-
   const goToStep = (idx: number) => {
-    if (idx <= maxReachableStep && idx >= 0 && !loading) {
+    const locked = orderResults.length > 0;
+    const maxReachable = locked ? 3 : 2;
+    if (idx <= maxReachable && idx >= 0 && !loading && (!locked || idx === 3)) {
       setStep(STEPS[idx].key as typeof step);
+      setError('');
     }
   };
 
@@ -224,12 +313,13 @@ function CheckoutContent() {
   }, [formData, isAr]);
 
   const handleApplyPromo = async () => {
-    if (!promoCode.trim()) return;
+    if (!promoCode.trim() || !singleUnit || !resolved[0]) return;
+    const linePrice = resolved[0].price || 0;
     try {
-      const res = await fetch('/api/cms/coupons/validate', {
+      const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode, amount: basePrice, serviceId: serviceId || undefined }),
+        body: JSON.stringify({ code: promoCode, amount: linePrice, serviceId: resolved[0].serviceId }),
       });
       const data = await res.json();
       if (data.success && data.data) {
@@ -282,8 +372,23 @@ function CheckoutContent() {
     if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
   };
 
+  const mapOrderResult = (data: Record<string, unknown>, line: LineItem): OrderResult => ({
+    id: data.id as string,
+    orderNumber: data.orderNumber as string,
+    invoiceNumber: data.invoiceNumber as string,
+    amount: Number(data.amount),
+    discount: Number(data.discount),
+    total: Number(data.total),
+    currency: (data.currency as string) || 'SAR',
+    status: (data.status as string) || 'PENDING',
+    paymentStatus: (data.paymentStatus as string) || 'PENDING',
+    createdAt: (data.createdAt as string) || new Date().toISOString(),
+    customerName: formData.name,
+    serviceName: isAr ? line.nameAr : line.nameEn || line.nameAr,
+  });
+
   const handleCreateOrder = async () => {
-    if (!validate() || !service) return;
+    if (!validate() || resolved.length === 0) return;
     setLoading(true);
     setError('');
 
@@ -313,46 +418,47 @@ function CheckoutContent() {
         setFileUploading(false);
       }
 
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serviceId: service.id,
-        serviceName: service.name || '',
-          amount: basePrice,
-          discount,
-          total: finalAmount,
-          currency: currency === 'SAR' ? 'SAR' : 'SAR',
-          customerName: formData.name,
-          customerEmail: formData.email,
-          customerPhone: `${formData.phoneCode}${formData.phone}`,
-          notes: '',
-          attachments: uploadedFiles.map((f) => f.name),
-          fileAttachmentIds,
-          promoCode: promoResult?.valid ? promoCode : undefined,
-        }),
-      });
-      const data = await res.json();
+      const units = resolved.flatMap((l) => Array<LineItem>(l.qty).fill(l));
+      const created: OrderResult[] = [];
 
-      if (!data.success) {
-        throw new Error(data.error || (isAr ? 'فشل إنشاء الطلب' : 'Failed to create order'));
+      for (let i = 0; i < units.length; i++) {
+        const line = units[i];
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serviceId: line.serviceId,
+            amount: line.price,
+            discount: 0,
+            total: line.price,
+            currency: 'SAR',
+            customerName: formData.name,
+            customerEmail: formData.email,
+            customerPhone: `${formData.phoneCode}${formData.phone}`,
+            notes: '',
+            attachments: uploadedFiles.map((f) => f.name),
+            fileAttachmentIds,
+            promoCode: i === 0 && singleUnit && promoResult?.valid ? promoCode : undefined,
+          }),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.error || (isAr ? 'فشل إنشاء الطلب' : 'Failed to create order'));
+        }
+        created.push(mapOrderResult(data.data, line));
       }
 
-      setOrderResult({
-        id: data.data.id,
-        orderNumber: data.data.orderNumber,
-        invoiceNumber: data.data.invoiceNumber,
-        amount: Number(data.data.amount),
-        discount: Number(data.data.discount),
-        total: Number(data.data.total),
-        currency: data.data.currency,
-        status: data.data.status,
-        paymentStatus: data.data.paymentStatus,
-        createdAt: data.data.createdAt,
-        customerName: formData.name,
-        serviceName: service.name || '',
-      });
-      setStep('order_created');
+      if (created.length === 0) {
+        throw new Error(isAr ? 'لم يتم إنشاء أي طلب' : 'No orders were created');
+      }
+
+      setOrderResults(created);
+      if (!serviceId) {
+        clearCart();
+        setCartOpen(false);
+      }
+      setStep('payment');
     } catch (err) {
       setError(err instanceof Error ? err.message : (isAr ? 'حدث خطأ أثناء إنشاء الطلب' : 'Error creating order'));
     } finally {
@@ -376,7 +482,7 @@ function CheckoutContent() {
     return <CheckoutSkeleton />;
   }
 
-  if (!service) {
+  if (missingService || resolved.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 pt-20">
         <div>
@@ -384,10 +490,10 @@ function CheckoutContent() {
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center mx-auto mb-5">
               <X size={36} className="text-red-400" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'خدمة غير موجودة' : 'Service not found'}</h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">{isAr ? 'الخدمة المحددة غير موجودة أو تم حذفها' : 'The selected service is not available or has been removed'}</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'لا توجد خدمات للطلب' : 'Nothing to order'}</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">{isAr ? 'سلة التسوق فارغة أو الخدمة غير متوفرة' : 'Your cart is empty or the service is unavailable'}</p>
             <Link href="/services">
-              <Button variant="primary" className="rounded-xl px-8">{isAr ? 'العودة للخدمات' : 'Back to Services'}</Button>
+              <Button variant="primary" className="rounded-xl px-8">{isAr ? 'تصفح الخدمات' : 'Browse Services'}</Button>
             </Link>
           </Card>
         </div>
@@ -436,6 +542,30 @@ function CheckoutContent() {
             );
           })}
         </div>
+      </div>
+    );
+  }
+
+  function renderLineItems() {
+    return (
+      <div className="space-y-2.5">
+        {resolved.map((l) => (
+          <div key={l.serviceId} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+            {l.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={l.image} alt={isAr ? l.nameAr : l.nameEn} loading="lazy" className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-600" />
+            ) : (
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 border border-slate-200 dark:border-slate-600 flex items-center justify-center">
+                <Zap size={18} className="text-[#2580eb]" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{isAr ? l.nameAr : l.nameEn}</p>
+              <p className="text-xs text-slate-400">{isAr ? 'الكمية' : 'Qty'}: {l.qty}</p>
+            </div>
+            <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0">{formatPrice(l.price * l.qty, currency)}</span>
+          </div>
+        ))}
       </div>
     );
   }
@@ -504,37 +634,39 @@ function CheckoutContent() {
           </div>
         </Card>
 
-        <Card className="p-5 sm:p-7">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-500/10 flex items-center justify-center">
-              <Sparkles size={20} className="text-amber-500" />
+        {singleUnit && (
+          <Card className="p-5 sm:p-7">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-500/10 flex items-center justify-center">
+                <Sparkles size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'كود الخصم' : 'Discount Code'}</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'لديك كود خصم؟ أدخله هنا' : 'Have a discount code? Enter it here'}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'كود الخصم' : 'Discount Code'}</h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'لديك كود خصم؟ أدخله هنا' : 'Have a discount code? Enter it here'}</p>
+            <div className="flex gap-2.5">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => { setPromoCode(e.target.value); setPromoResult(null); }}
+                placeholder={isAr ? 'أدخل كود الخصم' : 'Enter discount code'}
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm dark:text-white focus:outline-none focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 transition-all text-left font-mono uppercase tracking-wider"
+                dir="ltr"
+              />
+              <Button onClick={handleApplyPromo} variant="primary" className="px-6 rounded-xl font-semibold">{isAr ? 'تطبيق' : 'Apply'}</Button>
             </div>
-          </div>
-          <div className="flex gap-2.5">
-            <input
-              type="text"
-              value={promoCode}
-              onChange={(e) => { setPromoCode(e.target.value); setPromoResult(null); }}
-              placeholder={isAr ? 'أدخل كود الخصم' : 'Enter discount code'}
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm dark:text-white focus:outline-none focus:border-[#2580eb] focus:ring-4 focus:ring-[#2580eb]/10 transition-all text-left font-mono uppercase tracking-wider"
-              dir="ltr"
-            />
-            <Button onClick={handleApplyPromo} variant="primary" className="px-6 rounded-xl font-semibold">{isAr ? 'تطبيق' : 'Apply'}</Button>
-          </div>
-          {promoResult && (
-            <div className={cn(
-              "flex items-center gap-2 mt-3 text-sm font-semibold px-3 py-2 rounded-xl",
-              promoResult.valid ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400',
-            )}>
-              {promoResult.valid ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-              {promoResult.message}
-            </div>
-          )}
-        </Card>
+            {promoResult && (
+              <div className={cn(
+                "flex items-center gap-2 mt-3 text-sm font-semibold px-3 py-2 rounded-xl",
+                promoResult.valid ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400',
+              )}>
+                {promoResult.valid ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                {promoResult.message}
+              </div>
+            )}
+          </Card>
+        )}
 
         <div className="flex justify-end">
           <Button
@@ -556,10 +688,9 @@ function CheckoutContent() {
   }
 
   function renderDocumentsStep() {
-    const hasRequired = requiredDocs && requiredDocs.length > 0;
     return (
       <div className="space-y-6">
-        {hasRequired && (
+        {requiredDocsList.length > 0 && (
           <Card className="p-5 sm:p-7">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-400/10 to-indigo-500/10 flex items-center justify-center">
@@ -570,26 +701,35 @@ function CheckoutContent() {
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'يرجى رفع المستندات التالية' : 'Please upload the following documents'}</p>
               </div>
             </div>
-            <div className="space-y-2">
-              {requiredDocs.map((doc: string, i: number) => {
-                const matched = uploadedFiles.some((f) => f.uploaded && f.name.toLowerCase().includes(doc.substring(0, 10).toLowerCase()));
-                return (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
-                    {matched ? (
-                      <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
-                    ) : (
-                      <Circle size={18} className="text-slate-300 dark:text-slate-500 shrink-0" />
-                    )}
-                    <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">{doc}</span>
-                    <span className={cn(
-                      "text-[11px] font-medium px-2 py-0.5 rounded-lg",
-                      matched ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" : "bg-slate-100 dark:bg-slate-600 text-slate-400"
-                    )}>
-                      {matched ? (isAr ? 'مرفوع' : 'Uploaded') : (isAr ? 'غير مرفوع' : 'Not uploaded')}
-                    </span>
+            <div className="space-y-3">
+              {requiredDocsList.map((group) => (
+                <div key={group.serviceId} className="rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+                  <div className="px-3 py-2 bg-slate-50 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-600">
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">{isAr ? group.nameAr : group.nameEn}</p>
                   </div>
-                );
-              })}
+                  <div className="space-y-2 p-3">
+                    {group.docs.map((doc: string, i: number) => {
+                      const matched = uploadedFiles.some((f) => f.uploaded && f.name.toLowerCase().includes(doc.substring(0, 10).toLowerCase()));
+                      return (
+                        <div key={i} className="flex items-center gap-3">
+                          {matched ? (
+                            <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                          ) : (
+                            <Circle size={18} className="text-slate-300 dark:text-slate-500 shrink-0" />
+                          )}
+                          <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">{doc}</span>
+                          <span className={cn(
+                            "text-[11px] font-medium px-2 py-0.5 rounded-lg",
+                            matched ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" : "bg-slate-100 dark:bg-slate-600 text-slate-400"
+                          )}>
+                            {matched ? (isAr ? 'مرفوع' : 'Uploaded') : (isAr ? 'غير مرفوع' : 'Not uploaded')}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
         )}
@@ -716,8 +856,17 @@ function CheckoutContent() {
                 <p className="font-semibold text-slate-900 dark:text-white" dir="ltr">{formData.phoneCode} {formData.phone}</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'الخدمة' : 'Service'}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{isAr ? service?.name : service?.nameEn}</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'عدد الطلبات' : 'Orders'}</p>
+                <p className="font-semibold text-slate-900 dark:text-white">{totalUnits}</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-2">{isAr ? 'الخدمات المطلوبة' : 'Services'}</p>
+              {renderLineItems()}
+              <div className="flex justify-between items-center text-sm font-bold mt-3 pt-3 border-t border-slate-200 dark:border-slate-600">
+                <span className="text-slate-900 dark:text-white">{isAr ? 'الإجمالي' : 'Total'}</span>
+                <span className="text-[#2580eb]">{formatPrice(subtotal, currency)}</span>
               </div>
             </div>
 
@@ -761,22 +910,23 @@ function CheckoutContent() {
             className="px-8 py-3 rounded-xl font-bold"
             iconLeft={!loading ? <Shield size={18} /> : undefined}
           >
-            {loading ? (isAr ? 'جاري إنشاء الطلب...' : 'Creating order...') : (isAr ? 'تأكيد الطلب' : 'Confirm Order')}
+            {loading ? (isAr ? 'جاري إنشاء الطلبات...' : 'Creating orders...') : (isAr ? 'تأكيد الطلبات' : 'Confirm Orders')}
           </Button>
         </div>
+
+        <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
+          {isAr ? 'يتم التحقق من الأسعار النهائية على الخادم عند تأكيد الطلب.' : 'Final prices are verified on the server when you confirm.'}
+        </p>
       </div>
     );
   }
 
-  function renderOrderCreated() {
-    if (!orderResult) return null;
-    const createdDate = new Date(orderResult.createdAt);
+  function renderPaymentStep() {
+    if (orderResults.length === 0) return null;
+    const ordersTotal = orderResults.reduce((s, o) => s + Number(o.total), 0);
+    const createdDate = new Date(orderResults[0].createdAt);
     const dateStr = createdDate.toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = createdDate.toLocaleTimeString(isAr ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-
-    const handlePrint = () => {
-      window.print();
-    };
 
     return (
       <div className="space-y-6">
@@ -785,82 +935,115 @@ function CheckoutContent() {
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30">
               <CheckCircle2 size={32} className="text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{isAr ? 'تم إرسال طلبك بنجاح' : 'Order Submitted Successfully'}</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'شكراً لك، تم استلام طلبك وسيتم مراجعته من قبل فريقنا' : 'Thank you, your order has been received and will be reviewed by our team'}</p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{isAr ? 'تم إرسال طلبك بنجاح' : 'Orders Submitted Successfully'}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'شكراً لك، تم استلام طلباتك وسيتم مراجعتها من قبل فريقنا' : 'Thank you, your orders have been received and will be reviewed by our team'}</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'رقم الطلب' : 'Order Number'}</p>
-              <p className="text-lg font-bold text-[#2580eb] font-mono" dir="ltr">{orderResult.orderNumber}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'رقم الفاتورة' : 'Invoice Number'}</p>
-              <p className="text-lg font-bold text-[#7c3aed] font-mono" dir="ltr">{orderResult.invoiceNumber}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'العميل' : 'Customer'}</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{orderResult.customerName}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'الخدمة' : 'Service'}</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{orderResult.serviceName}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'التاريخ' : 'Date'}</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{dateStr}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'الوقت' : 'Time'}</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{timeStr}</p>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock size={16} className="text-amber-500" />
-              <p className="font-semibold text-amber-700 dark:text-amber-400 text-sm">{isAr ? 'حالة الطلب' : 'Order Status'}</p>
-            </div>
-            <p className="text-amber-600 dark:text-amber-300 text-sm">{isAr ? 'قيد المراجعة' : 'Under Review'}</p>
-          </div>
-
-          <div className="border-t border-slate-200 dark:border-slate-600 pt-4">
-            <h4 className="font-bold text-slate-900 dark:text-white mb-3">{isAr ? 'ملخص الفاتورة' : 'Invoice Summary'}</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 dark:text-slate-400">{isAr ? 'السعر الأساسي' : 'Base Price'}</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatPrice(orderResult.amount, currency)}</span>
-              </div>
-              {orderResult.discount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-emerald-600 font-medium">{isAr ? 'الخصم' : 'Discount'}</span>
-                  <span className="font-bold text-emerald-600">-{formatPrice(orderResult.discount, currency)}</span>
+          <div className="space-y-3 mb-6">
+            {orderResults.map((o, i) => (
+              <div key={o.id} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+                <div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'الطلب' : 'Order'} #{i + 1} — {o.serviceName}</p>
+                  <p className="text-lg font-bold text-[#2580eb] font-mono" dir="ltr">{o.orderNumber}</p>
                 </div>
-              )}
+                <div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'رقم الفاتورة' : 'Invoice Number'}</p>
+                  <p className="text-lg font-bold text-[#7c3aed] font-mono" dir="ltr">{o.invoiceNumber}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'الحالة' : 'Status'}</p>
+                  <p className="font-semibold text-amber-600 dark:text-amber-400 text-sm">{isAr ? 'قيد المراجعة' : 'Under Review'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium mb-1">{isAr ? 'الإجمالي' : 'Total'}</p>
+                  <p className="font-bold text-[#2580eb]">{formatPrice(o.total, currency)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Clock size={14} className="text-slate-400" />
+            <span className="text-xs text-slate-400 dark:text-slate-500">{dateStr} — {timeStr}</span>
+          </div>
+
+          <div className="border-t border-slate-200 dark:border-slate-600 pt-4 mb-4">
+            <h4 className="font-bold text-slate-900 dark:text-white mb-3">{isAr ? 'ملخص الفواتير' : 'Invoice Summary'}</h4>
+            <div className="space-y-2">
+{orderResults.map((o) => (
+                <div key={o.id} className="flex justify-between text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">{o.serviceName}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{formatPrice(o.total, currency)}</span>
+                </div>
+              ))}
               <div className="flex justify-between text-base font-bold border-t border-slate-200 dark:border-slate-600 pt-2 mt-2">
                 <span className="text-slate-900 dark:text-white">{isAr ? 'الإجمالي' : 'Total'}</span>
-                <span className="text-[#2580eb]">{formatPrice(orderResult.total, currency)}</span>
+                <span className="text-[#2580eb]">{formatPrice(ordersTotal, currency)}</span>
               </div>
             </div>
           </div>
         </Card>
 
+        <Card className="p-5 sm:p-7">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-500/10 flex items-center justify-center">
+              <Wallet size={20} className="text-amber-500" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'بوابة الدفع' : 'Payment Gateway'}</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{isAr ? 'خيارات الدفع المتاحة' : 'Available payment options'}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5 mb-4">
+            {gateways.length > 0 ? (
+              gateways.map((g) => (
+                <div key={g.slug} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                  {g.logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={g.logo} alt="" className="w-9 h-9 rounded-lg object-contain border border-slate-200 dark:border-slate-600 bg-white" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2580eb]/10 to-[#14b8a6]/10 border border-slate-200 dark:border-slate-600 flex items-center justify-center">
+                      <Wallet size={16} className="text-[#2580eb]" />
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-slate-800 dark:text-slate-200 flex-1">{isAr ? g.displayName : g.displayNameEn}</span>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
+                    {isAr ? 'متاح عبر لوحة التحكم' : 'Available via dashboard'}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 inline-flex items-center gap-2">
+                <Clock size={18} className="text-slate-400" />
+                <span className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'قريباً' : 'Coming Soon'}</span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+            {isAr
+              ? 'سيتم إشعاركم بالدفع الإلكتروني فور توفره. حالياً تتم متابعة الطلبات من خلال لوحة التحكم وسيتواصل معكم فريقنا لإتمام الدفع إذا لزم.'
+              : 'You will be notified once online payment is enabled. Orders are currently tracked from the dashboard and our team will contact you to finalize payment if needed.'}
+          </p>
+        </Card>
+
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
-            onClick={handlePrint}
+            onClick={() => window.print()}
             variant="secondary"
             className="px-6 py-3 rounded-xl font-medium"
             iconLeft={<Printer size={18} />}
           >
-            {isAr ? 'طباعة الفاتورة' : 'Print Invoice'}
+            {isAr ? 'طباعة الفواتير' : 'Print Invoices'}
           </Button>
-          <Link href={`/dashboard/invoices`}>
+          <Link href="/dashboard/invoices">
             <Button
               variant="secondary"
               className="px-6 py-3 rounded-xl font-medium"
               iconLeft={<FileText size={18} />}
             >
-              {isAr ? 'عرض الفاتورة' : 'View Invoice'}
+              {isAr ? 'عرض الفواتير' : 'View Invoices'}
             </Button>
           </Link>
           <Link href="/">
@@ -877,113 +1060,90 @@ function CheckoutContent() {
     );
   }
 
-  function renderPaymentStep() {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6 sm:p-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400/10 to-orange-500/10 flex items-center justify-center mx-auto mb-4">
-            <Wallet size={32} className="text-amber-500" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{isAr ? 'بوابة الدفع' : 'Payment Gateway'}</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-            {isAr
-              ? 'سيتم تفعيل بوابة الدفع قريباً. يمكنك متابعة طلبك من خلال لوحة التحكم.'
-              : 'Payment gateway will be activated soon. You can track your order from the dashboard.'}
-          </p>
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 inline-flex items-center gap-2 mx-auto">
-            <Clock size={18} className="text-slate-400" />
-            <span className="text-sm text-slate-500 dark:text-slate-400">{isAr ? 'قريباً' : 'Coming Soon'}</span>
-          </div>
-          <div className="mt-6">
-            <Link href="/">
-              <Button variant="primary" className="px-8 py-3 rounded-xl font-bold" iconLeft={<Home size={18} />}>
-                {isAr ? 'العودة للرئيسية' : 'Back to Home'}
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
       <div className="max-w-4xl mx-auto px-4 py-8 pt-24">
-        {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-1">
-            {step === 'order_created' ? (isAr ? 'تم بنجاح' : 'Success') : (isAr ? 'طلب الخدمة' : 'Service Order')}
+            {step === 'payment' && orderResults.length > 0 ? (isAr ? 'تم بنجاح' : 'Success') : (isAr ? 'إتمام الطلب' : 'Checkout')}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {step === 'order_created'
-              ? (isAr ? 'تفاصيل طلبك' : 'Your order details')
-              : (isAr ? `طلب خدمة: ${service.name}` : `Order: ${service.nameEn}`)}
+            {step === 'payment' && orderResults.length > 0
+              ? (isAr ? 'تفاصيل طلباتك' : 'Your orders details')
+              : (isAr ? `${resolved.length} ${resolved.length === 1 ? 'خدمة' : 'خدمات'} لإتمام الطلب` : `${resolved.length} ${resolved.length === 1 ? 'service' : 'services'} to check out`)}
           </p>
         </div>
 
-        {step !== 'order_created' && renderStepIndicator()}
+        {!(step === 'payment' && orderResults.length > 0) && renderStepIndicator()}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             {step === 'customer_info' && renderCustomerInfoStep()}
             {step === 'documents' && renderDocumentsStep()}
             {step === 'confirm' && renderConfirmStep()}
-            {step === 'order_created' && renderOrderCreated()}
             {step === 'payment' && renderPaymentStep()}
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <Card className="overflow-hidden">
-                <div className="p-5 sm:p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-[#2580eb]/90 text-white">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                      <Zap size={20} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-white/60 uppercase tracking-wider font-medium">{isAr ? 'ملخص الطلب' : 'Order Summary'}</p>
-                      <p className="font-bold text-sm mt-0.5">{service.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-white/50">
-                    <Clock size={12} />
-                    <span>{service.duration}</span>
-                  </div>
-                </div>
-
-                <div className="p-5 sm:p-6">
-                  <div className="space-y-3 pb-4 border-b border-slate-100 dark:border-slate-700">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500 dark:text-slate-400">{isAr ? 'السعر الأساسي' : 'Base Price'}</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formatPrice(basePrice, currency)}</span>
-                    </div>
-                    {discount > 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-emerald-600 font-medium flex items-center gap-1">
-                          <Tag size={13} /> {isAr ? 'الخصم' : 'Discount'}
-                        </span>
-                        <span className="font-bold text-emerald-600">-{formatPrice(discount, currency)}</span>
+          {!(step === 'payment' && orderResults.length > 0) && (
+            <div className="lg:col-span-1">
+              <div className="sticky top-24">
+                <Card className="overflow-hidden">
+                  <div className="p-5 sm:p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-[#2580eb]/90 text-white">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                        <Zap size={20} className="text-white" />
                       </div>
-                    )}
-                  </div>
-                  <div className="py-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'الإجمالي' : 'Total'}</span>
-                      <span className="text-2xl font-extrabold bg-gradient-to-l from-[#2580eb] to-[#14b8a6] bg-clip-text text-transparent">
-                        {formatPrice(finalAmount, currency)}
-                      </span>
+                      <div>
+                        <p className="text-xs text-white/60 uppercase tracking-wider font-medium">{isAr ? 'ملخص الطلب' : 'Order Summary'}</p>
+                        <p className="font-bold text-sm mt-0.5">{totalUnits} {isAr ? 'إجمالي الخدمات' : 'total services'}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <Shield size={13} className="text-emerald-500" />
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{isAr ? 'دفع آمن ومشفر بتقنية SSL' : 'Secure encrypted payment with SSL'}</span>
+                  <div className="p-5 sm:p-6">
+                    <div className="space-y-2 mb-4">
+                      {resolved.map((l) => (
+                        <div key={l.serviceId} className="flex items-start gap-2 text-sm">
+                          <CheckCircle size={12} className="text-emerald-500 mt-1 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-slate-700 dark:text-slate-300 truncate">{isAr ? l.nameAr : l.nameEn}</p>
+                            <p className="text-xs text-slate-400">×{l.qty} — {formatPrice(l.price * l.qty, currency)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-500 dark:text-slate-400">{isAr ? 'المجموع الفرعي' : 'Subtotal'}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{formatPrice(subtotal, currency)}</span>
+                      </div>
+                      {discount > 0 && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-emerald-600 font-medium flex items-center gap-1">
+                            <Tag size={13} /> {isAr ? 'الخصم' : 'Discount'}
+                          </span>
+                          <span className="font-bold text-emerald-600">-{formatPrice(discount, currency)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="py-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-base font-bold text-slate-900 dark:text-white">{isAr ? 'الإجمالي' : 'Total'}</span>
+                        <span className="text-2xl font-extrabold bg-gradient-to-l from-[#2580eb] to-[#14b8a6] bg-clip-text text-transparent">
+                          {formatPrice(grandTotal, currency)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <Shield size={13} className="text-emerald-500" />
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{isAr ? 'دفع آمن ومشفر بتقنية SSL' : 'Secure encrypted payment with SSL'}</span>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

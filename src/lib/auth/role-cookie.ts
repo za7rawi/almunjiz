@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 
 const ROLE_COOKIE_NAME = "almunjiz-role";
-const ROLE_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
+const ROLE_COOKIE_MAX_AGE = 24 * 60 * 60; // 24 hours
 
 export function hmacSign(data: string, secret: string): string {
   return crypto.createHmac("sha256", secret).update(data).digest("hex");
@@ -14,8 +14,10 @@ export function setRoleCookie(
   status = 200
 ): NextResponse {
   const secret = process.env.NEXTAUTH_SECRET || "";
-  const signature = hmacSign(role, secret);
-  const cookieValue = `${role}|${signature}`;
+  const timestamp = Date.now();
+  const payload = `${role}|${timestamp}`;
+  const signature = hmacSign(payload, secret);
+  const cookieValue = `${payload}|${signature}`;
 
   const nextResponse = NextResponse.json(body, { status });
 
@@ -35,8 +37,10 @@ export function setRoleCookieOnRedirect(
   role: string
 ): NextResponse {
   const secret = process.env.NEXTAUTH_SECRET || "";
-  const signature = hmacSign(role, secret);
-  const cookieValue = `${role}|${signature}`;
+  const timestamp = Date.now();
+  const payload = `${role}|${timestamp}`;
+  const signature = hmacSign(payload, secret);
+  const cookieValue = `${payload}|${signature}`;
 
   const nextResponse = NextResponse.redirect(redirectUrl);
 

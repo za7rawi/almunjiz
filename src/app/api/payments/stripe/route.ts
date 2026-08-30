@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/admin-auth';
-import { computeOrderPricing, amountsMatch } from '@/lib/pricing';
+import { computeOrderPricing } from '@/lib/pricing';
 
 interface PaymentIntentRequest {
   amount: number;
@@ -22,6 +22,9 @@ export async function POST(request: NextRequest) {
     const body: PaymentIntentRequest = await request.json();
 
     const { currency, serviceId, customerEmail, customerName, description } = body;
+
+    // SECURITY: Client-submitted 'amount' is completely ignored.
+    // All pricing is computed server-side from the database.
 
     if (!serviceId || !customerEmail || !customerName) {
       return Response.json(
@@ -43,14 +46,6 @@ export async function POST(request: NextRequest) {
     }
 
     const pricing = await computeOrderPricing(Number(service.price), null);
-
-    const clientAmount = body.amount !== undefined && body.amount !== null ? Number(body.amount) : null;
-    if (clientAmount !== null && !amountsMatch(clientAmount, pricing.total)) {
-      return Response.json(
-        { error: 'Amount validation failed. Refresh and try again.' },
-        { status: 400 },
-      );
-    }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2026-06-24.dahlia',

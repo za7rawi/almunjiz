@@ -2,8 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { unlink } from "fs/promises";
-import { join } from "path";
+
+const ALLOWED_URL_HOSTS = [
+  'vercel-blob.com',
+  'blob.vercel-storage.com',
+  '.vercel.app',
+];
+
+function isAllowedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    return ALLOWED_URL_HOSTS.some((host) => parsed.hostname.endsWith(host) || parsed.hostname === host);
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,6 +101,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    for (const f of files) {
+      if (!f.fileUrl || !isAllowedUrl(f.fileUrl)) {
+        return NextResponse.json(
+          { success: false, message: "رابط الملف غير صالح" },
+          { status: 400 }
+        );
+      }
+      if (!f.fileName || typeof f.fileName !== 'string' || f.fileName.length > 255) {
+        return NextResponse.json(
+          { success: false, message: "اسم الملف غير صالح" },
+          { status: 400 }
+        );
+      }
+    }
+
     const created = await prisma.fileAttachment.createMany({
       data: files.map(
         (f: {
@@ -97,10 +126,10 @@ export async function POST(request: NextRequest) {
         }) => ({
           userId,
           orderId: orderId || null,
-          fileName: f.fileName,
+          fileName: f.fileName.substring(0, 255),
           fileUrl: f.fileUrl,
           fileType: f.fileType,
-          fileSize: f.fileSize,
+          fileSize: Math.min(f.fileSize, 10 * 1024 * 1024),
         })
       ),
     });
@@ -151,8 +180,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (file.storedName) {
+      const { unlink } = await import("fs/promises");
+      const { join } = await import("path");
       unlink(join(process.cwd(), "public", "uploads", file.storedName)).catch(() => {});
     } else if (file.fileUrl) {
+      const { unlink } = await import("fs/promises");
+      const { join } = await import("path");
       const urlPath = file.fileUrl.startsWith("/") ? file.fileUrl.slice(1) : file.fileUrl;
       if (urlPath.startsWith("uploads/")) {
         unlink(join(process.cwd(), "public", urlPath)).catch(() => {});

@@ -106,8 +106,8 @@ export abstract class PaymentProvider {
       ? String(payload[rawBodyKey as keyof WebhookPayload])
       : JSON.stringify(payload.body);
 
-    const { computeHmacSha256 } = await import('@/lib/encryption');
-    return computeHmacSha256(secret, rawBody) === signature;
+    const { verifyHmacSha256 } = await import('@/lib/encryption');
+    return verifyHmacSha256(secret, rawBody, signature);
   }
 
   async testConnection(): Promise<{ success: boolean; message: string }> {

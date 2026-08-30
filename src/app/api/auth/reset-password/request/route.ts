@@ -38,10 +38,6 @@ export async function POST(req: NextRequest) {
 
     const response: Record<string, unknown> = { success: true, message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني" };
 
-    if (process.env.NODE_ENV !== "production") {
-      response.devCode = code;
-    }
-
     return NextResponse.json(response);
   } catch (error) {
     console.error("[Reset Password Request] Error:", error);

@@ -11,7 +11,7 @@ import {
   Package, Shield, Star, Globe, Car, Plane, Building2, Headphones,
   GraduationCap, Briefcase, Hotel, Laptop, MessageSquare, Home,
   FileSignature, Upload, Send, ChevronDown, ChevronUp, ClipboardList, Search, Settings, Bell, Stamp,
-  Monitor, Zap, Mail, CreditCard, Video, Truck, List, Check, Lock, X,
+  Monitor, Zap, Mail, CreditCard, Video, Truck, List, Check, Lock, X, ShoppingCart,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrencyStore } from '@/store/currency-store';
 import { useAuthStore } from '@/store/auth-store';
+import { useCartStore } from '@/store/cart-store';
 import { useLanguageStore } from '@/store/language-store';
 import { formatPrice } from '@/lib/currency';
 import type { ServiceData } from '@/types/service-data';
@@ -132,6 +133,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const { currency } = useCurrencyStore();
   const { isAuthenticated } = useAuthStore();
+  const addToCart = useCartStore((s) => s.addItem);
+  const setCartOpen = useCartStore((s) => s.setOpen);
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
 
@@ -475,6 +478,29 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
                     <span className="text-sm text-slate-600 dark:text-slate-400">{isAr ? 'دفع آمن ومشفر' : 'Secure and encrypted payment'}</span>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    addToCart({
+                      serviceId: service.id,
+                      slug: service.id,
+                      nameAr: service.name,
+                      nameEn: service.nameEn || service.name,
+                      price: service.price,
+                      duration: service.duration,
+                      durationEn: service.durationEn || service.duration,
+                      icon: service.icon,
+                      image: service.image,
+                      categoryAr: service.categoryAr,
+                    });
+                    setCartOpen(true);
+                  }}
+                  className="w-full mb-3"
+                >
+                  <Button variant="secondary" fullWidth size="lg" iconLeft={<ShoppingCart size={18} />}>
+                    {isAr ? 'أضف إلى السلة' : 'Add to Cart'}
+                  </Button>
+                </button>
                 {isAuthenticated ? (
                   <Link href={`/checkout?service=${service.id}`} className="block">
                     <Button fullWidth size="lg" iconLeft={<ArrowLeft size={18} className="rtl:rotate-180" />}>

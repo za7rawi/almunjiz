@@ -1,5 +1,5 @@
 import { PaymentProvider } from './base';
-import { computeHmacSha256 } from '@/lib/encryption';
+import { verifyHmacSha256 } from '@/lib/encryption';
 import type {
   CreatePaymentParams,
   PaymentResult,
@@ -202,9 +202,8 @@ export class StripeProvider extends PaymentProvider {
 
     const rawBody = payload.rawBody || JSON.stringify(payload.body);
     const payloadToVerify = `${timestamp}.${rawBody}`;
-    const expected = computeHmacSha256(secret, payloadToVerify);
 
-    return expected === signature;
+    return verifyHmacSha256(secret, payloadToVerify, signature);
   }
 
   private mapStatus(status: string): PaymentVerification['status'] {

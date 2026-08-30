@@ -254,7 +254,7 @@ export default function RequestPage({ params }: { params: Promise<{ id: string }
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
     try {
-      const res = await fetch('/api/cms/coupons/validate', {
+      const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: promoCode, amount: price, serviceId: service?.id }),

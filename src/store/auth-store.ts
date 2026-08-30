@@ -19,7 +19,7 @@ interface AuthStore {
   isAuthenticated: boolean;
   _hydrated: boolean;
   login: (user: User) => void;
-  loginEmail: (email: string, password: string) => Promise<{ success: boolean; message: string; redirect?: string }>;
+  loginEmail: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; message: string; redirect?: string }>;
   register: (data: { name: string; email: string; password: string }) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
@@ -54,14 +54,14 @@ export const useAuthStore = create<AuthStore>()(
         set({ user, isAuthenticated: true });
       },
 
-      loginEmail: async (email, password) => {
+      loginEmail: async (email, password, rememberMe = false) => {
         const lowerEmail = email.toLowerCase().trim();
 
         try {
           const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: lowerEmail, password }),
+            body: JSON.stringify({ email: lowerEmail, password, rememberMe }),
           });
           const json = await res.json();
 

@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash("temp-password-123", 10);
+    const crypto = await import("crypto");
+    const tempPassword = crypto.randomBytes(16).toString("base64url");
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const user = await prisma.user.create({
       data: {

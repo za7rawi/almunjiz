@@ -14,6 +14,7 @@ interface DashboardHeaderProps {
   userAvatar?: string | null;
   notificationCount?: number;
   onMenuToggle?: () => void;
+  onSearchOpen?: () => void;
 }
 
 export function DashboardHeader({
@@ -21,6 +22,7 @@ export function DashboardHeader({
   userAvatar,
   notificationCount = 0,
   onMenuToggle,
+  onSearchOpen,
 }: DashboardHeaderProps) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -87,6 +89,14 @@ export function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onSearchOpen}
+            className="sm:hidden p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-600 dark:text-slate-300"
+          >
+            <Search size={18} />
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

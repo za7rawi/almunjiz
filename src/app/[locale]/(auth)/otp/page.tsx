@@ -94,7 +94,6 @@ export default function OtpPage() {
   const timerProgress = timer / 60;
 
   const identifier = typeof window !== 'undefined' ? sessionStorage.getItem('otp_identifier') || '' : '';
-  const devCode = typeof window !== 'undefined' ? sessionStorage.getItem('otp_dev_code') || '' : '';
 
   const maskedEmail = identifier
     ? identifier.replace(/(.{3})(.*)(@.*)/, '$1***$3')
@@ -237,18 +236,6 @@ export default function OtpPage() {
           <p className="text-white font-semibold text-base tracking-wider" dir="ltr">{maskedEmail}</p>
         </div>
       </motion.div>
-
-      {devCode && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-xl bg-[#14b8a6]/10 border border-[#14b8a6]/20 text-center"
-        >
-          <p className="text-xs text-[#14b8a6] mb-1">{isAr ? 'رمز التحقق للتجربة' : 'Test verification code'}</p>
-          <p className="text-2xl font-bold text-white tracking-[0.3em] font-mono" dir="ltr">{devCode}</p>
-          <p className="text-[10px] text-white/30 mt-1">{isAr ? 'هذا الرمز يظهر في وضع التطوير فقط' : 'This code is shown in development mode only'}</p>
-        </motion.div>
-      )}
 
       <motion.div variants={error ? shakeVariants : undefined} animate={error ? 'shake' : undefined} className="flex justify-center gap-2.5 sm:gap-3 mb-8">
         {otp.map((digit, i) => (

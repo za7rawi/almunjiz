@@ -10,6 +10,7 @@ export type AuditAction =
   | 'webhook.received'
   | 'webhook.processed'
   | 'webhook.failed'
+  | 'webhook.no_signature_configured'
   | 'gateway.created'
   | 'gateway.updated'
   | 'gateway.deleted'

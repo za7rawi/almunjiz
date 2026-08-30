@@ -1,10 +1,9 @@
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { prisma } from '../src/lib/prisma';
 
 async function seedAdmin() {
-  const adminEmail = 'admin@gmail.com';
-  // TODO: Change this password after first login
-  const adminPassword = 'Admin@Munjiz2026!';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@munjiz.store';
 
   const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
 
@@ -14,17 +13,23 @@ async function seedAdmin() {
       await prisma.$disconnect();
       return;
     }
-    const hashed = await bcrypt.hash(adminPassword, 12);
+    // Generate secure random password for upgrade
+    const tempPassword = randomBytes(16).toString('hex');
+    const hashed = await bcrypt.hash(tempPassword, 12);
     await prisma.user.update({
       where: { id: existing.id },
       data: { role: 'SUPER_ADMIN', password: hashed },
     });
     console.log(`Updated existing user ${adminEmail} to SUPER_ADMIN`);
+    console.log(`TEMPORARY PASSWORD: ${tempPassword}`);
+    console.log(`IMPORTANT: Change this password immediately after first login!`);
     await prisma.$disconnect();
     return;
   }
 
-  const hashed = await bcrypt.hash(adminPassword, 12);
+  // Generate secure random password for new admin
+  const tempPassword = randomBytes(16).toString('hex');
+  const hashed = await bcrypt.hash(tempPassword, 12);
   await prisma.user.create({
     data: {
       name: 'مدير النظام',
@@ -35,6 +40,8 @@ async function seedAdmin() {
     },
   });
   console.log(`Created admin user: ${adminEmail}`);
+  console.log(`TEMPORARY PASSWORD: ${tempPassword}`);
+  console.log(`IMPORTANT: Change this password immediately after first login!`);
 
   await prisma.$disconnect();
 }

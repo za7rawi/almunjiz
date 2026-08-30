@@ -1,5 +1,5 @@
 import { PaymentProvider } from './base';
-import { computeHmacSha256 } from '@/lib/encryption';
+import { verifyHmacSha256 } from '@/lib/encryption';
 import type {
   CreatePaymentParams,
   PaymentResult,
@@ -164,9 +164,8 @@ export class TabbyProvider extends PaymentProvider {
     if (!signature) return false;
 
     const rawBody = payload.rawBody || JSON.stringify(payload.body);
-    const expected = computeHmacSha256(secret, rawBody);
 
-    return expected === signature;
+    return verifyHmacSha256(secret, rawBody, signature);
   }
 
   private mapStatus(status: string): PaymentVerification['status'] {

@@ -70,6 +70,28 @@ const apiLimiter = createRateLimiter(60 * 1000, 60);
 const uploadLimiter = createRateLimiter(60 * 1000, 10);
 const contactLimiter = createRateLimiter(10 * 60 * 1000, 5);
 const trackLimiter = createRateLimiter(60 * 1000, 30);
+const couponLimiter = createRateLimiter(60 * 1000, 10);
+
+class WebhookEventStore {
+  private store = new Map<string, number>();
+  private readonly maxAgeMs = 5 * 60 * 1000;
+
+  seen(eventId: string): boolean {
+    this.cleanup();
+    if (this.store.has(eventId)) return true;
+    this.store.set(eventId, Date.now());
+    return false;
+  }
+
+  private cleanup() {
+    const now = Date.now();
+    for (const [id, ts] of this.store) {
+      if (now - ts > this.maxAgeMs) this.store.delete(id);
+    }
+  }
+}
+
+const webhookEvents = new WebhookEventStore();
 
 export {
   RateLimiter,
@@ -80,5 +102,7 @@ export {
   uploadLimiter,
   contactLimiter,
   trackLimiter,
+  couponLimiter,
+  webhookEvents,
 };
 export type { RateLimitResult };

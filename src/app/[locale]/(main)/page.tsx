@@ -1,35 +1,28 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   Search,
-  Globe,
-  FileText,
-  Car,
-  Plane,
-  Building2,
-  Headphones,
-  Shield,
-  Star,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Users,
-  Zap,
-  Award,
   ArrowLeft,
   ArrowRight,
-  BadgePercent,
-  Heart,
+  ChevronDown,
   Phone,
   Mail,
   MessageCircle,
   Calendar,
+  FileText,
+  Star,
+  Users,
+  Zap,
+  Award,
+  Heart,
   ArrowUpRight,
+  Shield,
+  BadgePercent,
+  Headphones,
 } from 'lucide-react';
 import { useLanguageStore } from '@/store/language-store';
 import { useDirection } from '@/hooks/use-direction';
@@ -37,7 +30,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { blogsData } from '@/lib/blogs-data';
 import { CONTACT_INFO, SUPPORT_CHANNELS } from '@/constants';
-import type { ServiceData } from '@/types/service-data';
+import { DEFAULT_HOMEPAGE } from '@/constants/homepage';
+import { HorizontalSlider } from '@/components/storefront/horizontal-slider';
+import { SectionHeading } from '@/components/storefront/section-heading';
+import { ServiceCard, type ServiceCardData } from '@/components/storefront/service-card';
+import { ServiceIcon } from '@/components/ui/service-icon';
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
@@ -81,223 +78,32 @@ const fadeInUp = {
   transition: { duration: 0.6, ease: 'easeOut' as const },
 };
 
-const popularServiceIds = ['visa-tourist', 'visa-business', 'vehicle-transfer', 'government-services'];
-
-const popularServiceColors: Record<string, string> = {
-  'visa-tourist': '#2580eb',
-  'visa-business': '#7c3aed',
-  'vehicle-transfer': '#14b8a6',
-  'government-services': '#F59E0B',
-};
-
-const popularServiceIcons: Record<string, string> = {
-  'visa-tourist': 'bg-[#2580eb]/10',
-  'visa-business': 'bg-[#7c3aed]/10',
-  'vehicle-transfer': 'bg-[#14b8a6]/10',
-  'government-services': 'bg-[#F59E0B]/10',
-};
-
-const categoryData = [
-  { icon: Globe, titleAr: 'التأشيرات', titleEn: 'Visas', count: 4, color: '#2580eb', bgColor: 'bg-[#2580eb]/10' },
-  { icon: FileText, titleAr: 'العقود', titleEn: 'Contracts', count: 2, color: '#14b8a6', bgColor: 'bg-[#14b8a6]/10' },
-  { icon: Car, titleAr: 'المركبات', titleEn: 'Vehicles', count: 3, color: '#7c3aed', bgColor: 'bg-[#7c3aed]/10' },
-  { icon: Plane, titleAr: 'السفر', titleEn: 'Travel', count: 2, color: '#F59E0B', bgColor: 'bg-[#F59E0B]/10' },
-  { icon: Building2, titleAr: 'الخدمات الحكومية', titleEn: 'Government', count: 2, color: '#10B981', bgColor: 'bg-[#10B981]/10' },
-  { icon: Headphones, titleAr: 'الاستشارات', titleEn: 'Consulting', count: 1, color: '#EF4444', bgColor: 'bg-[#EF4444]/10' },
-];
-
 const blogPostsPreview = blogsData.slice(0, 3);
+
+interface StorefrontCategoryData {
+  key: string;
+  labelAr: string;
+  labelEn: string;
+  icon: string;
+  count: number;
+}
+
+interface StorefrontResponse {
+  success: boolean;
+  data: {
+    homepage: Record<string, unknown>;
+    services: ServiceCardData[];
+    categories: StorefrontCategoryData[];
+    banners: unknown[];
+    offers: unknown[];
+  };
+}
 
 const whyUsIconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   Zap, Shield, BadgePercent, Headphones, Award, Heart,
 };
 
-interface HomepageData {
-  hero: {
-    badgeAr: string; badgeEn: string;
-    titleAr: string; titleEn: string;
-    descriptionAr: string; descriptionEn: string;
-    button1Ar: string; button1En: string;
-    button2Ar: string; button2En: string;
-  };
-  stats: { number: string; labelAr: string; labelEn: string }[];
-  whyUs: { icon: string; titleAr: string; titleEn: string; descAr: string; descEn: string }[];
-  steps: { num: string; titleAr: string; titleEn: string; descAr: string; descEn: string }[];
-  testimonials: { nameAr: string; nameEn: string; roleAr: string; roleEn: string; textAr: string; textEn: string; rating: number }[];
-  faq: { questionAr: string; questionEn: string; answerAr: string; answerEn: string }[];
-}
-
-const STATIC_HOMEPAGE: HomepageData = {
-  hero: {
-    badgeAr: 'منصة المنجز', badgeEn: 'AL-MUNJIZ Platform',
-    titleAr: 'منصتك المتكاملة لخدمات التأشيرات والسفر والأعمال', titleEn: 'Your all-in-one platform for visas, travel & business services',
-    descriptionAr: 'أنجز معاملاتك بسهولة، بسرعة، وبموثوقية من خلال منصة إلكترونية تجمع جميع خدمات التأشيرات والسفر والأعمال في مكان واحد.', descriptionEn: 'Complete your transactions easily, quickly, and reliably through an electronic platform that brings all visa, travel and business services into one place.',
-    button1Ar: 'تصفح الخدمات', button1En: 'Browse Services',
-    button2Ar: 'تتبع الطلب', button2En: 'Track Order',
-  },
-  stats: [
-    { number: '+17', labelAr: 'خدمة', labelEn: 'Services' },
-    { number: '+500', labelAr: 'عميل', labelEn: 'Clients' },
-    { number: '24/7', labelAr: 'دعم', labelEn: 'Support' },
-    { number: '99%', labelAr: 'رضا العملاء', labelEn: 'Satisfaction' },
-  ],
-  whyUs: [
-    { icon: 'Zap', titleAr: 'السرعة', titleEn: 'Speed', descAr: 'ننجز طلباتك في أسرع وقت ممكن', descEn: 'We complete your requests in the fastest time' },
-    { icon: 'Shield', titleAr: 'الأمان', titleEn: 'Security', descAr: 'نضمن حماية بياناتك', descEn: 'We ensure the protection of your data' },
-    { icon: 'BadgePercent', titleAr: 'الأسعار', titleEn: 'Prices', descAr: 'أسعار تنافسية وشفافة', descEn: 'Competitive and transparent prices' },
-    { icon: 'Headphones', titleAr: 'الدعم', titleEn: 'Support', descAr: 'فريق دعم متاح على مدار الساعة', descEn: 'Support team available 24/7' },
-    { icon: 'Award', titleAr: 'الجودة', titleEn: 'Quality', descAr: 'نلتزم بأعلى معايير الجودة', descEn: 'Highest quality standards' },
-    { icon: 'Heart', titleAr: 'الثقة', titleEn: 'Trust', descAr: 'أكثر من 10,000 عميل يثقون بنا', descEn: 'Over 10,000 clients trust us' },
-  ],
-  steps: [
-    { num: '01', titleAr: 'اختر الخدمة', titleEn: 'Choose Service', descAr: 'تصفح خدماتنا واختر ما يناسبك', descEn: 'Browse and choose what fits your needs' },
-    { num: '02', titleAr: 'أرسل طلبك', titleEn: 'Submit Request', descAr: 'املأ البيانات وأرسل طلبك بسهولة', descEn: 'Fill in details and submit easily' },
-    { num: '03', titleAr: 'تتبع واحصل', titleEn: 'Track & Receive', descAr: 'تابع طلبك واستلم نتائجك', descEn: 'Track status and receive results' },
-  ],
-  testimonials: [
-    { nameAr: 'أحمد الشمري', nameEn: 'Ahmad Al-Shammari', roleAr: 'رائد أعمال', roleEn: 'Entrepreneur', textAr: 'خدمة ممتازة وسريعة جداً', textEn: 'Excellent and very fast service', rating: 5 },
-    { nameAr: 'سارة العتيبي', nameEn: 'Sara Al-Otaibi', roleAr: 'موظفة حكومية', roleEn: 'Government Employee', textAr: 'منصة سهلة الاستخدام وفريق متعاون', textEn: 'Easy to use and helpful team', rating: 5 },
-    { nameAr: 'خالد المطيري', nameEn: 'Khalid Al-Mutairi', roleAr: 'مدير شركة', roleEn: 'Company Manager', textAr: 'أفضل منصة للخدمات الإلكترونية', textEn: 'The best electronic services platform', rating: 5 },
-  ],
-  faq: [
-    { questionAr: 'كيف أطلب خدمة؟', questionEn: 'How to order?', answerAr: 'تصفح خدماتنا واختر ما تحتاجه', answerEn: 'Browse and choose what you need' },
-    { questionAr: 'ما هي طرق الدفع؟', questionEn: 'What payment methods?', answerAr: 'نقبل جميع البطاقات والتحويل البنكي', answerEn: 'We accept all cards and bank transfer' },
-    { questionAr: 'كم تستغرق المعاملات؟', questionEn: 'How long do transactions take?', answerAr: 'تختلف حسب نوع الخدمة', answerEn: 'Varies by service type' },
-  ],
-};
-
-function useDragScroll(isRtl: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isDown = useRef(false);
-  const startX = useRef(0);
-  const moved = useRef(0);
-  const [canScroll, setCanScroll] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => setCanScroll(el.scrollWidth > el.clientWidth + 1);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    window.addEventListener('resize', update);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', update);
-    };
-  }, []);
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const el = ref.current;
-    if (!el) return;
-    isDown.current = true;
-    moved.current = 0;
-    startX.current = e.clientX;
-    el.setPointerCapture(e.pointerId);
-    el.classList.add('dragging');
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    if (!el || !isDown.current) return;
-    const dx = e.clientX - startX.current;
-    moved.current = Math.max(moved.current, Math.abs(dx));
-    el.scrollBy({ left: -dx });
-    startX.current = e.clientX;
-  };
-
-  const endDrag = () => {
-    isDown.current = false;
-    ref.current?.classList.remove('dragging');
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    endDrag();
-    if (el?.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
-    if (moved.current > 6) e.stopPropagation();
-  };
-
-  const onClickCapture = (e: React.MouseEvent) => {
-    if (moved.current > 6) {
-      e.preventDefault();
-      e.stopPropagation();
-      moved.current = 0;
-    }
-  };
-
-  const stepSize = () => {
-    const el = ref.current;
-    if (!el) return 0;
-    const card = el.querySelector<HTMLElement>('[data-slide]');
-    return card ? card.offsetWidth + 16 : Math.round(el.clientWidth * 0.8);
-  };
-
-  const goForward = () => {
-    const el = ref.current;
-    if (!el) return;
-    el.scrollBy({ left: isRtl ? -stepSize() : stepSize(), behavior: 'smooth' });
-  };
-
-  const goBack = () => {
-    const el = ref.current;
-    if (!el) return;
-    el.scrollBy({ left: isRtl ? stepSize() : -stepSize(), behavior: 'smooth' });
-  };
-
-  return { ref, canScroll, onPointerDown, onPointerMove, onPointerUp, onClickCapture, goForward, goBack };
-}
-
-interface HorizontalSliderProps {
-  children: React.ReactNode;
-  isRtl: boolean;
-  nextLabel?: string;
-  prevLabel?: string;
-  className?: string;
-}
-
-function HorizontalSlider({ children, isRtl, nextLabel, prevLabel, className }: HorizontalSliderProps) {
-  const { ref, canScroll, onPointerDown, onPointerMove, onPointerUp, onClickCapture, goForward, goBack } = useDragScroll(isRtl);
-  const NextIcon = isRtl ? ChevronLeft : ChevronRight;
-  const PrevIcon = isRtl ? ChevronRight : ChevronLeft;
-
-  return (
-    <div className="relative">
-      <div
-        ref={ref}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
-        onClickCapture={onClickCapture}
-        className={`slider-grab flex gap-4 overflow-x-auto select-none touch-pan-y cursor-grab ${className ?? ''}`}
-      >
-        {children}
-      </div>
-      {canScroll && (
-        <>
-          <button
-            type="button"
-            onClick={goForward}
-            aria-label={nextLabel}
-            className="hidden sm:flex absolute top-1/2 -translate-y-1/2 end-1 md:end-2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 transition-colors z-10"
-          >
-            <NextIcon size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={goBack}
-            aria-label={prevLabel}
-            className="hidden sm:flex absolute top-1/2 -translate-y-1/2 start-1 md:start-2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 transition-colors z-10"
-          >
-            <PrevIcon size={18} />
-          </button>
-        </>
-      )}
-    </div>
-  );
-}
+type HomepageContent = Record<string, unknown>;
 
 export default function HomePage() {
   const { language } = useLanguageStore();
@@ -307,8 +113,9 @@ export default function HomePage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [servicesData, setServicesData] = useState<ServiceData[]>([]);
-  const [homepage, setHomepage] = useState<HomepageData>(STATIC_HOMEPAGE);
+  const [services, setServices] = useState<ServiceCardData[]>([]);
+  const [categories, setCategories] = useState<StorefrontCategoryData[]>([]);
+  const [content, setContent] = useState<HomepageContent>({} as HomepageContent);
   const [animateHero, setAnimateHero] = useState(true);
 
   useEffect(() => {
@@ -329,36 +136,37 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [servicesRes, homepageRes] = await Promise.all([
-          fetch('/api/services?limit=100'),
-          fetch('/api/cms/homepage'),
-        ]);
-        const servicesJson = await servicesRes.json();
-        const homepageJson = await homepageRes.json();
-        if (servicesJson.success) {
-          setServicesData(servicesJson.data.data);
-        }
-        if (homepageJson.success) {
-          setHomepage(homepageJson.data);
+        const res = await fetch('/api/storefront', { cache: 'no-store' });
+        const json: StorefrontResponse = await res.json();
+        if (json.success && json.data) {
+          setServices(json.data.services ?? []);
+          setCategories(json.data.categories ?? []);
+          setContent(json.data.homepage ?? ({} as HomepageContent));
         }
       } catch (e) {
-        console.error('Failed to fetch homepage data:', e);
+        console.error('Failed to fetch storefront data:', e);
       }
     }
     fetchData();
   }, []);
 
-  const popularServices = servicesData.filter((s) => popularServiceIds.includes(s.id));
+  const hero = (content.hero ?? DEFAULT_HOMEPAGE.hero) as typeof DEFAULT_HOMEPAGE.hero;
+  const stats = (content.stats ?? DEFAULT_HOMEPAGE.stats) as typeof DEFAULT_HOMEPAGE.stats;
+  const whyUs = (content.whyUs ?? DEFAULT_HOMEPAGE.whyUs) as typeof DEFAULT_HOMEPAGE.whyUs;
+  const steps = (content.steps ?? DEFAULT_HOMEPAGE.steps) as typeof DEFAULT_HOMEPAGE.steps;
+  const testimonials = (content.testimonials ?? DEFAULT_HOMEPAGE.testimonials) as typeof DEFAULT_HOMEPAGE.testimonials;
+  const faq = (content.faq ?? DEFAULT_HOMEPAGE.faq) as typeof DEFAULT_HOMEPAGE.faq;
 
-  const filteredServices = servicesData.filter((s) => {
+  const popularServices = services.filter((s) => s.isPopular);
+  const filteredServices = services.filter((s) => {
     if (!searchQuery.trim()) return false;
     const q = searchQuery.toLowerCase();
     return (
       s.name.toLowerCase().includes(q) ||
       s.nameEn.toLowerCase().includes(q) ||
-      s.description.toLowerCase().includes(q) ||
-      s.descriptionEn.toLowerCase().includes(q) ||
-      s.categoryAr.includes(q) ||
+      (s.description ?? '').toLowerCase().includes(q) ||
+      (s.descriptionEn ?? '').toLowerCase().includes(q) ||
+      (s.categoryAr ?? '').toLowerCase().includes(q) ||
       s.category.toLowerCase().includes(q)
     );
   });
@@ -366,8 +174,6 @@ export default function HomePage() {
   const toggleFaq = useCallback((i: number) => {
     setOpenFaq((prev) => (prev === i ? null : i));
   }, []);
-
-  const { hero, stats, whyUs, steps, testimonials, faq } = homepage;
 
   const contactCards = [
     { href: `tel:${CONTACT_INFO.phone}`, Icon: Phone, color: '#2580eb', bg: 'bg-[#2580eb]/10', title: isAr ? 'الهاتف' : 'Phone', value: CONTACT_INFO.phone, external: false },
@@ -377,14 +183,14 @@ export default function HomePage() {
 
   return (
     <div className="overflow-hidden">
-      {/* ─── SECTION 1: HERO ─── */}
-      <section className="relative min-h-[80vh] sm:min-h-[85vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]">
+      {/* ─── HERO ─── */}
+      <section className="relative min-h-[70vh] sm:min-h-[76vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-48 -left-40 w-[480px] h-[480px] bg-[#2580eb]/[0.07] rounded-full blur-[140px]" />
           <div className="absolute -bottom-48 -right-40 w-[560px] h-[560px] bg-[#14b8a6]/[0.05] rounded-full blur-[140px]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-32 sm:py-36 lg:py-44 text-center">
+        <div className="relative z-10 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
           <motion.div
             initial={animateHero ? { opacity: 0, y: 12 } : false}
             animate={{ opacity: 1, y: 0 }}
@@ -430,7 +236,7 @@ export default function HomePage() {
             initial={animateHero ? { opacity: 0, y: 20 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: animateHero ? 0.3 : 0, ease: 'easeOut' }}
-            className="text-base md:text-lg text-slate-400 max-w-xl mx-auto mb-12 md:mb-14 leading-relaxed text-balance"
+            className="text-base md:text-lg text-slate-400 max-w-xl mx-auto mb-10 md:mb-12 leading-relaxed text-balance"
           >
             {isAr ? hero.descriptionAr : hero.descriptionEn}
           </motion.p>
@@ -459,7 +265,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 1.5: STATS ─── */}
+      {/* ─── STATS ─── */}
       <section className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
           <motion.div
@@ -481,7 +287,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 2: SERVICES SEARCH BAR ─── */}
+      {/* ─── SEARCH ─── */}
       <section className="py-8 md:py-12 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div {...fadeInUp}>
@@ -510,7 +316,7 @@ export default function HomePage() {
                   className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0"
                 >
                   <div className="w-10 h-10 rounded-lg bg-[#2580eb]/10 flex items-center justify-center shrink-0">
-                    <Globe size={18} className="text-[#2580eb]" />
+                    <ServiceIcon name={service.icon} size={18} className="text-[#2580eb]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-900 dark:text-white truncate">{isAr ? service.name : service.nameEn}</p>
@@ -524,128 +330,82 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 3: MOST POPULAR SERVICES ─── */}
-      <section className="py-14 md:py-24 bg-white dark:bg-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
-            <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
-              {isAr ? 'الخدمات الأكثر طلباً' : 'Most Popular Services'}
-            </h2>
-            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-base md:text-lg">
-              {isAr ? 'الخدمات الأكثر طلباً من عملائنا الكرام' : 'Our most requested services by our valued clients'}
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-            {servicesData.length === 0
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800">
-                    <div className="skeleton w-11 h-11 sm:w-14 sm:h-14 rounded-xl mb-3 sm:mb-5" />
-                    <div className="skeleton h-4 w-3/4 mb-2" />
-                    <div className="skeleton h-3 w-full mb-2" />
-                    <div className="skeleton h-3 w-2/3 mb-3 sm:mb-4" />
-                    <div className="flex justify-between items-center mb-3 sm:mb-4">
-                      <div className="skeleton h-5 w-16 rounded-full" />
-                      <div className="skeleton h-4 w-12" />
-                    </div>
-                    <div className="skeleton h-9 w-full rounded-xl" />
-                  </div>
-                ))
-              : popularServices.map((service, i) => {
-                  const color = popularServiceColors[service.id] ?? '#2580eb';
-                  const iconBg = popularServiceIcons[service.id] ?? 'bg-[#2580eb]/10';
-                  const ServiceIcon = service.icon === 'Car' ? Car : service.icon === 'Shield' ? Shield : Globe;
-                  return (
-                    <motion.div
-                      key={service.id}
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: i * 0.1 }}
-                      whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                      className="group p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-transparent bg-white dark:bg-slate-800 hover:shadow-2xl hover:shadow-black/5 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col"
-                    >
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" style={{ border: `1px solid ${color}20` }} />
-                      <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl ${iconBg} flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                        <ServiceIcon size={20} className="sm:w-6 sm:h-6" style={{ color }} />
-                      </div>
-                      <h3 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white mb-1 sm:mb-2 line-clamp-1">
-                        {isAr ? service.name : service.nameEn}
-                      </h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2 flex-1">
-                        {isAr ? service.description : service.descriptionEn}
-                      </p>
-                      <div className="flex items-center justify-between mb-3 sm:mb-4">
-                        <span className="text-[10px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 sm:px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <Clock size={10} className="sm:w-3 sm:h-3" />
-                          {isAr ? service.duration : service.durationEn}
-                        </span>
-                        <span className="text-xs sm:text-sm font-bold" style={{ color }}>
-                          {service.price} {isAr ? 'ر.س' : 'SAR'}
-                        </span>
-                      </div>
-                      <Link href={`/services/${service.id}`}>
-                        <Button fullWidth size="sm" className="mt-auto text-xs sm:text-sm">
-                          {isAr ? 'اطلب الآن' : 'Order Now'}
-                        </Button>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
+      {/* ─── POPULAR SERVICES SLIDER ─── */}
+      {popularServices.length > 0 && (
+        <section className="py-14 md:py-20 bg-white dark:bg-slate-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading
+              title={isAr ? 'الخدمات الأكثر طلباً' : 'Most Popular Services'}
+              subtitle={isAr ? 'الخدمات المفضلة لدى عملائنا' : 'Our clients favourite services'}
+              action={{
+                label: isAr ? 'عرض الكل' : 'View all',
+                href: '/services',
+              }}
+            />
+            <HorizontalSlider
+              isRtl={isRtl}
+              nextLabel={isAr ? 'التالي' : 'Next'}
+              prevLabel={isAr ? 'السابق' : 'Previous'}
+            >
+              {popularServices.map((service, i) => (
+                <ServiceCard key={service.id} service={service} isAr={isAr} index={i} />
+              ))}
+            </HorizontalSlider>
           </div>
+        </section>
+      )}
 
-          <div className="mt-8 md:mt-12 text-center">
-            <Link href="/services">
-              <Button variant="secondary" size="lg" className="gap-2">
-                {isAr ? 'إظهار المزيد من الخدمات' : 'Show More Services'}
-                <Arrow size={16} />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── SECTION 4: ALL SERVICES GRID ─── */}
-      <section className="py-14 md:py-24 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
-            <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
-              {isAr ? 'جميع خدماتنا' : 'All Our Services'}
-            </h2>
-            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-base md:text-lg">
-              {isAr ? 'تصفح جميع فئات خدماتنا المتنوعة' : 'Browse all our diverse service categories'}
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-            {categoryData.map((cat, i) => (
-              <motion.div
-                key={cat.titleAr}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.08 }}
-                whileHover={{ y: -4, transition: { duration: 0.3 } }}
+      {/* ─── CATEGORY SECTIONS (HORIZONTAL SLIDERS) ─── */}
+      {categories.map((cat, catIndex) => {
+        const catServices = services.filter((s) => s.category === cat.key);
+        if (catServices.length === 0) return null;
+        return (
+          <section
+            key={cat.key}
+            className={cn(
+              'py-14 md:py-20',
+              catIndex % 2 === 0
+                ? 'bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900'
+                : 'bg-white dark:bg-slate-900'
+            )}
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <SectionHeading
+                title={isAr ? cat.labelAr : cat.labelEn}
+                subtitle={isAr ? `${cat.count} خدمات متاحة` : `${cat.count} services available`}
+                align="start"
+                action={{
+                  label: isAr ? 'تصفح الكل' : 'Browse all',
+                  href: `/services?category=${encodeURIComponent(cat.key)}`,
+                }}
+              />
+              <HorizontalSlider
+                isRtl={isRtl}
+                nextLabel={isAr ? 'التالي' : 'Next'}
+                prevLabel={isAr ? 'السابق' : 'Previous'}
               >
-                <Link href="/services" className="flex items-center gap-3 sm:gap-4 p-3 sm:p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-xl hover:shadow-black/5 hover:border-transparent transition-all duration-500 group">
-                  <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl ${cat.bgColor} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                    <cat.icon size={18} className="sm:w-6 sm:h-6" style={{ color: cat.color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-white truncate">{isAr ? cat.titleAr : cat.titleEn}</h3>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">{cat.count} {isAr ? 'خدمات' : 'services'}</p>
-                  </div>
-                  <Arrow size={16} className="text-slate-300 group-hover:text-[#2580eb] transition-colors shrink-0" />
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+                {catServices.map((service, i) => (
+                  <ServiceCard key={service.id} service={service} isAr={isAr} index={i} />
+                ))}
+              </HorizontalSlider>
+            </div>
+          </section>
+        );
+      })}
+
+      {/* ─── ALL SERVICES CTA ─── */}
+      <section className="py-10 md:py-14 bg-white dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Link href="/services">
+            <Button variant="secondary" size="lg" className="gap-2">
+              {isAr ? 'إظهار جميع الخدمات' : 'Show All Services'}
+              <Arrow size={16} />
+            </Button>
+          </Link>
         </div>
       </section>
 
-      {/* ─── SECTION 5: WHY AL-MUNJIZ ─── */}
+      {/* ─── WHY US ─── */}
       <section className="py-14 md:py-24 bg-gradient-to-br from-[#0f172a] to-[#1e293b] relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#2580eb]/10 rounded-full blur-[120px]" />
@@ -653,15 +413,12 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
+          <div className="text-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-white mb-3">
               {isAr ? 'لماذا المنجز؟' : 'Why Al-Munjiz?'}
             </h2>
-            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg">
-              {isAr ? 'نقدم لك تجربة فريدة تجمع بين السرعة والأمان والجودة' : 'We offer you a unique experience combining speed, security, and quality'}
-            </p>
-          </motion.div>
+            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {whyUs.map((reason, i) => {
@@ -689,18 +446,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 6: HOW IT WORKS ─── */}
+      {/* ─── HOW IT WORKS ─── */}
       <section className="py-14 md:py-24 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
+          <div className="text-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'كيف يعمل المنجز؟' : 'How Al-Munjiz Works?'}
             </h2>
-            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-base md:text-lg">
-              {isAr ? 'ثلاث خطوات بسيطة للحصول على خدماتك' : 'Three simple steps to get your services'}
-            </p>
-          </motion.div>
+            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
+          </div>
 
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
             <div className="hidden md:block absolute top-12 left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-[#2580eb]/20 via-[#14b8a6]/20 to-[#2580eb]/20" />
@@ -728,7 +482,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 7: STATISTICS ─── */}
+      {/* ─── ANIMATED STATS ─── */}
       <section className="py-14 md:py-20 gradient-animated relative overflow-hidden">
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -760,7 +514,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 8: TESTIMONIALS ─── */}
+      {/* ─── TESTIMONIALS ─── */}
       <section className="py-14 md:py-24 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-[10%] w-[300px] h-[300px] bg-[#2580eb]/10 rounded-full blur-[100px]" />
@@ -768,12 +522,12 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
+          <div className="text-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-white mb-3">
               {isAr ? 'ماذا يقول عملاؤنا' : 'What Our Clients Say'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
-          </motion.div>
+          </div>
 
           <HorizontalSlider
             isRtl={isRtl}
@@ -810,15 +564,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 9: FAQ ─── */}
+      {/* ─── FAQ ─── */}
       <section className="py-14 md:py-24 bg-white dark:bg-slate-900">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
+          <div className="text-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'الأسئلة الشائعة' : 'Frequently Asked Questions'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
-          </motion.div>
+          </div>
 
           {faq.length > 0 && (
             <script
@@ -884,15 +638,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 10: BLOG PREVIEW ─── */}
+      {/* ─── BLOG PREVIEW ─── */}
       <section className="py-14 md:py-24 bg-slate-50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
+          <div className="text-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'آخر المقالات' : 'Latest Articles'}
             </h2>
             <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
-          </motion.div>
+          </div>
 
           <HorizontalSlider
             isRtl={isRtl}
@@ -935,18 +689,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 11: CONTACT CTA ─── */}
+      {/* ─── CONTACT ─── */}
       <section className="py-14 md:py-24 bg-gradient-to-br from-slate-50 via-white to-[#2580eb]/[0.03] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeInUp} className="text-center mb-10">
+          <div className="text-center mb-10">
             <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3">
               {isAr ? 'تواصل معنا' : 'Contact Us'}
             </h2>
-            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-base md:text-lg">
-              {isAr ? 'نحن هنا لمساعدتك. تواصل معنا بأي طريقة تناسبك.' : 'We are here to help you. Contact us in any way that suits you.'}
-            </p>
-          </motion.div>
+            <div className="w-20 h-1 bg-gradient-to-r from-[#2580eb] to-[#14b8a6] rounded-full mx-auto" />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto">
             {contactCards.map((card, i) => (
@@ -987,7 +738,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 12: REGISTER CTA ─── */}
+      {/* ─── REGISTER CTA ─── */}
       <section className="py-14 md:py-24 bg-gradient-to-br from-[#0f172a] to-[#1e293b] relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#2580eb]/10 rounded-full blur-[120px]" />

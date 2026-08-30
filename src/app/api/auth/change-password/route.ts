@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { success, error } from "@/lib/api/response";
 import { authLimiter } from "@/lib/rate-limit";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { revokeAllUserSessions } from "@/lib/session-revocation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +17,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return error("غير مصرح به", 401);
+    }
+
+    const userId = (session.user as Record<string, unknown>).id as string;
+    if (!userId) {
+      return error("غير مصرح به", 401);
+    }
+
     const { currentPassword, newPassword } = await request.json();
 
     if (!currentPassword || !newPassword) {
@@ -22,39 +35,6 @@ export async function POST(request: NextRequest) {
 
     if (newPassword.length < 8) {
       return error("كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل");
-    }
-
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    let userId: string | null = null;
-
-    if (token) {
-      const tokenParts = token.split("_");
-      if (tokenParts.length >= 3) {
-        const tokenUserId = tokenParts[1];
-        const user = await prisma.user.findUnique({ where: { id: tokenUserId } });
-        if (user) userId = user.id;
-      }
-    }
-
-    if (!userId) {
-      const cookieHeader = request.headers.get("cookie") || "";
-      const sessionMatch = cookieHeader.match(/almunjiz-auth=([^;]+)/);
-      if (sessionMatch) {
-        try {
-          const sessionData = JSON.parse(
-            decodeURIComponent(sessionMatch[1])
-          );
-          userId = sessionData?.state?.user?.id;
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    if (!userId) {
-      return error("غير مصرح به", 401);
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -74,6 +54,11 @@ export async function POST(request: NextRequest) {
       where: { id: userId },
       data: { password: hashedPassword },
     });
+
+    await revokeAllUserSessions(userId, 'password_change');
+
+    const { revokeAllSessions } = await import("@/lib/session-security");
+    await revokeAllSessions(userId);
 
     return success(null, "تم تحديث كلمة المرور بنجاح");
   } catch {
